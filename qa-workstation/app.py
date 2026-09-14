@@ -11,6 +11,7 @@ from pathlib import Path
 from flask import Flask, render_template
 
 import modules
+from version import __version__
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
@@ -39,9 +40,11 @@ def create_app():
     registered.sort(key=lambda i: i["name"])
     app.config["MODULES"] = registered
 
+    app.config["VERSION"] = __version__
+
     @app.context_processor
     def inject_modules():
-        return {"nav_modules": registered}
+        return {"nav_modules": registered, "app_version": __version__}
 
     @app.route("/")
     def home():

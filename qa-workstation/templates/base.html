@@ -15,7 +15,7 @@
     <a href="{{ m.url }}" class="{{ 'active' if request.path.startswith(m.url) else '' }}">{{ m.icon }} {{ m.name }}</a>
     {% endfor %}
   </nav>
-  <div class="sidebar-foot">local · 127.0.0.1:5010</div>
+  <div class="sidebar-foot">local · 127.0.0.1:5010 · v{{ app_version }}</div>
 </aside>
 <main class="content">
 {% block content %}{% endblock %}

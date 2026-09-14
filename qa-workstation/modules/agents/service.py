@@ -12,6 +12,7 @@ Providers:
 - any registered Copilot agent id — routed live to Copilot Studio over
   the M365 Agents SDK or Direct Line, whichever the agent is set up for.
 """
+import json
 import os
 import shutil
 import subprocess
@@ -66,6 +67,22 @@ def complete(provider_id, prompt):
         raise ProviderError(str(exc), "agent_failed") from exc
     store.set_status(agent["id"], "connected")
     return "\n\n".join(replies) if replies else ""
+
+
+def extract_json(text):
+    """Parse a model's JSON reply, tolerating code fences or stray prose."""
+    for candidate in (text, text.strip("`").lstrip("json")):
+        try:
+            return json.loads(candidate)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    start, end = text.find("{"), text.rfind("}")
+    if start != -1 and end > start:
+        try:
+            return json.loads(text[start:end + 1])
+        except json.JSONDecodeError:
+            return None
+    return None
 
 
 # ---------- Claude CLI backend ----------

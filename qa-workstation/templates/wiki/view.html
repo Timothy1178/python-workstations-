@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · QA Wiki{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="muted small-text"><a href="{{ url_for('wiki.index') }}">📚 QA Wiki</a> / <a href="{{ url_for('wiki.index', category=page.category) }}">{{ page.category }}</a></p>
+    <h1>{{ page.title }}</h1>
+    <p class="muted small-text">
+      {% for t in page.tags %}<span class="tag">#{{ t }}</span> {% endfor %}
+      updated {{ page.updated }} · created {{ page.created }}
+    </p>
+  </div>
+  <div class="row-actions">
+    <a class="btn primary" href="{{ url_for('wiki.edit', page_id=page.id) }}">✏️ Edit</a>
+    <form method="post" action="{{ url_for('wiki.delete', page_id=page.id) }}"
+          onsubmit="return confirm('Delete page {{ page.title }}?')">
+      <button class="btn danger" type="submit">Delete</button>
+    </form>
+    <a class="btn" href="{{ url_for('wiki.index') }}">← Wiki</a>
+  </div>
+</div>
+
+<article class="card wiki-content">{{ html|safe }}</article>
+{% endblock %}

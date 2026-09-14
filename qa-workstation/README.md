@@ -15,11 +15,23 @@ python3 app.py
 
 Open **http://127.0.0.1:5010**.
 
+## Versioning
+
+The version lives in `version.py` and shows in the sidebar footer
+(currently starting from 1.1.0). Every **main update adds 0.1**
+(1.1.0 → 1.2.0); every **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Each
+bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
+
 ## Modules
 
 - **Test Cases** (`modules/testcases/`) — template-driven test case builder
   and a test-run viewer. The columns come from `data/template.json`; replace
   it with your own template to change the layout, no code changes needed.
+- **QA Wiki** (`modules/wiki/`) — the team's knowledge base: Markdown
+  pages with categories, tags and search, plus an agent-assisted editor
+  (paste a real document, the agent drafts the page). See
+  [docs/copilot-wiki-agent-setup.md](docs/copilot-wiki-agent-setup.md)
+  for the wiki-librarian agent prompt.
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a
