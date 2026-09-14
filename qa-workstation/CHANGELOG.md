@@ -5,6 +5,16 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.6.0 — 2026-09-14
+
+- **Multi Screen Cap v1.1.0**: 🗔 floating capture window that stays
+  open while you work — drag thumbnails straight into Excel, a folder,
+  or the workstation's 📎 chat box, or 📋 copy & paste them; the
+  selected capture area is saved, so ↻ / Alt+Shift+A re-captures the
+  same spot without dragging; gallery keeps the last 10 captures
+  (oldest drops off); ⌨️ button opens the browser's shortcut settings
+  to rebind the keys.
+
 ## 1.5.0 — 2026-09-14
 
 - **Web Plugins**: new module listing browser extensions (Chrome & Edge)
