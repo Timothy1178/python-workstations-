@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ agent.name }} · Chat{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>💬 {{ agent.name }}</h1>
+    <p class="muted">{{ agent.role or "Copilot Studio agent" }} · <span class="pill" id="conn-pill">{{ agent.status }}</span></p>
+  </div>
+  <div class="row-actions">
+    <button class="btn" id="new-convo">↺ New conversation</button>
+    <a class="btn" href="{{ url_for('agents.index') }}">✕ Close</a>
+  </div>
+</div>
+
+{% if sdk_error %}
+<div class="card warn-card">⚠️ {{ sdk_error }}</div>
+{% elif missing %}
+<div class="card warn-card">⚠️ This agent is missing connection details: {{ missing|join(", ") }}. Remove it and re-add it with the Copilot Studio metadata filled in.</div>
+{% endif %}
+
+<div class="card chat-page">
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-input">
+    <textarea id="chat-text" rows="3" placeholder="Message {{ agent.name }}… (Enter to send, Shift+Enter for a new line)"></textarea>
+    <button class="btn primary" id="chat-send">Send</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CAN_CONNECT = {{ (not sdk_error and not missing)|tojson }};
+const msgs = document.getElementById("chat-msgs");
+const chatText = document.getElementById("chat-text");
+const chatSend = document.getElementById("chat-send");
+const pill = document.getElementById("conn-pill");
+
+function addMsg(role, text) {
+  const div = document.createElement("div");
+  div.className = "chat-msg " + role;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function showReplies(data, fallback) {
+  if (data.error) {
+    pill.textContent = "error";
+    addMsg("agent error", data.error);
+    return false;
+  }
+  pill.textContent = "connected";
+  const replies = data.replies || [];
+  if (replies.length) replies.forEach(r => addMsg("agent", r));
+  else if (fallback) addMsg("agent note", fallback);
+  return true;
+}
+
+async function connect() {
+  if (!CAN_CONNECT) return;
+  setBusy(true);
+  const note = addMsg("agent thinking",
+    "Connecting to Copilot Studio… a Microsoft sign-in window may open in your browser.");
+  try {
+    const res = await fetch("{{ url_for('agents.connect', agent_id=agent.id) }}", { method: "POST" });
+    const data = await res.json();
+    note.remove();
+    showReplies(data, "Connected — say hi!");
+  } catch (err) {
+    note.remove();
+    pill.textContent = "error";
+    addMsg("agent error", "Connection failed: " + err.message);
+  } finally {
+    setBusy(false);
+  }
+}
+
+function setBusy(busy) {
+  chatSend.disabled = busy;
+  document.getElementById("new-convo").disabled = busy;
+}
+
+async function sendChat() {
+  const message = chatText.value.trim();
+  if (!message || chatSend.disabled) return;
+  chatText.value = "";
+  addMsg("user", message);
+  setBusy(true);
+  const thinking = addMsg("agent thinking", "Thinking…");
+  try {
+    const res = await fetch("{{ url_for('agents.send', agent_id=agent.id) }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+    const data = await res.json();
+    thinking.remove();
+    showReplies(data, "(no reply)");
+  } catch (err) {
+    thinking.remove();
+    addMsg("agent error", "Request failed: " + err.message);
+  } finally {
+    setBusy(false);
+    chatText.focus();
+  }
+}
+
+chatSend.onclick = sendChat;
+chatText.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+document.getElementById("new-convo").onclick = () => {
+  msgs.innerHTML = "";
+  connect();
+};
+
+if (CAN_CONNECT) connect();
+else chatSend.disabled = true;
+</script>
+{% endblock %}

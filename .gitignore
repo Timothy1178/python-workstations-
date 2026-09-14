@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
+qa-workstation/data/assist_debug.log
+qa-workstation/data/msal_token_cache.json

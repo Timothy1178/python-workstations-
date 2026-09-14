@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}QA Workstation{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/">🧪 QA Workstation</a>
+  <nav>
+    <a href="/" class="{{ 'active' if request.path == '/' else '' }}">🏠 Home</a>
+    {% for m in nav_modules %}
+    <a href="{{ m.url }}" class="{{ 'active' if request.path.startswith(m.url) else '' }}">{{ m.icon }} {{ m.name }}</a>
+    {% endfor %}
+  </nav>
+  <div class="sidebar-foot">local · 127.0.0.1:5010</div>
+</aside>
+<main class="content">
+{% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>
