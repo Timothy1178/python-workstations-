@@ -1,0 +1,16 @@
+[
+  {
+    "id": "781cc80a",
+    "name": "QA Helper",
+    "role": "SIT&UAT Test Case",
+    "notes": "",
+    "environment_id": "",
+    "schema_name": "",
+    "direct_connect_url": "",
+    "directline_secret": "EduHioaqO0n3xgIWOVLqureWHPcvAM9LJsYjd7L4II2PLdY2iiyYJQQJ99CIAC3pKaRAArohAAABAZBS3TNz.EPJ12H9rg3RNcnthQ91ShLBlTPSzv0WQhMWtEMPl6UViPf7IPJf7JQQJ99CIAC3pKaRAArohAAABAZBS33kG",
+    "tenant_id": "",
+    "app_client_id": "",
+    "status": "connected",
+    "added": "2026-09-14"
+  }
+]
