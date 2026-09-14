@@ -232,4 +232,19 @@ document.getElementById("settings-save").onclick = async () => {
 
 render(0);
 </script>
+<script src="{{ url_for('static', filename='chatbox.js') }}"></script>
+<script>
+initChatBox({
+  title: "CSV Data Analyst",
+  greeting: "Ask me about this file — counts, duplicates, anomalies, summaries (e.g. \"how many records have status = failed?\"). Attach a reference document or Excel with 📎 to cross-check the data.",
+  placeholder: "Ask about this data…",
+  endpoint: "{{ url_for('csvreader.ask', file_id=doc.id) }}",
+  quickActions: [
+    { label: "🔎 Data quality check",
+      message: "Run a data quality check on this file: empty fields that look required, duplicate records, inconsistent formats (dates, IDs, casing), and outliers. Report findings by record number." },
+    { label: "📊 Summarise this file",
+      message: "Summarise this file: what the data appears to be, the value distribution of the most informative columns, and anything unusual worth a tester's attention." },
+  ],
+});
+</script>
 {% endblock %}

@@ -122,7 +122,41 @@ def preview():
     return jsonify({"html": render_md(content)})
 
 
-# ---------- AI assistant ----------
+# ---------- AI assistants ----------
+
+@bp.route("/ask", methods=["POST"])
+def ask():
+    """Q&A over the whole wiki, for the chat box on the index page."""
+    data = request.get_json(force=True)
+    pages = store.list_pages()
+    parts, total = [], 0
+    for p in pages:
+        body = p["content"][:3000]
+        block = (f"=== {p['title']} (category: {p['category']}; "
+                 f"tags: {', '.join(p['tags'])}; updated {p['updated']}) ===\n{body}")
+        total += len(block)
+        if total > 45000:
+            parts.append("[... more pages omitted — knowledge base truncated]")
+            break
+        parts.append(block)
+    convo = ""
+    history = data.get("history", [])
+    if history:
+        convo = "Conversation so far:\n" + "\n".join(
+            f'{m["role"]}: {m["text"]}' for m in history[-8:]) + "\n\n"
+    prompt = f"""You are the QA team's knowledge assistant. Answer the tester's question using ONLY the wiki pages below (and any documents attached to the message). Answer in plain text, concise and practical. Name the wiki page(s) you used. If the wiki doesn't contain the answer, say so and suggest which page should be created or updated.
+
+Wiki pages:
+{chr(10).join(parts) if parts else "(the wiki is empty)"}
+
+{convo}Tester's question: {data.get("message", "")}
+"""
+    try:
+        raw = service.complete_with_attachments(
+            data.get("provider"), prompt, data.get("attachments"))
+    except service.ProviderError as exc:
+        return jsonify({"reply": str(exc), "error": exc.code})
+    return jsonify({"reply": raw[:6000] or "(no reply)"})
 
 def _build_prompt(draft, message, history):
     convo = ""
@@ -162,7 +196,8 @@ def assist():
     prompt = _build_prompt(draft, data.get("message", ""),
                            data.get("history", []))
     try:
-        raw = service.complete(data.get("provider"), prompt)
+        raw = service.complete_with_attachments(
+            data.get("provider"), prompt, data.get("attachments"))
     except service.ProviderError as exc:
         return jsonify({"reply": str(exc), "error": exc.code})
 

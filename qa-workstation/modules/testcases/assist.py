@@ -57,10 +57,11 @@ Current table rows:
 """
 
 
-def run_assist(plan, template, table, message, history, provider_id=None):
+def run_assist(plan, template, table, message, history, provider_id=None,
+               attachments=None):
     prompt = _build_prompt(plan, template, table, message, history)
     try:
-        raw = service.complete(provider_id, prompt)
+        raw = service.complete_with_attachments(provider_id, prompt, attachments)
     except service.ProviderError as exc:
         return {"reply": str(exc), "updates": [], "new_cases": [],
                 "error": exc.code}

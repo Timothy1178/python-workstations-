@@ -80,9 +80,13 @@ your data; copy it to move machines.
 
 ## Agent-assisted chat box in any module
 
-The test case builder's assistant chat box is a shared component — the
-dropdown in its header picks who answers: the local Claude CLI or any
-connected Copilot agent. To add the same chat box to a new tool:
+The assistant chat box is a shared component, used in the test case
+builder, the CSV viewer, and the QA Wiki. The dropdown in its header
+picks who answers: the local Claude CLI or any connected Copilot agent.
+The 📎 button attaches files: documents and Excel workbooks are read
+into the conversation for every provider; images are analysed by the
+Claude CLI provider (Copilot agents are told what was attached).
+To add the same chat box to a new tool:
 
 1. Backend: build a prompt and call
    `modules.agents.service.complete(provider_id, prompt)` from your

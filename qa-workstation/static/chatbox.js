@@ -39,10 +39,14 @@ function initChatBox(opts) {
     </div>
     <div class="chat-msgs"></div>
     <div class="chat-quick"></div>
+    <div class="chat-files"></div>
     <div class="chat-input">
+      <button class="btn chat-attach" title="Attach files — documents, Excel, images">📎</button>
       <textarea rows="3" placeholder="${opts.placeholder || "Ask the agent…"}"></textarea>
       <button class="btn primary">Send</button>
-    </div>`;
+    </div>
+    <input type="file" multiple hidden class="chat-file-input"
+           accept=".txt,.md,.csv,.tsv,.json,.log,.xml,.yml,.yaml,.html,.sql,.xlsx,.xlsm,.png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.docx">`;
   document.body.append(fab, panel);
 
   const msgs = panel.querySelector(".chat-msgs");
@@ -60,6 +64,59 @@ function initChatBox(opts) {
     return div;
   }
   if (opts.greeting) addMsg("agent", opts.greeting);
+
+  // ---------- attachments ----------
+  const TEXT_EXT = ["txt","md","csv","tsv","json","log","xml","yml","yaml","html","htm","sql","py","js","ini","cfg"];
+  const MAX_FILE_MB = 6;
+  const fileInput = panel.querySelector(".chat-file-input");
+  const fileChips = panel.querySelector(".chat-files");
+  let pendingFiles = [];
+
+  panel.querySelector(".chat-attach").onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    for (const f of fileInput.files) {
+      if (f.size > MAX_FILE_MB * 1024 * 1024) {
+        addMsg("agent error", `${f.name} is larger than ${MAX_FILE_MB} MB — attach a smaller file.`);
+        continue;
+      }
+      pendingFiles.push(f);
+    }
+    fileInput.value = "";
+    renderChips();
+  };
+
+  function renderChips() {
+    fileChips.innerHTML = "";
+    fileChips.hidden = !pendingFiles.length;
+    pendingFiles.forEach((f, i) => {
+      const chip = document.createElement("span");
+      chip.className = "file-chip";
+      chip.textContent = "📎 " + f.name + " ";
+      const x = document.createElement("button");
+      x.textContent = "✕";
+      x.title = "Remove";
+      x.onclick = () => { pendingFiles.splice(i, 1); renderChips(); };
+      chip.appendChild(x);
+      fileChips.appendChild(chip);
+    });
+  }
+  renderChips();
+
+  function readAttachment(f) {
+    const ext = (f.name.split(".").pop() || "").toLowerCase();
+    return new Promise(resolve => {
+      const r = new FileReader();
+      if (TEXT_EXT.includes(ext) || f.type.startsWith("text/")) {
+        r.onload = () => resolve({ name: f.name, text: String(r.result).slice(0, 300000) });
+        r.onerror = () => resolve(null);
+        r.readAsText(f);
+      } else {
+        r.onload = () => resolve({ name: f.name, data: String(r.result).split(",")[1] || "" });
+        r.onerror = () => resolve(null);
+        r.readAsDataURL(f);
+      }
+    });
+  }
 
   const quick = panel.querySelector(".chat-quick");
   for (const qa of opts.quickActions || []) {
@@ -106,21 +163,27 @@ function initChatBox(opts) {
 
   async function send(override, label) {
     const message = (override || chatText.value).trim();
-    if (!message || chatSend.disabled) return;
+    if ((!message && !pendingFiles.length) || chatSend.disabled) return;
     if (!override) chatText.value = "";
-    addMsg("user", label || message);
-    history.push({ role: "user", text: message });
+    const files = pendingFiles;
+    pendingFiles = [];
+    renderChips();
+    const fileNote = files.length ? ` 📎(${files.map(f => f.name).join(", ")})` : "";
+    addMsg("user", (label || message || "(files attached)") + fileNote);
+    history.push({ role: "user", text: message || "(files attached)" });
     chatSend.disabled = true;
     const thinking = addMsg("agent thinking", "Thinking…");
     try {
+      const attachments = (await Promise.all(files.map(readAttachment))).filter(Boolean);
       const context = opts.buildContext ? opts.buildContext() : {};
       const res = await fetch(opts.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message,
+          message: message || "See the attached files.",
           history: history.slice(0, -1),
           provider: providerSel.value || null,
+          attachments,
           ...context,
         }),
       });

@@ -123,6 +123,7 @@ def assist_chat(plan_id):
         message=data.get("message", ""),
         history=data.get("history", []),
         provider_id=data.get("provider"),
+        attachments=data.get("attachments"),
     )
     return jsonify({"ok": "error" not in result, **result})
 

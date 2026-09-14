@@ -329,6 +329,31 @@ label.btn input[type="file"] { display: none; }
   flex-wrap: wrap;
   padding: 8px 10px 0;
 }
+.chat-files { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 10px 0; }
+.file-chip {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 12px;
+  background: #eff6ff;
+  color: var(--accent);
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 2px 8px;
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.file-chip button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 11px;
+  padding: 0;
+}
+.chat-attach { padding: 8px 10px; }
 .chat-input {
   display: flex;
   gap: 8px;

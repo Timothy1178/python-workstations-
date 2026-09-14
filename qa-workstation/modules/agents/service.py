@@ -18,7 +18,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from . import copilot, directline, store
+from . import attachments, copilot, directline, store
 
 CLAUDE_CLI = "claude-cli"
 CLAUDE_PATHS = ["claude", "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
@@ -52,14 +52,28 @@ def agent_backend(agent):
     return copilot
 
 
-def complete(provider_id, prompt):
-    """Send `prompt` to the chosen provider and return its raw text reply."""
+def complete(provider_id, prompt, image_paths=None):
+    """Send `prompt` to the chosen provider and return its raw text reply.
+
+    image_paths: attached images saved locally by attachments.process().
+    The Claude CLI reads them with its Read tool; Copilot Studio agents
+    can't receive local files, so the prompt says what was attached.
+    """
     if not provider_id or provider_id == CLAUDE_CLI:
-        return _run_claude_cli(prompt)
+        if image_paths:
+            prompt += ("\n\nAttached image files — read each with the Read "
+                       "tool before answering:\n"
+                       + "\n".join(f"- {p}" for p in image_paths))
+        return _run_claude_cli(prompt, allow_read=bool(image_paths))
     agent = store.get_agent(provider_id)
     if agent is None:
         raise ProviderError("The selected agent no longer exists — pick "
                             "another one in the chat box.", "no_provider")
+    if image_paths:
+        names = ", ".join(Path(p).name for p in image_paths)
+        prompt += (f"\n\n[Note: the tester attached image(s) {names}, which "
+                   "cannot be delivered to this agent. If the images matter, "
+                   "ask the tester to describe them or paste their content.]")
     try:
         replies = agent_backend(agent).ask(agent, prompt)
     except copilot.CopilotError as exc:
@@ -67,6 +81,14 @@ def complete(provider_id, prompt):
         raise ProviderError(str(exc), "agent_failed") from exc
     store.set_status(agent["id"], "connected")
     return "\n\n".join(replies) if replies else ""
+
+
+def complete_with_attachments(provider_id, prompt, attachment_list):
+    """Prepend attached documents to the prompt and route images; the
+    one call assist endpoints make."""
+    extracted = attachments.process(attachment_list)
+    return complete(provider_id, extracted["context"] + prompt,
+                    image_paths=extracted["image_paths"])
 
 
 def extract_json(text):
@@ -106,15 +128,18 @@ def _claude_bin():
     return None
 
 
-def _run_claude_cli(prompt):
+def _run_claude_cli(prompt, allow_read=False):
     binary = _claude_bin()
     if not binary:
         raise ProviderError(
             "Claude CLI not found on this machine — install Claude Code, or "
             "pick a Copilot agent in the chat box instead.", "no_provider")
+    cmd = [binary, "-p", prompt]
+    if allow_read:  # needed for attached images; flag must follow the prompt
+        cmd += ["--allowedTools", "Read"]
     try:
         proc = subprocess.run(
-            [binary, "-p", prompt],
+            cmd,
             capture_output=True, text=True, timeout=CLI_TIMEOUT,
             stdin=subprocess.DEVNULL, env=_clean_env(),
             cwd=os.path.expanduser("~"))

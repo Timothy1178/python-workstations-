@@ -5,3 +5,4 @@ __pycache__/
 venv/
 qa-workstation/data/assist_debug.log
 qa-workstation/data/msal_token_cache.json
+qa-workstation/data/uploads/
