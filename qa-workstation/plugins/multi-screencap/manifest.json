@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "QA Multi Screen Cap",
-  "version": "1.0.0",
-  "description": "Take multiple screenshots — visible page or drag-selected area — collect them in a gallery and save them all at once.",
+  "version": "1.1.0",
+  "description": "Take multiple screenshots — visible page, drag-selected area, or your saved area — keep the last 10 in a floating window, and drag or paste them into Excel or anywhere else.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -17,7 +17,7 @@
     "128": "icons/icon128.png"
   },
   "background": { "service_worker": "background.js" },
-  "permissions": ["activeTab", "tabs", "scripting", "downloads", "storage", "unlimitedStorage"],
+  "permissions": ["activeTab", "tabs", "scripting", "downloads", "storage", "unlimitedStorage", "clipboardWrite"],
   "host_permissions": ["<all_urls>"],
   "commands": {
     "capture-visible": {
@@ -27,6 +27,10 @@
     "capture-area": {
       "suggested_key": { "default": "Alt+Shift+S" },
       "description": "Capture a selected area"
+    },
+    "capture-last-area": {
+      "suggested_key": { "default": "Alt+Shift+A" },
+      "description": "Capture the saved area again"
     }
   }
 }

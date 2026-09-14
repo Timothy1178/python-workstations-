@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>QA Screen Caps</title>
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body class="panel">
+<header>
+  <strong>📸 QA Screen Caps</strong>
+  <span class="count" id="count"></span>
+</header>
+<div class="actions">
+  <button class="primary" id="cap-visible" title="Capture the visible page of your last browser window">📸 Page</button>
+  <button class="primary" id="cap-area" title="Drag-select an area on your last browser window">✂️ Area</button>
+  <button id="cap-last-area">↻ Saved area</button>
+  <button id="save-all" title="Save every capture to Downloads/screencaps/">💾 All</button>
+  <button class="danger" id="clear-all" title="Clear the gallery">🗑</button>
+  <button id="shortcuts" title="Change the keyboard shortcuts">⌨️</button>
+</div>
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" hidden>No captures yet.<br>Capture with the buttons above or the shortcuts —<br>Alt+Shift+F page · Alt+Shift+S area · Alt+Shift+A saved area.<br>This window stays open while you work.</div>
+<div class="tip">Drag a thumbnail into Excel, a folder, or the workstation's 📎 chat box — or 📋 copy it and paste (Ctrl/Cmd+V). Newest capture is first; 10 are kept, oldest drops off.</div>
+<script src="gallery.js"></script>
+</body>
+</html>

@@ -77,6 +77,7 @@
 <script src="{{ url_for('static', filename='chatbox.js') }}"></script>
 <script>
 initChatBox({
+  context: "wiki-index",
   title: "Wiki Assistant",
   greeting: "Ask me anything recorded in this wiki — I answer from the pages and name the ones I used. Attach a document with 📎 to check it against the team's knowledge.",
   placeholder: "Ask the knowledge base…",

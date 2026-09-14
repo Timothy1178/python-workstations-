@@ -1,9 +1,11 @@
 // QA Multi Screen Cap — service worker.
-// Holds the shot gallery in chrome.storage.local and orchestrates the two
-// capture flows: visible page, and area selection (select.js overlay in the
-// page picks the rect and crops the capture, since the worker has no DOM).
+// Gallery (max 10 shots) lives in chrome.storage.local. Capture always
+// targets the active tab of the last-focused NORMAL window, so it works
+// from the popup and from the floating panel window alike. The last
+// selected area is remembered and can be re-captured without dragging.
 
-const MAX_SHOTS = 100;
+const MAX_SHOTS = 10;
+let panelWindowId = null;
 
 async function getShots() {
   const { shots = [] } = await chrome.storage.local.get("shots");
@@ -18,6 +20,7 @@ async function setShots(shots) {
 }
 
 async function addShot(dataUrl, tab, kind) {
+  if (!dataUrl) return;
   const shots = await getShots();
   shots.unshift({
     id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
@@ -27,49 +30,105 @@ async function addShot(dataUrl, tab, kind) {
     title: (tab && tab.title) || "",
     url: (tab && tab.url) || "",
   });
-  await setShots(shots.slice(0, MAX_SHOTS));
+  await setShots(shots.slice(0, MAX_SHOTS)); // 10 max — oldest drops off
 }
 
-async function activeTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab;
+async function targetTab() {
+  // The last-focused *normal* window — never the popup or the panel.
+  const win = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
+  if (!win) return {};
+  const [tab] = await chrome.tabs.query({ active: true, windowId: win.id });
+  return { win, tab };
 }
 
 async function captureVisible() {
-  const tab = await activeTab();
+  const { win, tab } = await targetTab();
   if (!tab) return;
-  const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+  const dataUrl = await chrome.tabs.captureVisibleTab(win.id, { format: "png" });
   await addShot(dataUrl, tab, "visible");
 }
 
+async function cropInTab(tabId, dataUrl, rect, dpr) {
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (dataUrl, rect, dpr) => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(rect.w * dpr));
+        c.height = Math.max(1, Math.round(rect.h * dpr));
+        c.getContext("2d").drawImage(
+          img,
+          Math.round(rect.x * dpr), Math.round(rect.y * dpr),
+          c.width, c.height, 0, 0, c.width, c.height);
+        resolve(c.toDataURL("image/png"));
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    }),
+    args: [dataUrl, rect, dpr],
+  });
+  return result;
+}
+
+async function captureArea(rect) {
+  const { win, tab } = await targetTab();
+  if (!tab || !rect) return;
+  const [{ result: dpr }] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => window.devicePixelRatio || 1,
+  });
+  const frame = await chrome.tabs.captureVisibleTab(win.id, { format: "png" });
+  const cropped = await cropInTab(tab.id, frame, rect, dpr);
+  await addShot(cropped, tab, "area");
+  await chrome.storage.local.set({ lastArea: rect }); // reusable without dragging
+}
+
 async function startAreaSelect() {
-  const tab = await activeTab();
+  const { win, tab } = await targetTab();
   if (!tab || !/^https?:|^file:/.test(tab.url || "")) return;
+  await chrome.windows.update(win.id, { focused: true });
   await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["select.js"] });
 }
 
+async function captureLastArea() {
+  const { lastArea } = await chrome.storage.local.get("lastArea");
+  if (lastArea) await captureArea(lastArea);
+}
+
+async function openPanel() {
+  if (panelWindowId !== null) {
+    try {
+      await chrome.windows.update(panelWindowId, { focused: true, drawAttention: true });
+      return;
+    } catch (e) { panelWindowId = null; } // was closed
+  }
+  const win = await chrome.windows.create({
+    url: chrome.runtime.getURL("panel.html"),
+    type: "popup", width: 380, height: 560,
+  });
+  panelWindowId = win.id;
+}
+
+chrome.windows.onRemoved.addListener((id) => {
+  if (id === panelWindowId) panelWindowId = null;
+});
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
-    if (msg.type === "capture-visible") {
-      await captureVisible();
-      sendResponse({ ok: true });
-    } else if (msg.type === "start-area") {
-      await startAreaSelect();
-      sendResponse({ ok: true });
-    } else if (msg.type === "area-rect") {
-      // Overlay is gone; grab the frame and hand it back for cropping.
-      const dataUrl = await chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" });
-      await chrome.tabs.sendMessage(sender.tab.id, {
-        type: "crop", dataUrl, rect: msg.rect, dpr: msg.dpr,
+    if (msg.type === "capture-visible") await captureVisible();
+    else if (msg.type === "start-area") await startAreaSelect();
+    else if (msg.type === "area-rect") await captureArea(msg.rect);
+    else if (msg.type === "capture-last-area") await captureLastArea();
+    else if (msg.type === "clear-shots") await setShots([]);
+    else if (msg.type === "open-panel") await openPanel();
+    else if (msg.type === "open-shortcuts") {
+      const isEdge = msg.isEdge;
+      await chrome.tabs.create({
+        url: isEdge ? "edge://extensions/shortcuts" : "chrome://extensions/shortcuts",
       });
-      sendResponse({ ok: true });
-    } else if (msg.type === "area-cropped") {
-      await addShot(msg.dataUrl, sender.tab, "area");
-      sendResponse({ ok: true });
-    } else if (msg.type === "clear-shots") {
-      await setShots([]);
-      sendResponse({ ok: true });
     }
+    sendResponse({ ok: true });
   })();
   return true; // keep sendResponse alive for the async work
 });
@@ -77,6 +136,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.commands.onCommand.addListener((command) => {
   if (command === "capture-visible") captureVisible();
   if (command === "capture-area") startAreaSelect();
+  if (command === "capture-last-area") captureLastArea();
 });
 
 chrome.runtime.onStartup.addListener(async () => setShots(await getShots()));

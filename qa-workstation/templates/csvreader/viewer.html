@@ -9,7 +9,8 @@
   <div class="row-actions">
     <button class="btn primary" id="analyst-btn">🤖 Data chat</button>
     <button class="btn" id="settings-btn">⚙️ Fields</button>
-    <a class="btn" href="{{ url_for('csvreader.download', file_id=doc.id) }}">📥 Download CSV</a>
+    <a class="btn" href="{{ url_for('csvreader.download', file_id=doc.id) }}">📥 CSV</a>
+    <a class="btn" href="{{ url_for('csvreader.download_json', file_id=doc.id) }}">📥 JSON</a>
     <a class="btn" href="{{ url_for('csvreader.index') }}">← Files</a>
   </div>
 </div>
@@ -42,6 +43,25 @@
 </div>
 
 <script id="doc-data" type="application/json">{{ {"headers": doc.headers, "rows": doc.rows}|tojson }}</script>
+<div class="preview-overlay" id="preview-overlay" hidden>
+  <div class="preview-modal card">
+    <div class="page-head">
+      <h2 id="preview-title">Field preview</h2>
+      <div class="row-actions">
+        <button class="btn small" id="pv-pretty" title="Pretty-print the value as JSON">✨ Pretty JSON</button>
+        <button class="btn small" id="pv-xml" title="Decode &amp;lt; &amp;gt; entities to readable XML — re-encoded when you apply">🔓 Decode XML</button>
+        <span class="muted small-text" id="pv-status"></span>
+      </div>
+    </div>
+    <textarea id="pv-text" spellcheck="false"></textarea>
+    <div class="row-actions" style="margin-top:10px">
+      <button class="btn primary" id="pv-apply">✔ Apply to field</button>
+      <button class="btn" id="pv-cancel">✕ Close</button>
+      <span class="muted small-text">Applied changes go back into the record — press 💾 Save record to keep them.</span>
+    </div>
+  </div>
+</div>
+
 <script id="settings-data" type="application/json">{{ settings|tojson }}</script>
 {% endblock %}
 
@@ -125,9 +145,86 @@ function makeField(h, value) {
   }
   input.dataset.col = idx;
   input.dataset.fieldType = c.type;
+  if (c.type === "text") {
+    const expand = document.createElement("button");
+    expand.className = "btn small";
+    expand.textContent = "⤢";
+    expand.title = "Open in the preview editor — pretty JSON, decode XML payloads, edit in full";
+    expand.onclick = () => openPreview(h, input);
+    wrap.appendChild(expand);
+  }
   block.appendChild(wrap);
   return block;
 }
+
+// ---------- editable field preview (pretty JSON / decoded XML) ----------
+const pvOverlay = document.getElementById("preview-overlay");
+const pvText = document.getElementById("pv-text");
+const pvStatus = document.getElementById("pv-status");
+const pvXmlBtn = document.getElementById("pv-xml");
+let pvTarget = null;
+let pvXmlDecoded = false;
+
+function decodeEntities(s) {
+  const t = document.createElement("textarea");
+  t.innerHTML = s;
+  return t.value;
+}
+function encodeXml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function openPreview(header, input) {
+  pvTarget = input;
+  pvXmlDecoded = false;
+  pvXmlBtn.textContent = "🔓 Decode XML";
+  pvText.value = input.value;
+  pvStatus.textContent = "";
+  document.getElementById("preview-title").textContent = "⤢ " + header;
+  pvOverlay.hidden = false;
+  pvText.focus();
+}
+
+document.getElementById("pv-pretty").onclick = () => {
+  try {
+    pvText.value = JSON.stringify(JSON.parse(pvText.value), null, 2);
+    pvStatus.textContent = "pretty-printed ✓";
+  } catch (e) {
+    pvStatus.textContent = "not valid JSON: " + e.message;
+  }
+};
+
+pvXmlBtn.onclick = () => {
+  if (!pvXmlDecoded) {
+    const decoded = decodeEntities(pvText.value);
+    if (decoded === pvText.value) {
+      pvStatus.textContent = "no encoded entities found";
+      return;
+    }
+    pvText.value = decoded;
+    pvXmlDecoded = true;
+    pvXmlBtn.textContent = "🔒 Will re-encode on apply";
+    pvStatus.textContent = "decoded — edit the XML freely";
+  } else {
+    pvText.value = encodeXml(pvText.value);
+    pvXmlDecoded = false;
+    pvXmlBtn.textContent = "🔓 Decode XML";
+    pvStatus.textContent = "re-encoded ✓";
+  }
+};
+
+document.getElementById("pv-apply").onclick = () => {
+  if (!pvTarget) return;
+  pvTarget.value = pvXmlDecoded ? encodeXml(pvText.value) : pvText.value;
+  pvOverlay.hidden = true;
+  document.getElementById("rec-status").textContent =
+    "field updated — press 💾 Save record to keep it";
+};
+document.getElementById("pv-cancel").onclick = () => pvOverlay.hidden = true;
+pvOverlay.addEventListener("click", e => { if (e.target === pvOverlay) pvOverlay.hidden = true; });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !pvOverlay.hidden) pvOverlay.hidden = true;
+});
 
 function render(idx) {
   current = Math.max(0, Math.min(idx, ROWS.length - 1));
@@ -245,6 +342,7 @@ function cleanedFileNote(data, api) {
 }
 
 const analystChat = initChatBox({
+  context: "csv-viewer",
   title: "CSV Data Analyst",
   greeting: "Ask me about this file — counts, duplicates, anomalies, summaries (e.g. \"how many records have status = failed?\"). Ask me to clean it and I'll save the result as a new file. Attach a reference document or Excel with 📎 to cross-check the data.",
   placeholder: "Ask about this data, or ask me to clean it…",

@@ -4,6 +4,32 @@ import uuid
 from pathlib import Path
 
 AGENTS_FILE = Path(__file__).resolve().parents[2] / "data" / "agents.json"
+ASSIGN_FILE = Path(__file__).resolve().parents[2] / "data" / "chat_assignments.json"
+
+# Every chat box in the workstation, by context key — the Agents page
+# assigns a provider to each, and chatbox.js auto-applies it.
+CHAT_CONTEXTS = [
+    ("testcases-builder", "Test Cases — builder assistant"),
+    ("csv-viewer", "CSV Reader — file data analyst"),
+    ("csv-index", "CSV Reader — page assistant"),
+    ("wiki-index", "QA Wiki — ask the wiki"),
+    ("wiki-editor", "QA Wiki — editor librarian"),
+]
+
+
+def load_assignments():
+    if ASSIGN_FILE.exists():
+        return json.loads(ASSIGN_FILE.read_text(encoding="utf-8"))
+    return {}
+
+
+def save_assignments(assignments):
+    known = {key for key, _ in CHAT_CONTEXTS}
+    clean = {k: v for k, v in (assignments or {}).items() if k in known and v}
+    ASSIGN_FILE.parent.mkdir(exist_ok=True)
+    ASSIGN_FILE.write_text(
+        json.dumps(clean, indent=2, ensure_ascii=False), encoding="utf-8")
+    return clean
 
 
 def load_agents():

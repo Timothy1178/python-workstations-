@@ -32,7 +32,11 @@ def upload():
     f = request.files.get("csvfile")
     if not f or not f.filename:
         return redirect(url_for("csvreader.index"))
-    doc = store.parse_csv(f.filename, f.read())
+    raw = f.read()
+    if f.filename.lower().endswith(".json"):
+        doc = store.parse_json_file(f.filename, raw)
+    else:
+        doc = store.parse_csv(f.filename, raw)
     if doc is None:
         return redirect(url_for("csvreader.index"))
     return redirect(url_for("csvreader.viewer", file_id=doc["id"]))
@@ -192,6 +196,22 @@ def download(file_id):
     doc = store.load_file(file_id)
     if doc is None:
         return redirect(url_for("csvreader.index"))
+    name = doc["name"]
+    if not name.lower().endswith(".csv"):
+        name = name.rsplit(".", 1)[0] + ".csv"
     return send_file(io.BytesIO(store.to_csv_bytes(doc)),
-                     as_attachment=True, download_name=doc["name"],
+                     as_attachment=True, download_name=name,
                      mimetype="text/csv")
+
+
+@bp.route("/<file_id>/download.json")
+def download_json(file_id):
+    doc = store.load_file(file_id)
+    if doc is None:
+        return redirect(url_for("csvreader.index"))
+    name = doc["name"]
+    if not name.lower().endswith(".json"):
+        name = name.rsplit(".", 1)[0] + ".json"
+    return send_file(io.BytesIO(store.to_json_bytes(doc)),
+                     as_attachment=True, download_name=name,
+                     mimetype="application/json")

@@ -33,6 +33,32 @@
 </section>
 
 <section class="card">
+  <h2>Chat box assignments</h2>
+  <p class="muted small-text">Pick which agent answers each page's chat box by default — it is applied automatically when that chat box opens (the tester can still switch in the dropdown for one session).</p>
+  <form method="post" action="{{ url_for('agents.assignments') }}" class="stack-form">
+    <table class="list-table">
+      <tr><th>Chat box</th><th>Assigned agent</th></tr>
+      {% for key, label in contexts %}
+      <tr>
+        <td>{{ label }}</td>
+        <td>
+          <select name="{{ key }}">
+            <option value="">— tester chooses (default)</option>
+            {% for p in providers %}
+            <option value="{{ p.id }}" {{ 'selected' if assignments.get(key) == p.id }}>
+              {{ '💻' if p.kind == 'cli' else '🤖' }} {{ p.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    <div><button class="btn primary" type="submit">Save assignments</button></div>
+  </form>
+</section>
+
+<section class="card">
   <h2>Registered agents</h2>
   {% if agents %}
   <table class="list-table">
