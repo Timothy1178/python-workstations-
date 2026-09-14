@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.name }} · CSV Reader{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>📄 {{ doc.name }}</h1>
+    <p class="muted">{{ doc.rows|length }} records · {{ doc.headers|length }} fields</p>
+  </div>
+  <div class="row-actions">
+    <button class="btn" id="settings-btn">⚙️ Fields</button>
+    <a class="btn" href="{{ url_for('csvreader.download', file_id=doc.id) }}">📥 Download CSV</a>
+    <a class="btn" href="{{ url_for('csvreader.index') }}">← Files</a>
+  </div>
+</div>
+
+<div class="csv-layout">
+  <section class="card" id="record-card">
+    <div class="case-nav">
+      <button class="btn small" id="rec-prev">← Prev</button>
+      <span>Record <input id="rec-jump" class="rec-jump" type="number" min="1" max="{{ doc.rows|length }}"> of {{ doc.rows|length }}</span>
+      <button class="btn small" id="rec-next">Next →</button>
+    </div>
+    <div id="record-form"></div>
+    <div class="row-actions" style="margin-top:14px">
+      <button class="btn primary" id="rec-save">💾 Save record</button>
+      <span class="muted" id="rec-status"></span>
+    </div>
+  </section>
+
+  <aside class="card settings-panel" id="settings-panel" hidden>
+    <h2>Field settings</h2>
+    <p class="muted small-text">⭐ starred fields show first and highlighted · hidden fields don't show. Saved for every file with these columns.</p>
+    <table class="list-table" id="settings-table">
+      <tr><th>Field</th><th>Display</th><th>Type</th></tr>
+    </table>
+    <div class="row-actions" style="margin-top:10px">
+      <button class="btn primary" id="settings-save">💾 Save settings</button>
+      <span class="muted" id="settings-status"></span>
+    </div>
+  </aside>
+</div>
+
+<script id="doc-data" type="application/json">{{ {"headers": doc.headers, "rows": doc.rows}|tojson }}</script>
+<script id="settings-data" type="application/json">{{ settings|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DOC = JSON.parse(document.getElementById("doc-data").textContent);
+const HEADERS = DOC.headers;
+const ROWS = DOC.rows;
+let SETTINGS = JSON.parse(document.getElementById("settings-data").textContent);
+let current = 0;
+
+const form = document.getElementById("record-form");
+const jump = document.getElementById("rec-jump");
+
+function cfg(h) { return SETTINGS.fields[h] || { mode: "show", type: "text" }; }
+
+function fieldOrder() {
+  const starred = HEADERS.filter(h => cfg(h).mode === "star");
+  const shown = HEADERS.filter(h => cfg(h).mode === "show");
+  return { starred, shown, hiddenCount: HEADERS.length - starred.length - shown.length };
+}
+
+function nowLocal() {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+function toPickerValue(v) {
+  v = v.trim();
+  let m = v.match(/^(\d{4})-(\d{2})-(\d{2})([ T](\d{2}):(\d{2}))?/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}T${m[5] || "00"}:${m[6] || "00"}`;
+  m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})( (\d{2}):(\d{2}))?/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}T${m[5] || "00"}:${m[6] || "00"}`;
+  return "";
+}
+function fromPickerValue(v) { return v ? v.replace("T", " ") : ""; }
+
+function makeField(h, value) {
+  const idx = HEADERS.indexOf(h);
+  const c = cfg(h);
+  const block = document.createElement("div");
+  block.className = "field-block" + (c.mode === "star" ? " starred" : "");
+  const label = document.createElement("label");
+  label.textContent = (c.mode === "star" ? "⭐ " : "") + h;
+  block.appendChild(label);
+
+  const wrap = document.createElement("div");
+  wrap.className = "field-input-row";
+
+  let input;
+  if (c.type === "date") {
+    input = document.createElement("input");
+    input.type = "datetime-local";
+    input.value = toPickerValue(value) || nowLocal();
+    const nowBtn = document.createElement("button");
+    nowBtn.className = "btn small";
+    nowBtn.textContent = "Now";
+    nowBtn.onclick = () => { input.value = nowLocal(); };
+    wrap.appendChild(input);
+    wrap.appendChild(nowBtn);
+  } else if (c.type === "uuid") {
+    input = document.createElement("input");
+    input.value = value;
+    input.spellcheck = false;
+    const gen = document.createElement("button");
+    gen.className = "btn small";
+    gen.textContent = "🎲 New ID";
+    gen.title = "Generate a new random UUID";
+    gen.onclick = () => { input.value = crypto.randomUUID(); };
+    wrap.appendChild(input);
+    wrap.appendChild(gen);
+  } else if (value.length > 60 || value.includes("\n")) {
+    input = document.createElement("textarea");
+    input.rows = 3;
+    input.value = value;
+    wrap.appendChild(input);
+  } else {
+    input = document.createElement("input");
+    input.value = value;
+    wrap.appendChild(input);
+  }
+  input.dataset.col = idx;
+  input.dataset.fieldType = c.type;
+  block.appendChild(wrap);
+  return block;
+}
+
+function render(idx) {
+  current = Math.max(0, Math.min(idx, ROWS.length - 1));
+  jump.value = current + 1;
+  form.innerHTML = "";
+  if (!ROWS.length) { form.innerHTML = '<p class="muted">This file has no records.</p>'; return; }
+  const row = ROWS[current];
+  const { starred, shown, hiddenCount } = fieldOrder();
+  for (const h of starred.concat(shown)) form.appendChild(makeField(h, row[HEADERS.indexOf(h)] || ""));
+  if (hiddenCount) {
+    const note = document.createElement("p");
+    note.className = "muted small-text";
+    note.textContent = `${hiddenCount} hidden field${hiddenCount > 1 ? "s" : ""} — change in ⚙️ Fields.`;
+    form.appendChild(note);
+  }
+  document.getElementById("rec-prev").disabled = current === 0;
+  document.getElementById("rec-next").disabled = current === ROWS.length - 1;
+  document.getElementById("rec-status").textContent = "";
+}
+
+document.getElementById("rec-prev").onclick = () => render(current - 1);
+document.getElementById("rec-next").onclick = () => render(current + 1);
+jump.onchange = () => render((+jump.value || 1) - 1);
+
+document.getElementById("rec-save").onclick = async () => {
+  const row = ROWS[current];
+  form.querySelectorAll("[data-col]").forEach(el => {
+    let v = el.value;
+    if (el.dataset.fieldType === "date") v = fromPickerValue(v);
+    row[+el.dataset.col] = v;
+  });
+  const res = await fetch(`{{ url_for('csvreader.viewer', file_id=doc.id) }}/row/${current}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ values: row }),
+  });
+  const data = await res.json();
+  document.getElementById("rec-status").textContent = data.ok ? "saved ✓" : "save failed";
+};
+
+// ---------- settings panel ----------
+const panel = document.getElementById("settings-panel");
+document.getElementById("settings-btn").onclick = () => {
+  panel.hidden = !panel.hidden;
+  if (!panel.hidden) buildSettingsTable();
+};
+
+function buildSettingsTable() {
+  const table = document.getElementById("settings-table");
+  table.querySelectorAll("tr:not(:first-child)").forEach(tr => tr.remove());
+  for (const h of HEADERS) {
+    const c = cfg(h);
+    const tr = document.createElement("tr");
+    const name = document.createElement("td");
+    name.textContent = h;
+    tr.appendChild(name);
+
+    const modeTd = document.createElement("td");
+    const modes = document.createElement("div");
+    modes.className = "mode-btns";
+    for (const [m, icon] of [["show", "👁"], ["star", "⭐"], ["hide", "🚫"]]) {
+      const b = document.createElement("button");
+      b.className = "btn small mode-opt" + (c.mode === m ? " picked-mode" : "");
+      b.textContent = icon;
+      b.title = m;
+      b.onclick = () => {
+        SETTINGS.fields[h] = { ...cfg(h), mode: m };
+        buildSettingsTable();
+        render(current);
+      };
+      modes.appendChild(b);
+    }
+    modeTd.appendChild(modes);
+    tr.appendChild(modeTd);
+
+    const typeTd = document.createElement("td");
+    const sel = document.createElement("select");
+    for (const t of ["text", "uuid", "date"]) {
+      const o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      if (c.type === t) o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.onchange = () => {
+      SETTINGS.fields[h] = { ...cfg(h), type: sel.value };
+      render(current);
+    };
+    typeTd.appendChild(sel);
+    tr.appendChild(typeTd);
+    table.appendChild(tr);
+  }
+}
+
+document.getElementById("settings-save").onclick = async () => {
+  const res = await fetch("{{ url_for('csvreader.settings', file_id=doc.id) }}", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(SETTINGS),
+  });
+  const data = await res.json();
+  document.getElementById("settings-status").textContent = data.ok ? "saved ✓" : "save failed";
+};
+
+render(0);
+</script>
+{% endblock %}

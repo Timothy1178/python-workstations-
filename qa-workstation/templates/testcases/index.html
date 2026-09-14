@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Test Cases · QA Workstation{% endblock %}
+{% block content %}
+<h1>📋 Test Cases</h1>
+<p class="muted">Template in use: <strong>{{ template.name }}</strong> ({{ template.fields|length }} columns)</p>
+
+<section class="card">
+  <h2>New test plan</h2>
+  <form method="post" action="{{ url_for('testcases.create') }}" class="inline-form">
+    <input name="name" placeholder="Plan name (e.g. JIRA-1234 SIT)" required>
+    <input name="description" placeholder="Description (optional)" class="grow">
+    <button class="btn primary" type="submit">Create</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Plans</h2>
+  {% if plans %}
+  <table class="list-table">
+    <tr><th>Plan</th><th>Cases</th><th>Progress</th><th>Updated</th><th></th></tr>
+    {% for p in plans %}
+    <tr>
+      <td><a href="{{ url_for('testcases.builder', plan_id=p.id) }}">{{ p.name }}</a></td>
+      <td>{{ p.total }}</td>
+      <td>
+        <div class="bar"><div class="bar-fill" style="width: {{ (p.done / p.total * 100)|round if p.total else 0 }}%"></div></div>
+        <span class="muted">{{ p.done }}/{{ p.total }}</span>
+      </td>
+      <td class="muted">{{ p.updated }}</td>
+      <td class="row-actions">
+        <a class="btn small" href="{{ url_for('testcases.builder', plan_id=p.id) }}">✏️ Build</a>
+        <a class="btn small" href="{{ url_for('testcases.viewer', plan_id=p.id) }}">▶ Run</a>
+        <a class="btn small" href="{{ url_for('testcases.export', plan_id=p.id) }}">📥 Excel</a>
+        <form method="post" action="{{ url_for('testcases.delete', plan_id=p.id) }}"
+              onsubmit="return confirm('Delete plan {{ p.name }}?')">
+          <button class="btn small danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">No plans yet. Create your first one above.</p>
+  {% endif %}
+</section>
+{% endblock %}

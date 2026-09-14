@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.name }} · Run{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>▶ {{ plan.name }}</h1>
+    <p class="muted">Test execution viewer — work through each case and record results.</p>
+  </div>
+  <div class="row-actions">
+    <a class="btn" href="{{ url_for('testcases.builder', plan_id=plan.id) }}">✏️ Builder</a>
+    <a class="btn" href="{{ url_for('testcases.export', plan_id=plan.id) }}">📥 Export Excel</a>
+    <a class="btn" href="{{ url_for('testcases.index') }}">← Plans</a>
+  </div>
+</div>
+
+{% if not plan.cases %}
+<div class="card"><p class="muted">This plan has no cases yet — add some in the
+<a href="{{ url_for('testcases.builder', plan_id=plan.id) }}">builder</a>.</p></div>
+{% else %}
+<div class="runner">
+  <aside class="card case-list" id="case-list">
+    {% for c in plan.cases %}
+    <button class="case-item" data-idx="{{ loop.index0 }}">
+      <span class="case-no">{{ c.fields.get('case_id') or loop.index }}</span>
+      <span class="case-title">{{ c.fields.get('title') or '(untitled)' }}</span>
+      <span class="pill result-pill" data-uid="{{ c.uid }}">{{ c.run.get('result', 'Not Run') or 'Not Run' }}</span>
+    </button>
+    {% endfor %}
+  </aside>
+
+  <section class="card case-detail" id="case-detail"></section>
+</div>
+
+<script id="plan-data" type="application/json">{{ plan.cases|tojson }}</script>
+<script id="fields-data" type="application/json">{{ template.fields|tojson }}</script>
+<script id="run-fields-data" type="application/json">{{ template.run_fields|tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if plan.cases %}
+<script>
+const CASES = JSON.parse(document.getElementById("plan-data").textContent);
+const FIELDS = JSON.parse(document.getElementById("fields-data").textContent);
+const RUN_FIELDS = JSON.parse(document.getElementById("run-fields-data").textContent);
+const detail = document.getElementById("case-detail");
+const items = [...document.querySelectorAll(".case-item")];
+let current = 0;
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+function render(idx) {
+  current = idx;
+  const c = CASES[idx];
+  items.forEach((el, i) => el.classList.toggle("active", i === idx));
+  let html = `<div class="case-nav">
+      <button class="btn small" id="prev" ${idx === 0 ? "disabled" : ""}>← Prev</button>
+      <span class="muted">Case ${idx + 1} of ${CASES.length}</span>
+      <button class="btn small" id="next" ${idx === CASES.length - 1 ? "disabled" : ""}>Next →</button>
+    </div>`;
+  for (const f of FIELDS) {
+    const v = c.fields[f.key];
+    if (!v) continue;
+    html += `<div class="field-block"><label>${esc(f.label)}</label><div class="field-value">${esc(v)}</div></div>`;
+  }
+  html += `<hr><h3>Result</h3>`;
+  for (const rf of RUN_FIELDS) {
+    const v = c.run[rf.key] || "";
+    if (rf.type === "select") {
+      html += `<div class="field-block"><label>${esc(rf.label)}</label><div class="result-btns" data-key="${rf.key}">`;
+      for (const opt of rf.options) {
+        html += `<button class="btn result-opt ${v === opt ? "picked res-" + opt.toLowerCase().replace(/[^a-z]/g, "") : ""}" data-val="${esc(opt)}">${esc(opt)}</button>`;
+      }
+      html += `</div></div>`;
+    } else {
+      html += `<div class="field-block"><label>${esc(rf.label)}</label><textarea rows="3" data-run-key="${rf.key}">${esc(v)}</textarea></div>`;
+    }
+  }
+  html += `<div class="row-actions"><button class="btn primary" id="save-run">💾 Save result</button><span class="muted" id="run-status"></span></div>`;
+  html += `<hr><h3>Screen Captures</h3>
+    <p class="muted small-text">Attach evidence for this case — choose files, or just press ⌘V / Ctrl+V to paste a screenshot. Included in the Excel export's ScreenCap sheet.</p>
+    <div class="shots-grid" id="shots-grid"></div>
+    <div class="row-actions">
+      <label class="btn">📎 Add images<input type="file" id="shot-files" accept="image/*" multiple hidden></label>
+      <span class="muted" id="shot-status"></span>
+    </div>`;
+  detail.innerHTML = html;
+  loadShots(c.uid);
+
+  detail.querySelector("#prev")?.addEventListener("click", () => render(idx - 1));
+  detail.querySelector("#next")?.addEventListener("click", () => render(idx + 1));
+  detail.querySelectorAll(".result-btns").forEach(group => {
+    group.querySelectorAll(".result-opt").forEach(btn => {
+      btn.onclick = () => {
+        group.querySelectorAll(".result-opt").forEach(b => b.className = "btn result-opt");
+        btn.classList.add("picked", "res-" + btn.dataset.val.toLowerCase().replace(/[^a-z]/g, ""));
+        c.run[group.dataset.key] = btn.dataset.val;
+      };
+    });
+  });
+  detail.querySelector("#shot-files").onchange = e => uploadShots(c.uid, e.target.files);
+  detail.querySelector("#save-run").onclick = async () => {
+    detail.querySelectorAll("[data-run-key]").forEach(el => c.run[el.dataset.runKey] = el.value);
+    const res = await fetch(`{{ url_for('testcases.viewer', plan_id=plan.id) }}/${c.uid}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ run: c.run }),
+    });
+    const data = await res.json();
+    const status = detail.querySelector("#run-status");
+    status.textContent = data.ok ? "saved ✓" : "save failed";
+    if (data.ok) {
+      const pill = document.querySelector(`.result-pill[data-uid="${c.uid}"]`);
+      pill.textContent = c.run.result || "Not Run";
+    }
+  };
+}
+
+// ---------- screenshots ----------
+const shotsUrl = uid => `{{ url_for('testcases.builder', plan_id=plan.id) }}/shots/${uid}`;
+
+function renderShots(uid, shots) {
+  const grid = document.getElementById("shots-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  for (const name of shots) {
+    const wrap = document.createElement("div");
+    wrap.className = "shot-thumb";
+    const a = document.createElement("a");
+    a.href = `${shotsUrl(uid)}/${name}`;
+    a.target = "_blank";
+    const img = document.createElement("img");
+    img.src = `${shotsUrl(uid)}/${name}`;
+    a.appendChild(img);
+    const del = document.createElement("button");
+    del.className = "shot-del";
+    del.textContent = "✕";
+    del.title = "Delete";
+    del.onclick = async () => {
+      if (!confirm("Delete this screenshot?")) return;
+      const res = await fetch(`${shotsUrl(uid)}/${name}/delete`, { method: "POST" });
+      const data = await res.json();
+      renderShots(uid, data.shots);
+    };
+    wrap.appendChild(a);
+    wrap.appendChild(del);
+    grid.appendChild(wrap);
+  }
+  if (!shots.length) grid.innerHTML = '<span class="muted small-text">No screenshots yet.</span>';
+}
+
+async function loadShots(uid) {
+  const res = await fetch(shotsUrl(uid));
+  const data = await res.json();
+  renderShots(uid, data.shots);
+}
+
+async function uploadShots(uid, files) {
+  if (!files.length) return;
+  const status = document.getElementById("shot-status");
+  status.textContent = "uploading…";
+  const fd = new FormData();
+  for (const f of files) fd.append("shots", f, f.name || "pasted.png");
+  const res = await fetch(shotsUrl(uid), { method: "POST", body: fd });
+  const data = await res.json();
+  status.textContent = data.ok ? `added ${data.saved.length} ✓` : "upload failed";
+  renderShots(uid, data.shots);
+}
+
+document.addEventListener("paste", e => {
+  const files = [...(e.clipboardData?.items || [])]
+    .filter(i => i.type.startsWith("image/"))
+    .map(i => i.getAsFile());
+  if (files.length) {
+    e.preventDefault();
+    uploadShots(CASES[current].uid, files);
+  }
+});
+
+items.forEach(el => el.onclick = () => render(+el.dataset.idx));
+render(0);
+</script>
+{% endif %}
+{% endblock %}

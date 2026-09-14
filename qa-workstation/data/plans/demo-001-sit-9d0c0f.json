@@ -1,0 +1,68 @@
+{
+  "id": "demo-001-sit-9d0c0f",
+  "name": "DEMO-001 SIT",
+  "description": "Demo: login validation for AIMAS portal",
+  "created": "2026-09-13 23:49",
+  "cases": [
+    {
+      "uid": "72dc5e4722",
+      "fields": {
+        "testing_bu": "WTCMY",
+        "title": "Login with valid credentials",
+        "steps": "1. Open login page\n2. Enter valid credentials\n3. Click Login",
+        "expected": "User lands on dashboard",
+        "test_data": "tester01",
+        "campaign_id": "612370",
+        "remark": "smoke test",
+        "case_id": "1"
+      },
+      "run": {
+        "result": "Pass",
+        "actual": "Logged in OK, dashboard shown"
+      }
+    },
+    {
+      "uid": "897d7e56f7",
+      "fields": {
+        "testing_bu": "WTCMY",
+        "title": "Login with wrong password",
+        "steps": "1. Open login page\n2. Enter wrong password\n3. Click Login",
+        "expected": "Error message shown, no login",
+        "test_data": "tester01 / bad pass",
+        "campaign_id": "612370",
+        "remark": "negative case",
+        "case_id": "1"
+      },
+      "run": {}
+    },
+    {
+      "uid": "8bcc3e622b",
+      "fields": {
+        "testing_bu": "WTCHK",
+        "title": "Query member profile",
+        "steps": "1. Call member API",
+        "expected": "",
+        "test_data": "",
+        "campaign_id": "",
+        "remark": "",
+        "case_id": "1"
+      },
+      "run": {}
+    },
+    {
+      "uid": "7f4edb6714",
+      "fields": {
+        "testing_bu": "WTCHK",
+        "title": "Query member profile",
+        "steps": "2. Verify response fields",
+        "expected": "",
+        "test_data": "",
+        "campaign_id": "",
+        "remark": "",
+        "case_id": "2"
+      },
+      "run": {}
+    }
+  ],
+  "updated": "2026-09-14 00:19"
+}

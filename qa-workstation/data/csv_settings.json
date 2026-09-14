@@ -1,0 +1,34 @@
+{
+  "a6f8b52fff76c662": {
+    "fields": {
+      "member_id": {
+        "mode": "show",
+        "type": "text"
+      },
+      "name": {
+        "mode": "show",
+        "type": "text"
+      },
+      "coupon_uuid": {
+        "mode": "star",
+        "type": "uuid"
+      },
+      "issue_date": {
+        "mode": "show",
+        "type": "date"
+      },
+      "expiry_date": {
+        "mode": "show",
+        "type": "date"
+      },
+      "campaign_id": {
+        "mode": "show",
+        "type": "text"
+      },
+      "notes": {
+        "mode": "hide",
+        "type": "text"
+      }
+    }
+  }
+}

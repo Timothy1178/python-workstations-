@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}CSV Reader · QA Workstation{% endblock %}
+{% block content %}
+<h1>📄 CSV Reader</h1>
+<p class="muted">Upload a CSV and browse its records as a form. Field settings (show / ⭐ / hide, types) are remembered per file structure.</p>
+
+<section class="card">
+  <h2>Open a CSV file</h2>
+  <form method="post" action="{{ url_for('csvreader.upload') }}" enctype="multipart/form-data" class="inline-form">
+    <input type="file" name="csvfile" accept=".csv,text/csv" required>
+    <button class="btn primary" type="submit">Upload &amp; open</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Files</h2>
+  {% if files %}
+  <table class="list-table">
+    <tr><th>File</th><th>Records</th><th>Columns</th><th>Uploaded</th><th></th></tr>
+    {% for f in files %}
+    <tr>
+      <td><a href="{{ url_for('csvreader.viewer', file_id=f.id) }}">{{ f.name }}</a></td>
+      <td>{{ f.rows }}</td>
+      <td>{{ f.cols }}</td>
+      <td class="muted">{{ f.uploaded }}</td>
+      <td class="row-actions">
+        <a class="btn small" href="{{ url_for('csvreader.viewer', file_id=f.id) }}">Open</a>
+        <a class="btn small" href="{{ url_for('csvreader.download', file_id=f.id) }}">📥 CSV</a>
+        <form method="post" action="{{ url_for('csvreader.delete', file_id=f.id) }}"
+              onsubmit="return confirm('Delete {{ f.name }}?')">
+          <button class="btn small danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">No files yet — upload one above.</p>
+  {% endif %}
+</section>
+{% endblock %}

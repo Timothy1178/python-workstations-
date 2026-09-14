@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>QA Workstation</h1>
+<p class="muted">Your daily QA command center — pick a tool, or continue where you left off.</p>
+
+<div class="card-grid">
+  {% for m in modules %}
+  <a class="card tool-card" href="{{ m.url }}">
+    <div class="tool-icon">{{ m.icon }}</div>
+    <h3>{{ m.name }}</h3>
+    <p>{{ m.desc }}</p>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="two-col">
+  <section class="card">
+    <h2>Recent test plans</h2>
+    {% if plans %}
+    <table class="list-table">
+      <tr><th>Plan</th><th>Progress</th><th>Updated</th><th></th></tr>
+      {% for p in plans %}
+      <tr>
+        <td><a href="/testcases/plan/{{ p.id }}">{{ p.name }}</a></td>
+        <td>{{ p.done }}/{{ p.total }} run</td>
+        <td class="muted">{{ p.updated }}</td>
+        <td><a class="btn small" href="/testcases/plan/{{ p.id }}/run">▶ Run</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">No plans yet — create one in <a href="/testcases">Test Cases</a>.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Copilot agents</h2>
+    {% if agents %}
+    <table class="list-table">
+      <tr><th>Agent</th><th>Role</th><th>Status</th></tr>
+      {% for a in agents %}
+      <tr>
+        <td>{{ a.name }}</td>
+        <td class="muted">{{ a.role or "—" }}</td>
+        <td><span class="pill">{{ a.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">No agents registered yet — add them in <a href="/agents">Copilot Agents</a>.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

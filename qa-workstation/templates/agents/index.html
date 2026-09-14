@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Copilot Agents · QA Workstation{% endblock %}
+{% block content %}
+<h1>🤖 Copilot Agents</h1>
+<p class="muted">Register your Copilot Studio agents and chat with them live through the Microsoft 365 Agents SDK. Easiest: paste the agent's <strong>Direct Connect URL</strong> (the <code>…environment.api.powerplatform.com/copilotstudio/…/conversations…</code> link). Alternatively use the Environment ID + schema name from <em>Settings → Advanced → Metadata</em>.</p>
+
+{% if sdk_error %}
+<div class="card warn-card">⚠️ {{ sdk_error }}</div>
+{% endif %}
+
+<section class="card">
+  <h2>Add agent</h2>
+  <form method="post" action="{{ url_for('agents.add') }}" class="stack-form">
+    <div class="inline-form">
+      <input name="name" placeholder="Agent name (e.g. Case Writer)" required>
+      <input name="role" placeholder="QA role (e.g. writes SIT cases)" class="grow">
+    </div>
+    <input name="direct_connect_url" placeholder="Direct Connect URL (Copilot Studio → Channels → Web/custom app) — easiest option">
+    <div class="inline-form">
+      <input name="environment_id" placeholder="…or Environment ID (Settings → Advanced → Metadata)" class="grow">
+      <input name="schema_name" placeholder="…and agent schema name (e.g. cr123_caseWriter)" class="grow">
+    </div>
+    <div class="inline-form">
+      <input name="tenant_id" placeholder="Entra tenant ID" class="grow">
+      <input name="app_client_id" placeholder="App registration client ID" class="grow">
+    </div>
+    <textarea name="notes" rows="2" placeholder="Notes (what this agent is for, environment, owner…)"></textarea>
+    <div><button class="btn primary" type="submit">Add agent</button></div>
+  </form>
+  <p class="muted small-text">Sign-in uses your Microsoft account (browser opens once, then cached). The app registration needs the delegated Power Platform API permission <code>CopilotStudio.Copilots.Invoke</code> and a <code>http://localhost</code> desktop redirect URI.</p>
+</section>
+
+<section class="card">
+  <h2>Registered agents</h2>
+  {% if agents %}
+  <table class="list-table">
+    <tr><th>Name</th><th>Role</th><th>Connection</th><th>Status</th><th>Added</th><th></th></tr>
+    {% for a in agents %}
+    <tr>
+      <td><strong>{{ a.name }}</strong>{% if a.notes %}<div class="muted small-text">{{ a.notes }}</div>{% endif %}</td>
+      <td>{{ a.role or "—" }}</td>
+      <td class="muted small-text">
+        {% if a.direct_connect_url %}direct: …{{ a.direct_connect_url[-40:] }}
+        {% elif a.schema_name %}{{ a.schema_name }}<br>env {{ a.environment_id or "?" }}
+        {% else %}not configured{% endif %}
+      </td>
+      <td><span class="pill">{{ a.status }}</span></td>
+      <td class="muted">{{ a.added }}</td>
+      <td class="row-actions">
+        <a class="btn small primary" href="{{ url_for('agents.chat', agent_id=a.id) }}">💬 Chat</a>
+        <form method="post" action="{{ url_for('agents.delete', agent_id=a.id) }}"
+              onsubmit="return confirm('Remove agent {{ a.name }}?')">
+          <button class="btn small danger" type="submit">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">No agents yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
