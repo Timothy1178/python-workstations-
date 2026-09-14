@@ -180,11 +180,23 @@ input:focus, textarea:focus { outline: 2px solid #bfdbfe; border-color: var(--ac
   border-bottom: 2px solid var(--line);
   white-space: nowrap;
 }
-.builder-table td { padding: 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
-.builder-table textarea { resize: vertical; min-height: 40px; }
-.col-narrow { width: 70px; }
-.col-medium { width: 180px; }
-.col-wide { min-width: 240px; }
+.builder-table td { padding: 4px 5px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.builder-table textarea {
+  resize: none;
+  overflow: hidden;      /* height follows content via autoResize */
+  min-height: 34px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.builder-table textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: var(--accent);
+  background: #fdfdff;
+}
+.col-narrow { width: 90px; }
+.col-medium { width: 200px; }
+.col-wide { min-width: 260px; }
 .drag-col { width: 20px; cursor: grab; text-align: center; user-select: none; }
 .num-col { width: 34px; text-align: center; font-weight: 600; }
 .builder-table td.num-col { padding-top: 12px; }
