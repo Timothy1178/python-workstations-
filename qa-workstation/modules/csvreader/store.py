@@ -86,6 +86,12 @@ def parse_pasted(name, text, delimiter="auto", has_header=True):
     return _from_table(name, table)
 
 
+def create_from_table(name, table):
+    """Public entry for building a stored file from an in-memory table
+    (first row = headers) — used by the cleaning chat bot."""
+    return _from_table(name, table)
+
+
 def _from_table(name, reader):
     table = [row for row in reader if any(c.strip() for c in row)]
     if not table:

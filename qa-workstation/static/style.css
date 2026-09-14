@@ -60,7 +60,30 @@ body {
 .sidebar nav a.active { background: var(--accent); color: #fff; }
 .sidebar-foot { margin-top: auto; font-size: 11px; color: #6b7280; padding: 10px; }
 
-.content { flex: 1; padding: 28px 36px; max-width: 1300px; }
+/* Fill the browser window: no fixed cap, and min-width:0 lets wide
+   tables scroll inside their cards instead of stretching the page. */
+.content { flex: 1; padding: 24px 32px; min-width: 0; }
+.table-wrap { overflow-x: auto; }
+.card { max-width: 100%; overflow-x: auto; }
+
+@media (max-width: 800px) {
+  body { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+  }
+  .brand { padding: 6px 8px; }
+  .sidebar nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .sidebar-foot { display: none; }
+  .content { padding: 14px 12px; }
+  .chat-panel { right: 8px; left: 8px; width: auto; bottom: 78px; }
+}
 
 h1 { margin: 0 0 6px; font-size: 24px; }
 h2 { margin: 0 0 12px; font-size: 16px; }
@@ -389,6 +412,11 @@ tr.agent-touched td { background: #fefce8; transition: background 1s; }
 .mode-opt { padding: 3px 8px; }
 .mode-opt.picked-mode { background: var(--accent); border-color: var(--accent); }
 #settings-table select { width: auto; padding: 4px 6px; }
+/* ---------- Web Plugins ---------- */
+.plugin-features { margin: 8px 0 12px; padding-left: 4px; list-style: none; }
+.plugin-features li { padding: 3px 0; }
+.install-steps li { margin-bottom: 8px; line-height: 1.5; }
+
 /* ---------- QA Wiki ---------- */
 .wiki-search { display: flex; gap: 8px; margin-bottom: 12px; }
 .wiki-search input { max-width: 440px; }

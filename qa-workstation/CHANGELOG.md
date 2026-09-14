@@ -5,6 +5,33 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.5.0 — 2026-09-14
+
+- **Web Plugins**: new module listing browser extensions (Chrome & Edge)
+  with feature lists, install steps, and one-click .zip download; each
+  plugin is an unpacked MV3 extension under `plugins/<slug>/` with a
+  `plugin.json` describing it.
+- First plugin — **QA Multi Screen Cap**: capture the visible page or a
+  drag-selected area (Esc cancels; Alt+Shift+F / Alt+Shift+S), collect
+  up to 100 captures in a popup gallery across pages and tabs, save one
+  or all at once into Downloads/screencaps/, toolbar badge shows the
+  count.
+
+## 1.4.0 — 2026-09-14
+
+- **CSV cleaning agent**: ask the viewer's Data Analyst chat to clean a
+  file (🧹 quick action) — the cleaned table is saved as a new
+  `<name>-cleaned.csv` next to the original, never overwriting it. The
+  CSV Reader index gets its own assistant that cleans pasted or
+  attached data straight into a new CSV file. Visible 🤖 chat buttons
+  on both pages; cleaning contract added to the CSV agent wiki guide.
+- **Fixed**: the 📎 button did not open the file explorer (the Send
+  handler was bound to the wrong button in the chat input row).
+- **Fixed**: layout now fits the browser window — content uses the full
+  width (1300px cap removed), wide tables scroll inside their cards
+  instead of stretching the page, and narrow windows get a top-bar
+  layout with a full-width chat panel.
+
 ## 1.3.0 — 2026-09-14
 
 - **Attachments in every chat box** (📎): attach documents (txt, md,

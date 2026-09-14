@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Web Plugins · QA Workstation{% endblock %}
+{% block content %}
+<h1>🧩 Web Plugins</h1>
+<p class="muted">Browser extensions for day-to-day QA work. Download a plugin, unzip it, and load it into Chrome or Edge — steps below.</p>
+
+{% for p in plugins %}
+<section class="card">
+  <div class="page-head">
+    <div>
+      <h2>{{ p.icon or "🧩" }} {{ p.name }} <span class="muted small-text">v{{ p.version }}</span></h2>
+      <p class="muted">{{ p.description }}</p>
+    </div>
+    <div class="row-actions">
+      {% for b in p.browsers %}<span class="pill">{{ b }}</span>{% endfor %}
+      <a class="btn primary" href="{{ url_for('plugins.download', slug=p.slug) }}">⬇️ Download .zip</a>
+    </div>
+  </div>
+  <ul class="plugin-features">
+    {% for f in p.features %}<li>{{ f }}</li>{% endfor %}
+  </ul>
+  <p class="muted small-text">Unpacked folder in this workstation: <code>qa-workstation/plugins/{{ p.slug }}/</code></p>
+</section>
+{% else %}
+<section class="card"><p class="muted">No plugins yet — add a folder with a <code>plugin.json</code> under <code>qa-workstation/plugins/</code>.</p></section>
+{% endfor %}
+
+<section class="card">
+  <h2>🛠 How to install (Chrome &amp; Edge)</h2>
+  <ol class="install-steps">
+    <li><strong>Download</strong> the plugin's .zip above and <strong>unzip</strong> it somewhere permanent (the browser loads it from that folder — don't delete it). If you run the workstation locally you can skip the download and use the <code>plugins/&lt;name&gt;/</code> folder directly.</li>
+    <li>Open the extensions page: <code>chrome://extensions</code> in Chrome, or <code>edge://extensions</code> in Edge.</li>
+    <li>Turn on <strong>Developer mode</strong> (toggle — top right in Chrome, left sidebar in Edge).</li>
+    <li>Click <strong>Load unpacked</strong> and pick the unzipped plugin folder (the one containing <code>manifest.json</code>).</li>
+    <li>Pin the extension from the puzzle-piece menu so its button stays on the toolbar.</li>
+  </ol>
+  <p class="muted small-text">Updates: download the new zip, replace the folder's contents, then press the ↻ reload icon on the extensions page.</p>
+</section>
+{% endblock %}

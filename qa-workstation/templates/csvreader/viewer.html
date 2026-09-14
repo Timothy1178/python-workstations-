@@ -7,6 +7,7 @@
     <p class="muted">{{ doc.rows|length }} records · {{ doc.headers|length }} fields</p>
   </div>
   <div class="row-actions">
+    <button class="btn primary" id="analyst-btn">🤖 Data chat</button>
     <button class="btn" id="settings-btn">⚙️ Fields</button>
     <a class="btn" href="{{ url_for('csvreader.download', file_id=doc.id) }}">📥 Download CSV</a>
     <a class="btn" href="{{ url_for('csvreader.index') }}">← Files</a>
@@ -234,17 +235,30 @@ render(0);
 </script>
 <script src="{{ url_for('static', filename='chatbox.js') }}"></script>
 <script>
-initChatBox({
+function cleanedFileNote(data, api) {
+  if (!data.cleaned_file) return;
+  const note = api.addMsg("agent note", "🧹 Created " + data.cleaned_file.name + " — ");
+  const a = document.createElement("a");
+  a.href = data.cleaned_file.url;
+  a.textContent = "open it";
+  note.appendChild(a);
+}
+
+const analystChat = initChatBox({
   title: "CSV Data Analyst",
-  greeting: "Ask me about this file — counts, duplicates, anomalies, summaries (e.g. \"how many records have status = failed?\"). Attach a reference document or Excel with 📎 to cross-check the data.",
-  placeholder: "Ask about this data…",
+  greeting: "Ask me about this file — counts, duplicates, anomalies, summaries (e.g. \"how many records have status = failed?\"). Ask me to clean it and I'll save the result as a new file. Attach a reference document or Excel with 📎 to cross-check the data.",
+  placeholder: "Ask about this data, or ask me to clean it…",
   endpoint: "{{ url_for('csvreader.ask', file_id=doc.id) }}",
   quickActions: [
+    { label: "🧹 Clean this file",
+      message: "Clean this data: trim whitespace, normalise casing and date formats to YYYY-MM-DD, unify inconsistent values that mean the same thing, remove exact duplicate records, and fill blanks only where derivable. Return the complete cleaned table per the JSON contract, and summarise every change in \"reply\"." },
     { label: "🔎 Data quality check",
-      message: "Run a data quality check on this file: empty fields that look required, duplicate records, inconsistent formats (dates, IDs, casing), and outliers. Report findings by record number." },
+      message: "Run a data quality check on this file: empty fields that look required, duplicate records, inconsistent formats (dates, IDs, casing), and outliers. Report findings by record number. Plain text only — do not return a cleaned table." },
     { label: "📊 Summarise this file",
       message: "Summarise this file: what the data appears to be, the value distribution of the most informative columns, and anything unusual worth a tester's attention." },
   ],
+  onReply: cleanedFileNote,
 });
+document.getElementById("analyst-btn").onclick = () => analystChat.open();
 </script>
 {% endblock %}

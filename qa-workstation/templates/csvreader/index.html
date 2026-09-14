@@ -1,8 +1,15 @@
 {% extends "base.html" %}
 {% block title %}CSV Reader · QA Workstation{% endblock %}
 {% block content %}
-<h1>📄 CSV Reader</h1>
-<p class="muted">Upload a CSV and browse its records as a form. Field settings (show / ⭐ / hide, types) are remembered per file structure.</p>
+<div class="page-head">
+  <div>
+    <h1>📄 CSV Reader</h1>
+    <p class="muted">Upload a CSV and browse its records as a form. Field settings (show / ⭐ / hide, types) are remembered per file structure.</p>
+  </div>
+  <div class="row-actions">
+    <button class="btn primary" id="csv-chat-btn">🤖 CSV assistant</button>
+  </div>
+</div>
 
 <section class="card">
   <h2>Open a CSV file</h2>
@@ -30,7 +37,7 @@
     </div>
     <div><button class="btn primary" type="submit">Convert &amp; open</button></div>
   </form>
-  <p class="muted small-text">The converted file is saved with your other CSVs — browse it as records, edit values, and download it as .csv with the 📥 button.</p>
+  <p class="muted small-text">The converted file is saved with your other CSVs — browse it as records, edit values, and download it as .csv with the 📥 button. Messy data? Use the <strong>🤖 CSV assistant</strong> instead — it cleans while converting.</p>
 </section>
 
 <section class="card">
@@ -59,4 +66,29 @@
   <p class="muted">No files yet — upload one above.</p>
   {% endif %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='chatbox.js') }}"></script>
+<script>
+const csvChat = initChatBox({
+  title: "CSV Assistant",
+  greeting: "Paste messy data here (or attach a document / Excel with 📎) and I'll clean and convert it into a CSV file for you — or ask me anything about working with CSVs.",
+  placeholder: "Paste messy data, or ask a CSV question…",
+  endpoint: "{{ url_for('csvreader.ask_general') }}",
+  quickActions: [
+    { label: "🧹 Clean attached/pasted data",
+      message: "Convert the pasted or attached data into a clean CSV table: detect the columns, trim whitespace, normalise casing and date formats to YYYY-MM-DD, unify inconsistent values, and remove exact duplicate records. Return the complete table per the JSON contract and summarise every change in \"reply\"." },
+  ],
+  onReply: (data, api) => {
+    if (!data.cleaned_file) return;
+    const note = api.addMsg("agent note", "🧹 Created " + data.cleaned_file.name + " — ");
+    const a = document.createElement("a");
+    a.href = data.cleaned_file.url;
+    a.textContent = "open it";
+    note.appendChild(a);
+  },
+});
+document.getElementById("csv-chat-btn").onclick = () => csvChat.open();
+</script>
 {% endblock %}

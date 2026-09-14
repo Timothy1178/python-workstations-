@@ -95,44 +95,96 @@ def save_row(file_id, idx):
     return jsonify({"ok": True})
 
 
+CLEAN_CONTRACT = """
+When the tester asks you to CLEAN, FIX, or CONVERT data, respond with ONLY one JSON object — no markdown fences, no text outside it:
+{"reply": "<short summary of every change you made>", "cleaned": [["header1", "header2", ...], ["row1col1", ...], ...]}
+- "cleaned" is the COMPLETE table including the header row as the first list; every cell a string.
+- Typical cleaning: trim whitespace, normalise casing and date formats (YYYY-MM-DD), unify inconsistent values of the same thing, remove exact duplicate records, fill derivable blanks — never invent data you cannot derive.
+For questions and analysis, answer in plain text only (no JSON)."""
+
+
+@bp.route("/ask", methods=["POST"])
+def ask_general():
+    """CSV assistant on the index page — clean/convert pasted or attached
+    data into a new file, or answer general CSV questions."""
+    return _run_chat(None)
+
+
 @bp.route("/<file_id>/ask", methods=["POST"])
 def ask(file_id):
-    """Data Q&A over this file, for the viewer's chat box."""
-    from modules.agents import service
+    """Data chat over one file: analysis Q&A, plus cleaning into a new file."""
     doc = store.load_file(file_id)
     if doc is None:
         return jsonify({"reply": "File not found.", "error": "not_found"}), 404
+    return _run_chat(doc)
+
+
+def _run_chat(doc):
+    from modules.agents import service
     data = request.get_json(force=True)
-    lines = [",".join(doc["headers"])]
-    total = len(lines[0])
-    shown = 0
-    for row in doc["rows"]:
-        line = ",".join(row)
-        total += len(line)
-        if shown >= 500 or total > 45000:
-            lines.append(f"[... {len(doc['rows']) - shown} more records truncated]")
-            break
-        lines.append(line)
-        shown += 1
     convo = ""
     history = data.get("history", [])
     if history:
         convo = "Conversation so far:\n" + "\n".join(
             f'{m["role"]}: {m["text"]}' for m in history[-8:]) + "\n\n"
-    prompt = f"""You are a QA data analyst embedded in a CSV record viewer. Answer the tester's question about the data below (and any attached documents): counts, filters, duplicates, anomalies, format problems, summaries, comparisons. Answer in plain text; be precise with numbers, quote exact values, and reference records by their 1-based record number. If the data was truncated, say your answer covers the shown records only.
+
+    if doc is not None:
+        lines = [",".join(doc["headers"])]
+        total, shown = len(lines[0]), 0
+        for row in doc["rows"]:
+            line = ",".join(row)
+            total += len(line)
+            if shown >= 500 or total > 45000:
+                break
+            lines.append(line)
+            shown += 1
+        truncated = shown < len(doc["rows"])
+        trunc_note = (f"\n[... {len(doc['rows']) - shown} more records not shown "
+                      "— the data is TRUNCATED: refuse cleaning requests and "
+                      "explain the file is too large to clean in chat; "
+                      "analysis covers the shown records only]" if truncated else "")
+        clean_part = "" if truncated else CLEAN_CONTRACT
+        prompt = f"""You are a QA data analyst embedded in a CSV record viewer. The tester asks about the data below (and any attached documents): counts, filters, duplicates, anomalies, format problems, summaries — answer precisely, quote exact values, reference records by 1-based record number.
+{clean_part}
 
 File: {doc["name"]} — {len(doc["rows"])} records, {len(doc["headers"])} fields.
 Data (CSV, first line is the header):
-{chr(10).join(lines)}
+{chr(10).join(lines)}{trunc_note}
 
-{convo}Tester's question: {data.get("message", "")}
+{convo}Tester's message: {data.get("message", "")}
 """
+    else:
+        prompt = f"""You are a QA data assistant on the CSV reader page. The tester pastes messy text or attaches documents/Excel and you convert and clean them into proper CSV data; you also answer general CSV questions.
+{CLEAN_CONTRACT}
+
+{convo}Tester's message: {data.get("message", "")}
+"""
+
     try:
         raw = service.complete_with_attachments(
             data.get("provider"), prompt, data.get("attachments"))
     except service.ProviderError as exc:
         return jsonify({"reply": str(exc), "error": exc.code})
-    return jsonify({"reply": raw[:6000] or "(no reply)"})
+
+    parsed = service.extract_json(raw)
+    cleaned = parsed.get("cleaned") if isinstance(parsed, dict) else None
+    if isinstance(cleaned, list) and len(cleaned) >= 2:
+        table = [[str(c) for c in r] for r in cleaned if isinstance(r, list)]
+        if doc is not None:
+            base = doc["name"][:-4] if doc["name"].lower().endswith(".csv") else doc["name"]
+            name = f"{base}-cleaned.csv"
+        else:
+            name = f"cleaned-{time.strftime('%Y%m%d-%H%M')}.csv"
+        newdoc = store.create_from_table(name, table)
+        if newdoc is not None:
+            return jsonify({
+                "reply": str(parsed.get("reply", "")).strip() or "Cleaned file created.",
+                "cleaned_file": {"id": newdoc["id"], "name": newdoc["name"],
+                                 "url": url_for("csvreader.viewer", file_id=newdoc["id"])},
+            })
+    if isinstance(parsed, dict) and parsed.get("reply"):
+        return jsonify({"reply": str(parsed["reply"])[:6000]})
+    return jsonify({"reply": (raw or "(no reply)")[:6000]})
 
 
 @bp.route("/<file_id>/download")
