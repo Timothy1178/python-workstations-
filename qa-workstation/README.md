@@ -27,7 +27,18 @@ Open **http://127.0.0.1:5010**.
 
 ## Connecting a Copilot Studio agent
 
-One-time setup per tenant, then fill the four connection fields on the
+### Option A — web channel secret (Direct Line, no Entra setup)
+
+1. In **Copilot Studio**: *Settings → Security → Authentication* →
+   **No authentication**, then republish the agent.
+2. Copy **Secret 1** from *Settings → Security → Web channel security*.
+3. Paste it into the secret field when registering the agent — done.
+   Note: anyone holding the secret can chat with the agent, and it no
+   longer knows who the tester is.
+
+### Option B — M365 Agents SDK (Microsoft sign-in, authenticated agents)
+
+One-time setup per tenant, then fill the connection fields on the
 Copilot Agents page:
 
 1. In **Copilot Studio**, publish the agent, then either copy its
@@ -40,7 +51,8 @@ Copilot Agents page:
      `http://localhost` redirect URI;
    - delegated **Power Platform API** permission
      `CopilotStudio.Copilots.Invoke`, admin-consented.
-   Copy the **tenant ID** and the app's **client ID**.
+   Copy the app's **client ID** (and optionally the **tenant ID** — leave
+   it blank to sign in with any work/school account).
 3. Open the agent's 💬 Chat page. On first use a browser window opens for
    Microsoft sign-in; the token is cached in
    `data/msal_token_cache.json` after that.

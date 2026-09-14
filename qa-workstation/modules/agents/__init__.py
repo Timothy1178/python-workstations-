@@ -7,7 +7,15 @@ page that talks to the published Copilot Studio agent.
 """
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for
 
-from . import copilot, store
+from . import copilot, directline, store
+
+
+def _provider(agent):
+    """Direct Line when the agent was registered with a web-channel secret,
+    otherwise the M365 Agents SDK (Entra sign-in) path."""
+    if (agent.get("directline_secret") or "").strip():
+        return directline
+    return copilot
 
 bp = Blueprint("agents", __name__, url_prefix="/agents")
 
@@ -41,6 +49,7 @@ def add():
             tenant_id=request.form.get("tenant_id", "").strip(),
             app_client_id=request.form.get("app_client_id", "").strip(),
             direct_connect_url=request.form.get("direct_connect_url", "").strip(),
+            directline_secret=request.form.get("directline_secret", "").strip(),
         )
     return redirect(url_for("agents.index"))
 
@@ -48,6 +57,7 @@ def add():
 @bp.route("/<agent_id>/delete", methods=["POST"])
 def delete(agent_id):
     copilot.reset(agent_id)
+    directline.reset(agent_id)
     store.delete_agent(agent_id)
     return redirect(url_for("agents.index"))
 
@@ -57,11 +67,12 @@ def chat(agent_id):
     agent = store.get_agent(agent_id)
     if agent is None:
         return redirect(url_for("agents.index"))
+    provider = _provider(agent)
     return render_template(
         "agents/chat.html",
         agent=agent,
-        missing=copilot.missing_config(agent),
-        sdk_error=copilot.SDK_ERROR,
+        missing=provider.missing_config(agent),
+        sdk_error=copilot.SDK_ERROR if provider is copilot else None,
     )
 
 
@@ -71,9 +82,10 @@ def connect(agent_id):
     agent = store.get_agent(agent_id)
     if agent is None:
         return jsonify({"error": "unknown agent"}), 404
-    copilot.reset(agent_id)
+    provider = _provider(agent)
+    provider.reset(agent_id)
     try:
-        replies = copilot.connect(agent)
+        replies = provider.connect(agent)
     except copilot.CopilotError as exc:
         store.set_status(agent_id, "error")
         return jsonify({"error": str(exc)})
@@ -90,7 +102,7 @@ def send(agent_id):
     if not message:
         return jsonify({"error": "empty message"})
     try:
-        replies = copilot.ask(agent, message)
+        replies = _provider(agent).ask(agent, message)
     except copilot.CopilotError as exc:
         store.set_status(agent_id, "error")
         return jsonify({"error": str(exc)})

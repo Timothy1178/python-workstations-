@@ -23,7 +23,8 @@ def _save(agents):
 
 
 def add_agent(name, role="", notes="", environment_id="", schema_name="",
-              tenant_id="", app_client_id="", direct_connect_url=""):
+              tenant_id="", app_client_id="", direct_connect_url="",
+              directline_secret=""):
     agents = load_agents()
     agents.append({
         "id": uuid.uuid4().hex[:8],
@@ -33,6 +34,7 @@ def add_agent(name, role="", notes="", environment_id="", schema_name="",
         "environment_id": environment_id,
         "schema_name": schema_name,
         "direct_connect_url": direct_connect_url,
+        "directline_secret": directline_secret,
         "tenant_id": tenant_id,
         "app_client_id": app_client_id,
         "status": "not connected",
