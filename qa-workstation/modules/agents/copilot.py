@@ -52,9 +52,10 @@ def _field(agent, key):
 
 
 def missing_config(agent):
-    """Sign-in always needs tenant + client id; the agent address is either
-    the Direct Connect URL or the Environment ID + schema name pair."""
-    missing = [f for f in ("tenant_id", "app_client_id") if not _field(agent, f)]
+    """Sign-in needs the app client id (tenant id is optional — without it
+    MSAL uses the multi-tenant 'organizations' authority); the agent address
+    is either the Direct Connect URL or the Environment ID + schema name."""
+    missing = [] if _field(agent, "app_client_id") else ["app_client_id"]
     if not _field(agent, "direct_connect_url"):
         missing += [f for f in ("environment_id", "schema_name")
                     if not _field(agent, f)]
@@ -75,9 +76,12 @@ def _acquire_token(agent):
     cache = msal.SerializableTokenCache()
     if TOKEN_CACHE.exists():
         cache.deserialize(TOKEN_CACHE.read_text(encoding="utf-8"))
+    # A specific tenant when given; otherwise any work/school account and
+    # Entra works out the home tenant at sign-in.
+    tenant = _field(agent, "tenant_id") or "organizations"
     app = msal.PublicClientApplication(
-        client_id=agent["app_client_id"],
-        authority=f"https://login.microsoftonline.com/{agent['tenant_id']}",
+        client_id=_field(agent, "app_client_id"),
+        authority=f"https://login.microsoftonline.com/{tenant}",
         token_cache=cache,
     )
     result = None

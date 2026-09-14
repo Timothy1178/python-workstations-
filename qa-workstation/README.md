@@ -40,7 +40,8 @@ Copilot Agents page:
      `http://localhost` redirect URI;
    - delegated **Power Platform API** permission
      `CopilotStudio.Copilots.Invoke`, admin-consented.
-   Copy the **tenant ID** and the app's **client ID**.
+   Copy the app's **client ID** (and optionally the **tenant ID** — leave
+   it blank to sign in with any work/school account).
 3. Open the agent's 💬 Chat page. On first use a browser window opens for
    Microsoft sign-in; the token is cached in
    `data/msal_token_cache.json` after that.
