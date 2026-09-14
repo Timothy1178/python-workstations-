@@ -13,6 +13,27 @@
 </section>
 
 <section class="card">
+  <h2>Paste text → CSV</h2>
+  <form method="post" action="{{ url_for('csvreader.paste') }}" class="stack-form">
+    <textarea name="pasted" rows="6" required
+      placeholder="Paste rows here — comma, tab (copied from Excel), semicolon or | separated. Each line becomes a record; lines without a separator become a one-column list."></textarea>
+    <div class="inline-form">
+      <input name="name" placeholder="File name (optional)">
+      <select name="delimiter">
+        <option value="auto" selected>Separator: auto-detect</option>
+        <option value="comma">Comma ( , )</option>
+        <option value="tab">Tab (Excel copy)</option>
+        <option value="semicolon">Semicolon ( ; )</option>
+        <option value="pipe">Pipe ( | )</option>
+      </select>
+      <label class="check-label"><input type="checkbox" name="has_header" checked> first row is headers</label>
+    </div>
+    <div><button class="btn primary" type="submit">Convert &amp; open</button></div>
+  </form>
+  <p class="muted small-text">The converted file is saved with your other CSVs — browse it as records, edit values, and download it as .csv with the 📥 button.</p>
+</section>
+
+<section class="card">
   <h2>Files</h2>
   {% if files %}
   <table class="list-table">

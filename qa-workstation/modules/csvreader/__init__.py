@@ -5,6 +5,7 @@ column signature, so the same kind of file keeps its layout. UUID fields
 get a regenerate button; date fields get a picker defaulting to now.
 """
 import io
+import time
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    jsonify, send_file)
@@ -32,6 +33,24 @@ def upload():
     if not f or not f.filename:
         return redirect(url_for("csvreader.index"))
     doc = store.parse_csv(f.filename, f.read())
+    if doc is None:
+        return redirect(url_for("csvreader.index"))
+    return redirect(url_for("csvreader.viewer", file_id=doc["id"]))
+
+
+@bp.route("/paste", methods=["POST"])
+def paste():
+    """Convert pasted text (comma/tab/semicolon/pipe separated) to a CSV doc."""
+    name = request.form.get("name", "").strip() \
+        or f"pasted-{time.strftime('%Y%m%d-%H%M')}"
+    if not name.lower().endswith(".csv"):
+        name += ".csv"
+    doc = store.parse_pasted(
+        name,
+        request.form.get("pasted", ""),
+        delimiter=request.form.get("delimiter", "auto"),
+        has_header=request.form.get("has_header") == "on",
+    )
     if doc is None:
         return redirect(url_for("csvreader.index"))
     return redirect(url_for("csvreader.viewer", file_id=doc["id"]))

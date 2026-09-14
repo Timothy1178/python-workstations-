@@ -66,6 +66,21 @@ your data; copy it to move machines.
 - `data/plans/*.json` — test plans and their cases/results
 - `data/agents.json` — registered Copilot agents
 
+## Agent-assisted chat box in any module
+
+The test case builder's assistant chat box is a shared component — the
+dropdown in its header picks who answers: the local Claude CLI or any
+connected Copilot agent. To add the same chat box to a new tool:
+
+1. Backend: build a prompt and call
+   `modules.agents.service.complete(provider_id, prompt)` from your
+   route (see `modules/testcases/assist.py`), passing through the
+   `provider` field of the request body.
+2. Frontend: include `static/chatbox.js` and call
+   `initChatBox({title, greeting, endpoint, buildContext, onReply})`
+   (see `templates/testcases/builder.html`). The provider dropdown,
+   history, and open/close handling come for free.
+
 ## Adding a new module
 
 1. Create `modules/<name>/__init__.py` with a Flask `Blueprint` named `bp`
