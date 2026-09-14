@@ -95,6 +95,46 @@ def save_row(file_id, idx):
     return jsonify({"ok": True})
 
 
+@bp.route("/<file_id>/ask", methods=["POST"])
+def ask(file_id):
+    """Data Q&A over this file, for the viewer's chat box."""
+    from modules.agents import service
+    doc = store.load_file(file_id)
+    if doc is None:
+        return jsonify({"reply": "File not found.", "error": "not_found"}), 404
+    data = request.get_json(force=True)
+    lines = [",".join(doc["headers"])]
+    total = len(lines[0])
+    shown = 0
+    for row in doc["rows"]:
+        line = ",".join(row)
+        total += len(line)
+        if shown >= 500 or total > 45000:
+            lines.append(f"[... {len(doc['rows']) - shown} more records truncated]")
+            break
+        lines.append(line)
+        shown += 1
+    convo = ""
+    history = data.get("history", [])
+    if history:
+        convo = "Conversation so far:\n" + "\n".join(
+            f'{m["role"]}: {m["text"]}' for m in history[-8:]) + "\n\n"
+    prompt = f"""You are a QA data analyst embedded in a CSV record viewer. Answer the tester's question about the data below (and any attached documents): counts, filters, duplicates, anomalies, format problems, summaries, comparisons. Answer in plain text; be precise with numbers, quote exact values, and reference records by their 1-based record number. If the data was truncated, say your answer covers the shown records only.
+
+File: {doc["name"]} — {len(doc["rows"])} records, {len(doc["headers"])} fields.
+Data (CSV, first line is the header):
+{chr(10).join(lines)}
+
+{convo}Tester's question: {data.get("message", "")}
+"""
+    try:
+        raw = service.complete_with_attachments(
+            data.get("provider"), prompt, data.get("attachments"))
+    except service.ProviderError as exc:
+        return jsonify({"reply": str(exc), "error": exc.code})
+    return jsonify({"reply": raw[:6000] or "(no reply)"})
+
+
 @bp.route("/<file_id>/download")
 def download(file_id):
     doc = store.load_file(file_id)
