@@ -5,6 +5,15 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.7.2 — 2026-09-14
+
+- **Privacy fix**: the whole `data/` folder is now gitignored and the
+  previously committed demo data (test plans, screenshots, CSV samples,
+  CSV settings, seeded wiki JSON) is untracked — no test case data,
+  wiki content, settings or secrets can be pushed to GitHub. The two
+  starter wiki guides are auto-seeded from the tracked `docs/` files on
+  first run (delete `data/wiki/.seeded` to re-seed).
+
 ## 1.7.1 — 2026-09-14
 
 - **Security fix**: `data/agents.json` (which holds Direct Line

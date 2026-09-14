@@ -3,8 +3,7 @@ __pycache__/
 .DS_Store
 .venv/
 venv/
-qa-workstation/data/assist_debug.log
-qa-workstation/data/msal_token_cache.json
-qa-workstation/data/uploads/
-qa-workstation/data/agents.json
-qa-workstation/data/chat_assignments.json
+# All workstation user data stays local: test plans & screenshots, wiki
+# pages, CSV files & settings, agent registry (incl. secrets), chat
+# assignments, caches, uploads.
+qa-workstation/data/
