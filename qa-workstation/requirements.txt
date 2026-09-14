@@ -3,3 +3,4 @@ openpyxl>=3.1
 Pillow>=10.0
 microsoft-agents-copilotstudio-client>=1.0
 msal>=1.28
+requests>=2.31

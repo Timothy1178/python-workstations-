@@ -2,7 +2,7 @@
 {% block title %}Copilot Agents · QA Workstation{% endblock %}
 {% block content %}
 <h1>🤖 Copilot Agents</h1>
-<p class="muted">Register your Copilot Studio agents and chat with them live through the Microsoft 365 Agents SDK. Easiest: paste the agent's <strong>Direct Connect URL</strong> (the <code>…environment.api.powerplatform.com/copilotstudio/…/conversations…</code> link). Alternatively use the Environment ID + schema name from <em>Settings → Advanced → Metadata</em>.</p>
+<p class="muted">Register your Copilot Studio agents and chat with them live. Two ways to connect: <strong>A)</strong> paste the <strong>web channel secret</strong> (Direct Line — no Entra setup, but the agent must be set to <em>No authentication</em>), or <strong>B)</strong> the <strong>Direct Connect URL</strong> + an app registration client ID (M365 Agents SDK — Microsoft sign-in, works with authenticated agents).</p>
 
 {% if sdk_error %}
 <div class="card warn-card">⚠️ {{ sdk_error }}</div>
@@ -15,14 +15,16 @@
       <input name="name" placeholder="Agent name (e.g. Case Writer)" required>
       <input name="role" placeholder="QA role (e.g. writes SIT cases)" class="grow">
     </div>
-    <input name="direct_connect_url" placeholder="Direct Connect URL (Copilot Studio → Channels → Web/custom app) — easiest option">
+    <input name="directline_secret" type="password" autocomplete="off"
+           placeholder="Option A — Web channel secret (Settings → Security → Web channel security; agent must be set to No authentication)">
+    <input name="direct_connect_url" placeholder="Option B — Direct Connect URL (…environment.api.powerplatform.com/copilotstudio/…/conversations…) + client ID below">
     <div class="inline-form">
       <input name="environment_id" placeholder="…or Environment ID (Settings → Advanced → Metadata)" class="grow">
       <input name="schema_name" placeholder="…and agent schema name (e.g. cr123_caseWriter)" class="grow">
     </div>
     <div class="inline-form">
       <input name="tenant_id" placeholder="Entra tenant ID (optional — blank = any work account)" class="grow">
-      <input name="app_client_id" placeholder="App registration client ID" class="grow">
+      <input name="app_client_id" placeholder="App registration client ID (option B only)" class="grow">
     </div>
     <textarea name="notes" rows="2" placeholder="Notes (what this agent is for, environment, owner…)"></textarea>
     <div><button class="btn primary" type="submit">Add agent</button></div>
@@ -40,7 +42,8 @@
       <td><strong>{{ a.name }}</strong>{% if a.notes %}<div class="muted small-text">{{ a.notes }}</div>{% endif %}</td>
       <td>{{ a.role or "—" }}</td>
       <td class="muted small-text">
-        {% if a.direct_connect_url %}direct: …{{ a.direct_connect_url[-40:] }}
+        {% if a.directline_secret %}Direct Line (secret)
+        {% elif a.direct_connect_url %}direct: …{{ a.direct_connect_url[-40:] }}
         {% elif a.schema_name %}{{ a.schema_name }}<br>env {{ a.environment_id or "?" }}
         {% else %}not configured{% endif %}
       </td>
