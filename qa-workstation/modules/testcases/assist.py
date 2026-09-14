@@ -90,17 +90,4 @@ def run_assist(plan, template, table, message, history, provider_id=None):
             "updates": updates, "new_cases": new_cases}
 
 
-def _extract_json(text):
-    """Parse the model's JSON, tolerating code fences or stray prose."""
-    for candidate in (text, text.strip("`").lstrip("json")):
-        try:
-            return json.loads(candidate)
-        except (json.JSONDecodeError, TypeError):
-            pass
-    start, end = text.find("{"), text.rfind("}")
-    if start != -1 and end > start:
-        try:
-            return json.loads(text[start:end + 1])
-        except json.JSONDecodeError:
-            return None
-    return None
+_extract_json = service.extract_json

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}QA Wiki · QA Workstation{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>📚 QA Wiki</h1>
+    <p class="muted">All the team's QA knowledge — {{ total }} page{{ "s" if total != 1 }}, organised by category, searchable, agent-assisted.</p>
+  </div>
+  <div class="row-actions">
+    <a class="btn primary" href="{{ url_for('wiki.new') }}">＋ New page</a>
+  </div>
+</div>
+
+<form method="get" action="{{ url_for('wiki.index') }}" class="wiki-search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search titles, tags and content…">
+  {% if cat %}<input type="hidden" name="category" value="{{ cat }}">{% endif %}
+  <button class="btn" type="submit">Search</button>
+  {% if q or cat %}<a class="btn" href="{{ url_for('wiki.index') }}">Clear</a>{% endif %}
+</form>
+
+{% if categories %}
+<div class="chip-row">
+  <a class="chip {{ 'chip-on' if not cat }}" href="{{ url_for('wiki.index', q=q or None) }}">All ({{ total }})</a>
+  {% for name, count in categories %}
+  <a class="chip {{ 'chip-on' if cat == name }}"
+     href="{{ url_for('wiki.index', category=name, q=q or None) }}">📂 {{ name }} ({{ count }})</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if recent %}
+<section class="card">
+  <h2>🕒 Recently updated</h2>
+  <div class="wiki-list">
+    {% for p in recent %}
+    <a class="wiki-row" href="{{ url_for('wiki.view', page_id=p.id) }}">
+      <span class="wiki-row-title">{{ p.title }}</span>
+      <span class="wiki-row-meta">
+        <span class="pill">{{ p.category }}</span>
+        <span class="muted">{{ p.updated }}</span>
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if grouped %}
+  {% for name, plist in grouped %}
+  <section class="card">
+    <h2>📂 {{ name }} <span class="muted small-text">({{ plist|length }})</span></h2>
+    <div class="wiki-list">
+      {% for p in plist %}
+      <a class="wiki-row" href="{{ url_for('wiki.view', page_id=p.id) }}">
+        <span>
+          <span class="wiki-row-title">{{ p.title }}</span>
+          {% for t in p.tags %}<span class="tag">#{{ t }}</span>{% endfor %}
+          <div class="muted small-text">{{ snippet(p.content) }}</div>
+        </span>
+        <span class="wiki-row-meta"><span class="muted">{{ p.updated }}</span></span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+{% elif q or cat %}
+<section class="card"><p class="muted">No pages match{% if q %} “{{ q }}”{% endif %}{% if cat %} in {{ cat }}{% endif %}. <a href="{{ url_for('wiki.index') }}">Clear filters</a> or <a href="{{ url_for('wiki.new') }}">create the page</a>.</p></section>
+{% else %}
+<section class="card">
+  <h2>Start your knowledge base</h2>
+  <p class="muted">No pages yet. Create the first one — or open <strong>＋ New page</strong>, paste a real document into the 🤖 chat box, and let an agent draft it for you.</p>
+</section>
+{% endif %}
+{% endblock %}
