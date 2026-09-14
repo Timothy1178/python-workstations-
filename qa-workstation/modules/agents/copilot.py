@@ -38,8 +38,6 @@ TOKEN_CACHE = DATA_DIR / "msal_token_cache.json"
 SCOPES = ["https://api.powerplatform.com/.default"]
 SIGNIN_TIMEOUT = 180
 
-REQUIRED_FIELDS = ("environment_id", "schema_name", "tenant_id", "app_client_id")
-
 # agent id -> Copilot Studio conversation id (in-memory; a restart simply
 # starts a fresh conversation)
 _conversations = {}
@@ -49,8 +47,18 @@ class CopilotError(Exception):
     """A connection/sign-in problem with a message meant for the tester."""
 
 
+def _field(agent, key):
+    return (agent.get(key) or "").strip()
+
+
 def missing_config(agent):
-    return [f for f in REQUIRED_FIELDS if not (agent.get(f) or "").strip()]
+    """Sign-in always needs tenant + client id; the agent address is either
+    the Direct Connect URL or the Environment ID + schema name pair."""
+    missing = [f for f in ("tenant_id", "app_client_id") if not _field(agent, f)]
+    if not _field(agent, "direct_connect_url"):
+        missing += [f for f in ("environment_id", "schema_name")
+                    if not _field(agent, f)]
+    return missing
 
 
 def _require_ready(agent):
@@ -92,10 +100,11 @@ def _acquire_token(agent):
 
 def _client(agent, token):
     settings = ConnectionSettings(
-        environment_id=agent["environment_id"].strip(),
-        agent_identifier=agent["schema_name"].strip(),
+        environment_id=_field(agent, "environment_id"),
+        agent_identifier=_field(agent, "schema_name"),
         cloud=PowerPlatformCloud.PROD,
         copilot_agent_type=AgentType.PUBLISHED,
+        direct_connect_url=_field(agent, "direct_connect_url") or None,
     )
     return CopilotClient(settings, token)
 
@@ -144,7 +153,8 @@ def connect(agent):
         raise CopilotError(f"Could not reach Copilot Studio: {exc}") from exc
     if not state.get("conversation_id"):
         raise CopilotError("Copilot Studio did not return a conversation id — "
-                           "check the Environment ID and schema name.")
+                           "check the connection details (Direct Connect URL or "
+                           "Environment ID + schema name).")
     _conversations[agent["id"]] = state["conversation_id"]
     return replies
 
@@ -161,7 +171,8 @@ def ask(agent, message):
         conversation_id = state.get("conversation_id")
         if not conversation_id:
             raise CopilotError("Could not start a Copilot Studio conversation — "
-                               "check the Environment ID and schema name.")
+                               "check the connection details (Direct Connect URL "
+                               "or Environment ID + schema name).")
         _conversations[agent["id"]] = conversation_id
     state = {}
     try:

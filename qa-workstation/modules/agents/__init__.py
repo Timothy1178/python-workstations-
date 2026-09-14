@@ -40,6 +40,7 @@ def add():
             schema_name=request.form.get("schema_name", "").strip(),
             tenant_id=request.form.get("tenant_id", "").strip(),
             app_client_id=request.form.get("app_client_id", "").strip(),
+            direct_connect_url=request.form.get("direct_connect_url", "").strip(),
         )
     return redirect(url_for("agents.index"))
 

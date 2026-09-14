@@ -30,8 +30,11 @@ Open **http://127.0.0.1:5010**.
 One-time setup per tenant, then fill the four connection fields on the
 Copilot Agents page:
 
-1. In **Copilot Studio**, publish the agent and copy its **Environment ID**
-   and **schema name** from *Settings → Advanced → Metadata*.
+1. In **Copilot Studio**, publish the agent, then either copy its
+   **Direct Connect URL** (the
+   `…environment.api.powerplatform.com/copilotstudio/…/conversations…`
+   link — paste it as-is), or the **Environment ID** and **schema name**
+   from *Settings → Advanced → Metadata*.
 2. In **Entra ID**, create (or reuse) an app registration:
    - platform *Mobile and desktop applications* with the
      `http://localhost` redirect URI;
