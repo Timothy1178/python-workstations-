@@ -9,6 +9,7 @@
  *     endpoint: "/testcases/plan/x/assist",   // POST target
  *     buildContext: () => ({table: [...]}),   // extra body fields (optional)
  *     onReply: (data, api) => {...},          // page-specific result handling (optional)
+ *     quickActions: [{label: "🔍 Review", message: "Review the table…"}], // one-click prompts (optional)
  *   });
  *
  * Each request POSTs JSON: {message, history, provider, ...buildContext()}.
@@ -37,6 +38,7 @@ function initChatBox(opts) {
       </span>
     </div>
     <div class="chat-msgs"></div>
+    <div class="chat-quick"></div>
     <div class="chat-input">
       <textarea rows="3" placeholder="${opts.placeholder || "Ask the agent…"}"></textarea>
       <button class="btn primary">Send</button>
@@ -58,6 +60,16 @@ function initChatBox(opts) {
     return div;
   }
   if (opts.greeting) addMsg("agent", opts.greeting);
+
+  const quick = panel.querySelector(".chat-quick");
+  for (const qa of opts.quickActions || []) {
+    const b = document.createElement("button");
+    b.className = "btn small";
+    b.textContent = qa.label;
+    b.onclick = () => send(qa.message, qa.label);
+    quick.appendChild(b);
+  }
+  if (!(opts.quickActions || []).length) quick.remove();
 
   async function loadProviders() {
     try {
@@ -92,11 +104,11 @@ function initChatBox(opts) {
     if (e.key === "Escape" && !panel.hidden) panel.hidden = true;
   });
 
-  async function send() {
-    const message = chatText.value.trim();
+  async function send(override, label) {
+    const message = (override || chatText.value).trim();
     if (!message || chatSend.disabled) return;
-    chatText.value = "";
-    addMsg("user", message);
+    if (!override) chatText.value = "";
+    addMsg("user", label || message);
     history.push({ role: "user", text: message });
     chatSend.disabled = true;
     const thinking = addMsg("agent thinking", "Thinking…");
@@ -126,7 +138,7 @@ function initChatBox(opts) {
     }
   }
 
-  chatSend.onclick = send;
+  chatSend.onclick = () => send();
   chatText.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   });

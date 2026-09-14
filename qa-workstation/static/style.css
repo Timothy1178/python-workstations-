@@ -302,6 +302,12 @@ label.btn input[type="file"] { display: none; }
 .chat-msg.thinking { color: var(--muted); font-style: italic; }
 .chat-msg.note { background: #ecfdf5; color: #065f46; }
 .chat-msg.error { background: #fef2f2; color: var(--danger); }
+.chat-quick {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px 0;
+}
 .chat-input {
   display: flex;
   gap: 8px;
