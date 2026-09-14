@@ -1,0 +1,15 @@
+{
+  "name": "QA Multi Screen Cap",
+  "slug": "multi-screencap",
+  "version": "1.0.0",
+  "icon": "📸",
+  "browsers": ["Chrome", "Edge"],
+  "description": "Take multiple screenshots without losing any — capture the visible page or drag-select an area, collect everything in a gallery, and save all captures at once.",
+  "features": [
+    "📸 Capture the visible page in one click (or Alt+Shift+F)",
+    "✂️ Select a capture area by dragging on the page (or Alt+Shift+S), Esc cancels",
+    "🖼 Gallery keeps up to 100 captures across pages and tabs until you clear it",
+    "💾 Save one capture or all of them at once into Downloads/screencaps/",
+    "🔢 Badge on the toolbar icon shows how many captures are waiting"
+  ]
+}

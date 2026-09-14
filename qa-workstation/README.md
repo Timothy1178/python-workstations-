@@ -32,6 +32,10 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   (paste a real document, the agent drafts the page). See
   [docs/copilot-wiki-agent-setup.md](docs/copilot-wiki-agent-setup.md)
   for the wiki-librarian agent prompt.
+- **Web Plugins** (`modules/plugins/`) — browser extensions for QA work,
+  downloadable as zips and loaded unpacked into Chrome/Edge. Extensions
+  live under `plugins/<slug>/`; first one is **QA Multi Screen Cap**
+  (multi-shot screenshots with area selection).
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a

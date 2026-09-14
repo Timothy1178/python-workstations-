@@ -5,6 +5,18 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.5.0 — 2026-09-14
+
+- **Web Plugins**: new module listing browser extensions (Chrome & Edge)
+  with feature lists, install steps, and one-click .zip download; each
+  plugin is an unpacked MV3 extension under `plugins/<slug>/` with a
+  `plugin.json` describing it.
+- First plugin — **QA Multi Screen Cap**: capture the visible page or a
+  drag-selected area (Esc cancels; Alt+Shift+F / Alt+Shift+S), collect
+  up to 100 captures in a popup gallery across pages and tabs, save one
+  or all at once into Downloads/screencaps/, toolbar badge shows the
+  count.
+
 ## 1.4.0 — 2026-09-14
 
 - **CSV cleaning agent**: ask the viewer's Data Analyst chat to clean a

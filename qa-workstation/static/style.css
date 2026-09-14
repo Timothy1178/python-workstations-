@@ -412,6 +412,11 @@ tr.agent-touched td { background: #fefce8; transition: background 1s; }
 .mode-opt { padding: 3px 8px; }
 .mode-opt.picked-mode { background: var(--accent); border-color: var(--accent); }
 #settings-table select { width: auto; padding: 4px 6px; }
+/* ---------- Web Plugins ---------- */
+.plugin-features { margin: 8px 0 12px; padding-left: 4px; list-style: none; }
+.plugin-features li { padding: 3px 0; }
+.install-steps li { margin-bottom: 8px; line-height: 1.5; }
+
 /* ---------- QA Wiki ---------- */
 .wiki-search { display: flex; gap: 8px; margin-bottom: 12px; }
 .wiki-search input { max-width: 440px; }
