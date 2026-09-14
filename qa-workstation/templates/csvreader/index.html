@@ -12,11 +12,12 @@
 </div>
 
 <section class="card">
-  <h2>Open a CSV file</h2>
+  <h2>Open a CSV or JSON file</h2>
   <form method="post" action="{{ url_for('csvreader.upload') }}" enctype="multipart/form-data" class="inline-form">
-    <input type="file" name="csvfile" accept=".csv,text/csv" required>
+    <input type="file" name="csvfile" accept=".csv,.json,text/csv,application/json" required>
     <button class="btn primary" type="submit">Upload &amp; open</button>
   </form>
+  <p class="muted small-text">JSON: an array of objects (or one object) becomes records; nested values and encoded payloads (e.g. <code>playloadJson</code>) stay editable via the ⤢ preview editor, and export back with 📥 JSON.</p>
 </section>
 
 <section class="card">
@@ -72,6 +73,7 @@
 <script src="{{ url_for('static', filename='chatbox.js') }}"></script>
 <script>
 const csvChat = initChatBox({
+  context: "csv-index",
   title: "CSV Assistant",
   greeting: "Paste messy data here (or attach a document / Excel with 📎) and I'll clean and convert it into a CSV file for you — or ask me anything about working with CSVs.",
   placeholder: "Paste messy data, or ask a CSV question…",

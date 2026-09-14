@@ -143,8 +143,16 @@ function initChatBox(opts) {
         o.textContent = (p.kind === "copilot" ? "🤖 " : "💻 ") + p.name;
         providerSel.appendChild(o);
       }
-      if (remembered && [...providerSel.options].some(o => o.value === remembered))
+      const has = v => v && [...providerSel.options].some(o => o.value === v);
+      // Assignment from the Agents page wins; the tester's last manual
+      // pick is the fallback for unassigned chat boxes.
+      const assigned = (data.assignments || {})[opts.context];
+      if (has(assigned)) {
+        providerSel.value = assigned;
+        providerSel.title = "Assigned on the Copilot Agents page — you can still switch for this session";
+      } else if (has(remembered)) {
         providerSel.value = remembered;
+      }
     } catch (e) { /* dropdown stays empty → server default provider */ }
   }
   loadProviders();

@@ -23,8 +23,19 @@ MODULE_INFO = {
 
 @bp.route("/api/providers")
 def providers():
-    """Chat providers for the shared chat box (static/chatbox.js)."""
-    return jsonify({"providers": service.list_providers()})
+    """Chat providers + per-page assignments for the shared chat box."""
+    return jsonify({
+        "providers": service.list_providers(),
+        "assignments": store.load_assignments(),
+    })
+
+
+@bp.route("/assignments", methods=["POST"])
+def assignments():
+    store.save_assignments(
+        {key: request.form.get(key, "").strip()
+         for key, _ in store.CHAT_CONTEXTS})
+    return redirect(url_for("agents.index"))
 
 
 @bp.route("/")
@@ -33,6 +44,9 @@ def index():
         "agents/index.html",
         agents=store.load_agents(),
         sdk_error=copilot.SDK_ERROR,
+        providers=service.list_providers(),
+        contexts=store.CHAT_CONTEXTS,
+        assignments=store.load_assignments(),
     )
 
 

@@ -5,6 +5,24 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.7.0 — 2026-09-14
+
+- **Per-page agent assignments**: the Copilot Agents page gets a "Chat
+  box assignments" table — pick which agent answers each chat box
+  (builder, CSV viewer/index, wiki index/editor) and it is applied
+  automatically when that chat box opens; testers can still switch in
+  the dropdown for one session.
+- **CSV Reader reads JSON**: upload a .json file (array of objects, or
+  one object) and browse it as records; nested values stay as JSON
+  text; export back with the new 📥 JSON button. New ⤢ **preview
+  editor** on every text field: edit long values in a large window,
+  pretty-print JSON, and decode/re-encode XML-entity payloads (e.g.
+  `playloadJson` transaction strings) — modelled on the old
+  Transaction String Editor.
+- **Dark mode**: 🌓 toggle in the sidebar, remembered per browser and
+  defaulting to the OS preference; the whole UI (cards, tables, chat
+  boxes, wiki content, editors) is themed via CSS variables.
+
 ## 1.6.0 — 2026-09-14
 
 - **Multi Screen Cap v1.1.0**: 🗔 floating capture window that stays

@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}QA Workstation{% endblock %}</title>
+<script>
+// Apply the theme before first paint: saved choice, else OS preference.
+(function () {
+  try {
+    var t = localStorage.getItem("qa-theme");
+    if (t !== "dark" && t !== "light") {
+      t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.dataset.theme = t;
+  } catch (e) { document.documentElement.dataset.theme = "light"; }
+})();
+</script>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -15,11 +27,21 @@
     <a href="{{ m.url }}" class="{{ 'active' if request.path.startswith(m.url) else '' }}">{{ m.icon }} {{ m.name }}</a>
     {% endfor %}
   </nav>
-  <div class="sidebar-foot">local · 127.0.0.1:5010 · v{{ app_version }}</div>
+  <div class="sidebar-foot">
+    <button id="theme-toggle" class="theme-btn" title="Switch light / dark mode">🌓</button>
+    local · 127.0.0.1:5010 · v{{ app_version }}
+  </div>
 </aside>
 <main class="content">
 {% block content %}{% endblock %}
 </main>
+<script>
+document.getElementById("theme-toggle").onclick = function () {
+  var next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("qa-theme", next); } catch (e) {}
+};
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

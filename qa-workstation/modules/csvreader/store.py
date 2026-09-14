@@ -51,6 +51,61 @@ def parse_csv(name, raw_bytes):
     return _from_table(name, csv.reader(io.StringIO(text)))
 
 
+def parse_json_file(name, raw_bytes):
+    """A JSON array of objects (or one object) becomes records; nested
+    values are stored as JSON text in the cell, so payload strings like
+    the transaction editor's playloadJson stay editable."""
+    try:
+        data = json.loads(raw_bytes.decode("utf-8-sig", errors="replace"))
+    except json.JSONDecodeError:
+        return None
+    if isinstance(data, dict):
+        data = [data]
+    if not isinstance(data, list) or not data \
+            or not all(isinstance(r, dict) for r in data):
+        return None
+    headers = []
+    for r in data:
+        for k in r:
+            if k not in headers:
+                headers.append(str(k))
+
+    def cell(v):
+        if v is None:
+            return ""
+        if isinstance(v, (dict, list)):
+            return json.dumps(v, ensure_ascii=False)
+        if isinstance(v, bool):
+            return "true" if v else "false"
+        return str(v)
+
+    doc = _from_table(name, [headers] + [[cell(r.get(h)) for h in headers]
+                                         for r in data])
+    if doc is not None:
+        doc["kind"] = "json"
+        save_file(doc)
+    return doc
+
+
+def to_json_bytes(doc):
+    """Rows back to a JSON array; cells that hold JSON objects/arrays are
+    restored, everything else stays a string."""
+    records = []
+    for row in doc["rows"]:
+        rec = {}
+        for h, v in zip(doc["headers"], row):
+            s = v.strip()
+            if s[:1] in ("{", "["):
+                try:
+                    rec[h] = json.loads(s)
+                    continue
+                except json.JSONDecodeError:
+                    pass
+            rec[h] = v
+        records.append(rec)
+    return json.dumps(records, indent=2, ensure_ascii=False).encode("utf-8")
+
+
 DELIMITERS = [",", "\t", ";", "|"]
 _DELIM_NAMES = {"comma": ",", "tab": "\t", "semicolon": ";", "pipe": "|"}
 
