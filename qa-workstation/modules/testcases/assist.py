@@ -1,40 +1,19 @@
 """AI assistant for the test case builder.
 
-Runs the locally installed Claude Code CLI (`claude -p`) so no API key is
-needed — it uses the user's existing Claude Code login. Designed so a
-Copilot Studio provider can be added later behind the same run_assist()
-contract.
+Builds the prompt and parses the reply; the completion itself goes
+through the shared provider service (modules/agents/service.py), so the
+tester can pick the local Claude CLI or any connected Copilot agent in
+the chat box.
 
 Contract with the model: it must return one JSON object
   {"reply": str, "updates": [{"row": int, "fields": {...}}], "new_cases": [{...}]}
-row numbers are 1-based positions in the builder table.
+row numbers are 1-based positions in the builder table. A provider that
+answers in prose (e.g. a Copilot agent without these instructions) still
+works — the reply is shown in the chat, just without table edits.
 """
 import json
-import os
-import shutil
-import subprocess
 
-CLAUDE_PATHS = ["claude", "/opt/homebrew/bin/claude", "/usr/local/bin/claude"]
-TIMEOUT = 240
-
-
-def _clean_env():
-    """Minimal environment for the CLI.
-
-    If this server was launched from inside a Claude Code session, the
-    inherited CLAUDE_*/ANTHROPIC_* variables point the nested CLI at that
-    session's plumbing and it hangs — so start from scratch instead.
-    """
-    keep = ("PATH", "HOME", "USER", "SHELL", "TERM", "LANG", "TMPDIR")
-    return {k: os.environ[k] for k in keep if k in os.environ}
-
-
-def _claude_bin():
-    for p in CLAUDE_PATHS:
-        found = shutil.which(p) if "/" not in p else (p if shutil.which(p) else None)
-        if found:
-            return found
-    return None
+from modules.agents import service
 
 
 def _build_prompt(plan, template, table, message, history):
@@ -78,39 +57,19 @@ Current table rows:
 """
 
 
-def run_assist(plan, template, table, message, history):
-    binary = _claude_bin()
-    if not binary:
-        return {"reply": "Claude CLI not found on this machine — install "
-                         "Claude Code or configure another agent provider.",
-                "updates": [], "new_cases": [], "error": "no_provider"}
-
+def run_assist(plan, template, table, message, history, provider_id=None):
     prompt = _build_prompt(plan, template, table, message, history)
     try:
-        proc = subprocess.run(
-            [binary, "-p", prompt],
-            capture_output=True, text=True, timeout=TIMEOUT,
-            stdin=subprocess.DEVNULL, env=_clean_env(), cwd=os.path.expanduser("~"))
-    except subprocess.TimeoutExpired:
-        return {"reply": "The agent took too long to answer — try again.",
-                "updates": [], "new_cases": [], "error": "timeout"}
-
-    raw = (proc.stdout or "").strip()
-    _log_debug(proc.returncode, raw, proc.stderr)
-    if proc.returncode != 0:
-        detail = (raw or proc.stderr or "unknown error").strip()
-        if "authenticate" in detail.lower() or "401" in detail:
-            return {"reply": "The Claude CLI on this Mac is not logged in. "
-                             "Open Terminal, run `claude`, and complete the "
-                             "login once — then I'll be able to answer here.",
-                    "updates": [], "new_cases": [], "error": "auth"}
-        return {"reply": f"Agent error: {detail[:300]}",
-                "updates": [], "new_cases": [], "error": "cli_failed"}
+        raw = service.complete(provider_id, prompt)
+    except service.ProviderError as exc:
+        return {"reply": str(exc), "updates": [], "new_cases": [],
+                "error": exc.code}
 
     data = _extract_json(raw)
     if data is None:
         # Model answered in prose — still show it rather than fail.
-        return {"reply": raw[:2000], "updates": [], "new_cases": []}
+        return {"reply": raw[:2000] or "(no reply)",
+                "updates": [], "new_cases": []}
 
     allowed = {f["key"] for f in template["fields"]}
     updates = []
@@ -129,14 +88,6 @@ def run_assist(plan, template, table, message, history):
 
     return {"reply": str(data.get("reply", "")).strip() or "Done.",
             "updates": updates, "new_cases": new_cases}
-
-
-def _log_debug(rc, stdout, stderr):
-    from pathlib import Path
-    log = Path(__file__).resolve().parents[2] / "data" / "assist_debug.log"
-    log.write_text(f"rc={rc}\n--- stdout ---\n{stdout[:4000]}\n"
-                   f"--- stderr ---\n{(stderr or '')[:2000]}\n",
-                   encoding="utf-8")
 
 
 def _extract_json(text):

@@ -7,15 +7,9 @@ page that talks to the published Copilot Studio agent.
 """
 from flask import Blueprint, jsonify, render_template, request, redirect, url_for
 
-from . import copilot, directline, store
+from . import copilot, directline, service, store
 
-
-def _provider(agent):
-    """Direct Line when the agent was registered with a web-channel secret,
-    otherwise the M365 Agents SDK (Entra sign-in) path."""
-    if (agent.get("directline_secret") or "").strip():
-        return directline
-    return copilot
+_provider = service.agent_backend
 
 bp = Blueprint("agents", __name__, url_prefix="/agents")
 
@@ -25,6 +19,12 @@ MODULE_INFO = {
     "desc": "Copilot Studio agents with live chat via the M365 Agents SDK.",
     "icon": "🤖",
 }
+
+
+@bp.route("/api/providers")
+def providers():
+    """Chat providers for the shared chat box (static/chatbox.js)."""
+    return jsonify({"providers": service.list_providers()})
 
 
 @bp.route("/")

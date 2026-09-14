@@ -272,6 +272,15 @@ label.btn input[type="file"] { display: none; }
   padding: 10px 14px;
   border-bottom: 1px solid var(--line);
 }
+.chat-head-tools { display: flex; gap: 6px; align-items: center; }
+.chat-provider {
+  max-width: 170px;
+  padding: 3px 6px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+}
 .chat-msgs {
   flex: 1;
   overflow-y: auto;

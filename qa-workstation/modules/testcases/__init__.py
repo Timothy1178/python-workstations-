@@ -122,6 +122,7 @@ def assist_chat(plan_id):
         table=data.get("table", []),
         message=data.get("message", ""),
         history=data.get("history", []),
+        provider_id=data.get("provider"),
     )
     return jsonify({"ok": "error" not in result, **result})
 
