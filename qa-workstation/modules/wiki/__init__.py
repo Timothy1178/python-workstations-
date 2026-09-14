@@ -31,6 +31,8 @@ MODULE_INFO = {
     "icon": "📚",
 }
 
+store.ensure_seeds()
+
 
 @bp.route("/")
 def index():

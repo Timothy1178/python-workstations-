@@ -11,6 +11,44 @@ import uuid
 from pathlib import Path
 
 WIKI_DIR = Path(__file__).resolve().parents[2] / "data" / "wiki"
+DOCS_DIR = Path(__file__).resolve().parents[2] / "docs"
+
+# data/ is local user data (gitignored); these starter pages are seeded
+# from the tracked docs/ files on first run. The marker keeps a page
+# deleted on purpose from coming back.
+SEED_PAGES = [
+    {"id": "seed-wiki-agent-setup",
+     "title": "Copilot Wiki Agent — setup guide",
+     "tags": ["copilot", "agent", "setup", "wiki"],
+     "source": "copilot-wiki-agent-setup.md"},
+    {"id": "seed-csv-agent-setup",
+     "title": "CSV Data Analyst Agent — setup guide",
+     "tags": ["copilot", "agent", "setup", "csv"],
+     "source": "copilot-csv-agent-setup.md"},
+]
+
+
+def ensure_seeds():
+    marker = WIKI_DIR / ".seeded"
+    if marker.exists():
+        return
+    now = time.strftime("%Y-%m-%d %H:%M")
+    for seed in SEED_PAGES:
+        source = DOCS_DIR / seed["source"]
+        if not source.exists() or _path(seed["id"]).exists():
+            continue
+        _write({
+            "id": seed["id"],
+            "title": seed["title"],
+            "category": "Workstation",
+            "tags": seed["tags"],
+            "content": source.read_text(encoding="utf-8"),
+            "created": now,
+            "updated": now,
+        })
+    WIKI_DIR.mkdir(parents=True, exist_ok=True)
+    marker.write_text("wiki starter pages seeded — delete this file to re-seed\n",
+                      encoding="utf-8")
 
 
 def _path(page_id):
