@@ -48,7 +48,45 @@ def detect_type(header, values):
 
 def parse_csv(name, raw_bytes):
     text = raw_bytes.decode("utf-8-sig", errors="replace")
-    reader = csv.reader(io.StringIO(text))
+    return _from_table(name, csv.reader(io.StringIO(text)))
+
+
+DELIMITERS = [",", "\t", ";", "|"]
+_DELIM_NAMES = {"comma": ",", "tab": "\t", "semicolon": ";", "pipe": "|"}
+
+
+def sniff_delimiter(text):
+    """Pick the delimiter that appears on every line, preferring the one
+    with a consistent count per line (a clean grid beats stray commas)."""
+    lines = [ln for ln in text.splitlines() if ln.strip()][:20]
+    best, best_score = None, 0
+    for d in DELIMITERS:
+        counts = [ln.count(d) for ln in lines]
+        if not counts or min(counts) == 0:
+            continue
+        score = min(counts) * (2 if len(set(counts)) == 1 else 1)
+        if score > best_score:
+            best, best_score = d, score
+    return best
+
+
+def parse_pasted(name, text, delimiter="auto", has_header=True):
+    """Convert pasted text (comma/tab/semicolon/pipe separated) to a doc."""
+    text = text.replace("﻿", "").strip("\n\r")
+    if not text.strip():
+        return None
+    delim = _DELIM_NAMES.get(delimiter) or sniff_delimiter(text)
+    if delim:
+        table = list(csv.reader(io.StringIO(text), delimiter=delim))
+    else:  # no separator found — one column, a record per line
+        table = [[ln.strip()] for ln in text.splitlines()]
+    if not has_header and table:
+        width = max(len(r) for r in table)
+        table.insert(0, [f"column_{i+1}" for i in range(width)])
+    return _from_table(name, table)
+
+
+def _from_table(name, reader):
     table = [row for row in reader if any(c.strip() for c in row)]
     if not table:
         return None
