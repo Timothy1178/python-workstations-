@@ -5,6 +5,21 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.4.0 — 2026-09-14
+
+- **CSV cleaning agent**: ask the viewer's Data Analyst chat to clean a
+  file (🧹 quick action) — the cleaned table is saved as a new
+  `<name>-cleaned.csv` next to the original, never overwriting it. The
+  CSV Reader index gets its own assistant that cleans pasted or
+  attached data straight into a new CSV file. Visible 🤖 chat buttons
+  on both pages; cleaning contract added to the CSV agent wiki guide.
+- **Fixed**: the 📎 button did not open the file explorer (the Send
+  handler was bound to the wrong button in the chat input row).
+- **Fixed**: layout now fits the browser window — content uses the full
+  width (1300px cap removed), wide tables scroll inside their cards
+  instead of stretching the page, and narrow windows get a top-bar
+  layout with a full-width chat panel.
+
 ## 1.3.0 — 2026-09-14
 
 - **Attachments in every chat box** (📎): attach documents (txt, md,

@@ -41,9 +41,9 @@ function initChatBox(opts) {
     <div class="chat-quick"></div>
     <div class="chat-files"></div>
     <div class="chat-input">
-      <button class="btn chat-attach" title="Attach files — documents, Excel, images">📎</button>
+      <button type="button" class="btn chat-attach" title="Attach files — documents, Excel, images">📎</button>
       <textarea rows="3" placeholder="${opts.placeholder || "Ask the agent…"}"></textarea>
-      <button class="btn primary">Send</button>
+      <button type="button" class="btn primary chat-send-btn">Send</button>
     </div>
     <input type="file" multiple hidden class="chat-file-input"
            accept=".txt,.md,.csv,.tsv,.json,.log,.xml,.yml,.yaml,.html,.sql,.xlsx,.xlsm,.png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.docx">`;
@@ -52,7 +52,9 @@ function initChatBox(opts) {
   const msgs = panel.querySelector(".chat-msgs");
   const providerSel = panel.querySelector(".chat-provider");
   const chatText = panel.querySelector("textarea");
-  const chatSend = panel.querySelector(".chat-input button");
+  // .chat-send-btn, not the row's first button — that's the 📎 attach
+  // button, and grabbing it here once broke opening the file explorer.
+  const chatSend = panel.querySelector(".chat-send-btn");
   const history = [];
 
   function addMsg(role, text) {
