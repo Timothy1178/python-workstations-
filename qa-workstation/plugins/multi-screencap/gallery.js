@@ -8,6 +8,26 @@ const grid = document.getElementById("grid");
 const empty = document.getElementById("empty");
 const count = document.getElementById("count");
 const lastAreaBtn = document.getElementById("cap-last-area");
+const scaleSel = document.getElementById("scale");
+
+async function loadSettings() {
+  const { settings = {} } = await chrome.storage.local.get("settings");
+  scaleSel.value = String(settings.scale || 1);
+}
+scaleSel.onchange = async () => {
+  const { settings = {} } = await chrome.storage.local.get("settings");
+  settings.scale = Number(scaleSel.value) || 1;
+  await chrome.storage.local.set({ settings });
+};
+
+function dataUrlToFile(dataUrl, name) {
+  const [head, b64] = dataUrl.split(",");
+  const type = (head.match(/data:([^;]+)/) || [, "image/png"])[1];
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new File([bytes], name, { type });
+}
 
 function stamp(iso) {
   return iso.replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
@@ -36,9 +56,9 @@ async function copyToClipboard(shot, el) {
   setTimeout(() => el.classList.remove("copied"), 900);
 }
 
-async function preview(shot) {
-  const blob = await (await fetch(shot.dataUrl)).blob();
-  chrome.tabs.create({ url: URL.createObjectURL(blob) });
+function preview(shot) {
+  // A page of our own: blob URLs made here die when the popup closes.
+  chrome.tabs.create({ url: chrome.runtime.getURL("view.html?id=" + encodeURIComponent(shot.id)) });
 }
 
 async function refreshLastAreaBtn() {
@@ -63,8 +83,13 @@ async function render() {
       + (s.title || "") + "\n" + new Date(s.ts).toLocaleString();
     img.draggable = true;
     img.addEventListener("dragstart", (e) => {
-      // Lets the thumbnail drop as a real .png file (folders, Excel, uploads).
+      // Drops as a real .png everywhere: DownloadURL for the desktop/Excel,
+      // a File item for web pages (the workstation's evidence cells), and
+      // the data URL as text as a last resort.
       e.dataTransfer.setData("DownloadURL", `image/png:${fileName(s)}:${s.dataUrl}`);
+      try { e.dataTransfer.items.add(dataUrlToFile(s.dataUrl, fileName(s))); } catch (err) {}
+      e.dataTransfer.setData("text/uri-list", s.dataUrl);
+      e.dataTransfer.effectAllowed = "copy";
     });
     img.onclick = () => preview(s);
     const bar = document.createElement("div");
@@ -130,3 +155,4 @@ chrome.storage.onChanged.addListener((changes) => {
 
 render();
 refreshLastAreaBtn();
+loadSettings();

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "QA Multi Screen Cap",
-  "version": "1.1.0",
-  "description": "Take multiple screenshots — visible page, drag-selected area, or your saved area — keep the last 10 in a floating window, and drag or paste them into Excel or anywhere else.",
+  "version": "1.2.0",
+  "description": "Take multiple screenshots \u2014 visible page, drag-selected area, or your saved area \u2014 at screen, 2\u00d7 or 3\u00d7 quality; keep the last 10 in a floating window and drag or paste them anywhere.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -16,20 +16,39 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "background": { "service_worker": "background.js" },
-  "permissions": ["activeTab", "tabs", "scripting", "downloads", "storage", "unlimitedStorage", "clipboardWrite"],
-  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting",
+    "downloads",
+    "storage",
+    "unlimitedStorage",
+    "clipboardWrite",
+    "debugger"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "commands": {
     "capture-visible": {
-      "suggested_key": { "default": "Alt+Shift+F" },
+      "suggested_key": {
+        "default": "Alt+Shift+F"
+      },
       "description": "Capture the visible page"
     },
     "capture-area": {
-      "suggested_key": { "default": "Alt+Shift+S" },
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
       "description": "Capture a selected area"
     },
     "capture-last-area": {
-      "suggested_key": { "default": "Alt+Shift+A" },
+      "suggested_key": {
+        "default": "Alt+Shift+A"
+      },
       "description": "Capture the saved area again"
     }
   }

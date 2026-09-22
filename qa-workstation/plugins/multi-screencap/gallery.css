@@ -21,3 +21,7 @@ body.panel .grid { flex: 1; }
 .copied { outline: 2px solid #16a34a; }
 .empty { padding: 24px 12px; color: #6b7280; text-align: center; line-height: 1.6; }
 .tip { padding: 6px 12px 10px; color: #9ca3af; font-size: 11px; line-height: 1.5; }
+select { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 5px 6px; font-size: 12px; }
+.view-wrap { padding: 12px; }
+.view-wrap img { max-width: 100%; border: 1px solid #e5e7eb; background: #fff; }
+.view-wrap img.actual { max-width: none; }
