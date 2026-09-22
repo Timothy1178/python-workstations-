@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Outlook settings · Mailer{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="muted small-text"><a href="{{ url_for('mailer.index') }}">📧 Mailer</a> / settings</p><h1>⚙️ Outlook connection</h1></div></div>
+{% if result %}<div class="card {{ 'warn-card' if result.startswith('✕') }}">{{ result }}</div>{% endif %}
+<form method="post" class="stack-form">
+  <section class="card stack-form">
+    <h2>How to send</h2>
+    <label class="check-label"><input type="radio" name="transport" value="outlook" {{ 'checked' if settings.transport == 'outlook' }}> <strong>Desktop Outlook</strong> on this machine — uses the account already signed in, mails land in your Sent Items. Windows needs <code>pip install pywin32</code>; macOS uses Outlook's AppleScript.</label>
+    <label class="check-label"><input type="radio" name="transport" value="smtp" {{ 'checked' if settings.transport == 'smtp' }}> <strong>SMTP</strong> (Office 365: smtp.office365.com:587 — your admin must allow SMTP AUTH for the mailbox).</label>
+    <div class="inline-form">
+      <input name="smtp_host" placeholder="SMTP host" value="{{ settings.smtp_host }}">
+      <input name="smtp_port" placeholder="Port" value="{{ settings.smtp_port }}" style="min-width:90px">
+      <input name="smtp_user" placeholder="Mailbox / user (also the From address)" value="{{ settings.smtp_user }}" class="grow">
+      <input name="smtp_password" type="password" placeholder="Password (leave blank to keep)" autocomplete="new-password">
+    </div>
+    <input name="from_name" placeholder="From display name (SMTP only)" value="{{ settings.from_name }}">
+    <label class="check-label"><input type="checkbox" name="review_before_send" {{ 'checked' if settings.review_before_send }}> open each mail in Outlook for review instead of sending immediately (desktop Outlook only — scheduled jobs then wait for you)</label>
+  </section>
+  <section class="card stack-form">
+    <h2>Test</h2>
+    <div class="inline-form"><input name="test_to" placeholder="Send a test mail to… (optional)" class="grow"><button class="btn primary" type="submit">💾 Save{{ " & send test" }}</button></div>
+    <p class="muted small-text">Settings are stored locally in <code>data/mailer/settings.json</code> (gitignored). The SMTP password is kept in plain text on this machine.</p>
+  </section>
+</form>
+{% endblock %}

@@ -5,6 +5,24 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.12.0 — 2026-09-22
+
+- **New module — 📧 Mailer** + **new plugin — QA Table Mailer**
+  (v1.0.0): email Excel tables through Outlook. In Excel Online (or any
+  spreadsheet) select the cells and Ctrl+C; the plugin's 📋 Grab copied
+  table reads them into an editable grid (edit cells, add/remove rows
+  and columns), then 📧 Send now or 💾 Save as job. The workstation
+  sends through your **desktop Outlook** (Windows via COM, macOS via
+  AppleScript — no app registration, mails land in Sent Items) or SMTP,
+  with an optional review-in-Outlook step. **Templates**: HTML with
+  `{{table}}` `{{date}}` `{{job}}` `{{rows}}` placeholders, saved and
+  edited with live preview. **Receiver groups**: To/Cc/Bcc lists.
+  **Jobs** with a **schedule** (time + weekdays) run on your PC while
+  the workstation is open; data comes from the saved table, a
+  OneDrive-synced `.xlsx` path or a download URL (sheet + range) read
+  live at send time. Every send is logged; configuration lives in
+  `data/mailer/` (gitignored).
+
 ## 1.11.0 — 2026-09-22
 
 - **AIMAS Recaller v1.1.0** (renamed from QA Form Recaller): two new

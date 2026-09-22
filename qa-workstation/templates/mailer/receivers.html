@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Receivers · Mailer{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="muted small-text"><a href="{{ url_for('mailer.index') }}">📧 Mailer</a> / receivers</p><h1>👥 Receiver groups</h1></div></div>
+<div class="two-col">
+  <section class="card">
+    <h2>Groups</h2>
+    {% if groups %}<table class="list-table"><tr><th>Group</th><th>To</th><th>Cc</th><th></th></tr>
+    {% for g in groups %}<tr><td><strong>{{ g.name }}</strong></td><td class="small-text">{{ g.to|join(", ") }}</td><td class="muted small-text">{{ g.cc|join(", ") }}</td>
+      <td class="row-actions"><a class="btn small" href="?edit={{ g.id }}">✏️</a><form method="post" action="{{ url_for('mailer.receivers_delete', group_id=g.id) }}" onsubmit="return confirm('Delete group {{ g.name }}?')"><button class="btn small danger">🗑</button></form></td></tr>{% endfor %}
+    </table>{% else %}<p class="muted">No groups yet.</p>{% endif %}
+  </section>
+  <section class="card">
+    {% set cur = (groups|selectattr("id", "equalto", request.args.get("edit", ""))|list|first) if request.args.get("edit") else None %}
+    <h2>{{ "✏️ " + cur.name if cur else "New group" }}</h2>
+    <form method="post" action="{{ url_for('mailer.receivers_save') }}" class="stack-form">
+      <input type="hidden" name="id" value="{{ cur.id if cur else '' }}">
+      <input name="name" placeholder="Group name (e.g. SIT stakeholders)" required value="{{ cur.name if cur else '' }}">
+      <textarea name="to" rows="3" placeholder="To — one address per line, or comma separated">{{ cur.to|join("\n") if cur else "" }}</textarea>
+      <textarea name="cc" rows="2" placeholder="Cc">{{ cur.cc|join("\n") if cur else "" }}</textarea>
+      <textarea name="bcc" rows="1" placeholder="Bcc">{{ cur.bcc|join("\n") if cur else "" }}</textarea>
+      <div><button class="btn primary" type="submit">💾 Save group</button> {% if cur %}<a class="btn" href="{{ url_for('mailer.receivers') }}">＋ New</a>{% endif %}</div>
+    </form>
+  </section>
+</div>
+{% endblock %}

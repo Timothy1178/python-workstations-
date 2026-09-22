@@ -1,0 +1,34 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="popup.css"></head>
+<body>
+<header><strong>📧 QA Table Mailer</strong><button id="open-ws" title="Open the workstation Mailer page (jobs, templates, receivers, Outlook settings)">🖥 Mailer</button></header>
+<div class="status" id="ws-status">Connecting to the workstation…</div>
+<div class="actions">
+  <button class="primary" id="grab" title="Reads the table you copied (Ctrl+C) from Excel Online, Google Sheets or desktop Excel">📋 Grab copied table</button>
+  <button id="add-row">＋ Row</button>
+  <button id="add-col">＋ Col</button>
+  <button class="danger" id="clear">🗑</button>
+  <span class="muted" id="dims"></span>
+</div>
+<div class="grid-wrap"><table id="grid"></table></div>
+<div class="form">
+  <div class="row">
+    <select id="template"><option value="">Template: default layout</option></select>
+    <select id="receivers"><option value="">Receivers: type below</option></select>
+  </div>
+  <input id="subject" placeholder="Subject (blank = template subject; {{date}} allowed)">
+  <input id="to" placeholder="To — extra addresses, comma separated">
+  <div class="row">
+    <button class="primary" id="send">📧 Send now</button>
+    <label class="check" title="Open in Outlook to check before it goes out (desktop Outlook only)"><input type="checkbox" id="review"> review first</label>
+    <button id="save-job" title="Save this table as a Mailer job — then schedule it on the workstation">💾 Save as job</button>
+  </div>
+  <div class="row" id="job-row" hidden>
+    <select id="job"><option value="">… as a new job</option></select>
+    <input id="job-name" placeholder="New job name">
+  </div>
+  <div class="status" id="result"></div>
+  <details><summary>⚙️ Workstation URL</summary><input id="ws-url" type="url" placeholder="http://127.0.0.1:5010"></details>
+</div>
+<script src="popup.js"></script>
+</body></html>

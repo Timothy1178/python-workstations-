@@ -5,3 +5,4 @@ microsoft-agents-copilotstudio-client>=1.0
 msal>=1.28
 requests>=2.31
 Markdown>=3.5
+pywin32>=306; sys_platform == "win32"

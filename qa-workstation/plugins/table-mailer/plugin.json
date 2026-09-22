@@ -1,0 +1,17 @@
+{
+  "name": "QA Table Mailer",
+  "slug": "table-mailer",
+  "version": "1.0.0",
+  "icon": "📧",
+  "browsers": ["Chrome", "Edge"],
+  "description": "Select a table or area in Excel Online (or any spreadsheet), copy it, and email it through Outlook via the workstation's Mailer — edit the cells first, pick a template and receiver group, send now or save it as a scheduled job.",
+  "features": [
+    "📋 Grab copied table: select cells in Excel Online / Google Sheets / desktop Excel, Ctrl+C, one click — the plugin reads the copied table (HTML or tab-separated)",
+    "✏️ Edit the selected area before sending: click any cell, add or remove rows and columns, use the first row as the header",
+    "📧 Send through Outlook: the workstation sends via your desktop Outlook (Windows/macOS) or SMTP — no app registration; optional review-in-Outlook before sending",
+    "🧾 HTML email templates with {{table}}, {{date}}, {{job}} placeholders — saved and edited with live preview on the workstation's Mailer page",
+    "👥 Saved receiver groups (To / Cc / Bcc) plus one-off addresses",
+    "⏰ Save as job: schedule daily/weekday sends that run on your PC while the workstation is open; live data from a OneDrive-synced .xlsx or the saved table; every send is logged",
+    "💾 All configuration (jobs, templates, receivers, Outlook settings) is saved in the workstation's data folder"
+  ]
+}

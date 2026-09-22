@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Mailer · QA Workstation{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>📧 Mailer</h1>
+    <p class="muted">Email Excel tables through Outlook — on demand from the QA Table Mailer plugin, or on a schedule while this workstation is running. Transport: <strong>{{ "desktop Outlook" if settings.transport == "outlook" else "SMTP" }}</strong>{% if settings.review_before_send %} · review before send{% endif %}.</p>
+  </div>
+  <div class="row-actions">
+    <a class="btn primary" href="{{ url_for('mailer.job_edit') }}">＋ New job</a>
+    <a class="btn" href="{{ url_for('mailer.templates') }}">🧾 Templates ({{ templates|length }})</a>
+    <a class="btn" href="{{ url_for('mailer.receivers') }}">👥 Receivers ({{ receivers|length }})</a>
+    <a class="btn" href="{{ url_for('mailer.settings') }}">⚙️ Outlook settings</a>
+  </div>
+</div>
+
+<section class="card">
+  <h2>Jobs</h2>
+  {% if jobs %}
+  <table class="list-table">
+    <tr><th>Job</th><th>Source</th><th>Schedule</th><th>Last run</th><th></th></tr>
+    {% for j in jobs %}
+    <tr>
+      <td><strong>{{ j.name }}</strong><div class="muted small-text">{{ j.subject or "subject from template" }}</div></td>
+      <td class="small-text">
+        {% set s = j.source or {} %}
+        {% if s.type == "file" %}📁 {{ s.path }}{% elif s.type == "url" %}🔗 {{ s.url[:50] }}{% else %}📋 saved table ({{ (s.table.rows if s.table else [])|length }} rows){% endif %}
+        {% if s.sheet or s.range %}<div class="muted">{{ s.sheet }} {{ s.range }}</div>{% endif %}
+      </td>
+      <td class="small-text">
+        {% set sc = j.schedule or {} %}
+        {% if sc.enabled %}⏰ {{ sc.time }} · {% for d in sc.days %}{{ days[d] }}{{ " " }}{% endfor %}{% else %}<span class="muted">manual</span>{% endif %}
+      </td>
+      <td class="small-text">
+        {% if j.last_run %}{{ j.last_run }}<div class="{{ 'muted' if j.last_status.ok else '' }}" style="{{ '' if j.last_status.ok else 'color:var(--danger)' }}">{{ "✓" if j.last_status.ok else "✕" }} {{ j.last_status.message }}</div>{% else %}<span class="muted">never</span>{% endif %}
+      </td>
+      <td class="row-actions">
+        <form method="post" action="{{ url_for('mailer.job_run', job_id=j.id) }}"><button class="btn small primary" type="submit">▶ Run now</button></form>
+        <a class="btn small" href="{{ url_for('mailer.job_preview', job_id=j.id) }}" target="_blank">👁</a>
+        <a class="btn small" href="{{ url_for('mailer.job_edit', job_id=j.id) }}">✏️</a>
+        <form method="post" action="{{ url_for('mailer.job_delete', job_id=j.id) }}" onsubmit="return confirm('Delete job {{ j.name }}?')"><button class="btn small danger" type="submit">🗑</button></form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">No jobs yet. In Excel Online select the cells, press Ctrl+C, then use the <strong>QA Table Mailer</strong> plugin's 📋 Grab copied table → 💾 Save as job — or create one here with a OneDrive-synced .xlsx path.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Recent sends</h2>
+  {% if log %}
+  <table class="list-table">
+    <tr><th>When</th><th>Job</th><th>Result</th><th>To</th></tr>
+    {% for e in log %}
+    <tr><td class="muted small-text">{{ e.at }}</td><td>{{ e.job }}</td>
+      <td class="small-text" style="{{ '' if e.ok else 'color:var(--danger)' }}">{{ "✓" if e.ok else "✕" }} {{ e.message }}</td>
+      <td class="muted small-text">{{ (e.to or [])|join(", ") }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">Nothing sent yet.</p>{% endif %}
+</section>
+{% endblock %}

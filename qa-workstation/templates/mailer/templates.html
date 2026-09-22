@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Email templates · Mailer{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><p class="muted small-text"><a href="{{ url_for('mailer.index') }}">📧 Mailer</a> / templates</p><h1>🧾 Email templates</h1></div>
+  <div class="row-actions"><a class="btn primary" href="{{ url_for('mailer.templates') }}">＋ New template</a></div>
+</div>
+<div class="two-col">
+  <section class="card">
+    <h2>Saved templates</h2>
+    {% if templates %}<div class="wiki-list">{% for t in templates %}
+      <a class="wiki-row" href="{{ url_for('mailer.templates', template_id=t.id) }}"><span><span class="wiki-row-title">{{ t.name }}</span><div class="muted small-text">{{ t.subject or "no subject" }}</div></span><span class="muted small-text">{{ t.updated }}</span></a>
+    {% endfor %}</div>{% else %}<p class="muted">No templates yet — the default layout is used until you save one.</p>{% endif %}
+    <p class="muted small-text" style="margin-top:12px">Placeholders: <code>{{ '{{table}}' }}</code> the data table · <code>{{ '{{date}}' }}</code> · <code>{{ '{{datetime}}' }}</code> · <code>{{ '{{job}}' }}</code> job name · <code>{{ '{{rows}}' }}</code> row count. Outlook only honours inline styles.</p>
+  </section>
+  <section class="card">
+    <h2>{{ "✏️ " + current.name if current else "New template" }}</h2>
+    <form method="post" action="{{ url_for('mailer.template_save') }}" class="stack-form">
+      <input type="hidden" name="id" value="{{ current.id if current else '' }}">
+      <input name="name" placeholder="Template name" required value="{{ current.name if current else '' }}">
+      <input name="subject" placeholder="Subject line, e.g. SIT status {{ '{{date}}' }}" value="{{ current.subject if current else '' }}">
+      <textarea name="html" id="tpl-html" rows="16" class="wiki-md" placeholder="HTML body">{{ current.html if current else default_html }}</textarea>
+      <div class="row-actions">
+        <button class="btn primary" type="submit">💾 Save template</button>
+        <button class="btn" type="button" id="preview-btn">👁 Preview</button>
+        {% if current %}<button class="btn danger" type="submit" formaction="{{ url_for('mailer.template_delete', template_id=current.id) }}" formnovalidate onclick="return confirm('Delete this template?')">🗑 Delete</button>{% endif %}
+      </div>
+    </form>
+    <div id="preview-box" hidden style="margin-top:12px">
+      <div class="muted small-text" id="preview-subject"></div>
+      <iframe id="preview" style="width:100%;height:320px;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("preview-btn").onclick = async () => {
+  const res = await fetch("{{ url_for('mailer.template_preview') }}", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ html: document.getElementById("tpl-html").value, subject: document.querySelector("[name=subject]").value }) });
+  const d = await res.json();
+  document.getElementById("preview-box").hidden = false;
+  document.getElementById("preview-subject").textContent = "Subject: " + d.subject;
+  document.getElementById("preview").srcdoc = d.html;
+};
+</script>
+{% endblock %}

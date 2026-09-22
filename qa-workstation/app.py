@@ -61,6 +61,12 @@ def create_app():
 
 
 if __name__ == "__main__":
+    import os
     app = create_app()
+    # The debug reloader runs this file twice; only the serving child
+    # (WERKZEUG_RUN_MAIN) should run scheduled Mailer jobs.
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        from modules.mailer import scheduler
+        scheduler.start()
     print("\n  QA Workstation running at http://127.0.0.1:5010\n")
     app.run(host="127.0.0.1", port=5010, debug=True)

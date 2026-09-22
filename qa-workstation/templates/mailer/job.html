@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ job.name if job else "New job" }} · Mailer{% endblock %}
+{% block content %}
+{% set s = (job.source if job else {}) or {} %}
+{% set sc = (job.schedule if job else {}) or {} %}
+<div class="page-head">
+  <div><p class="muted small-text"><a href="{{ url_for('mailer.index') }}">📧 Mailer</a> / job</p><h1>{{ "✏️ " + job.name if job else "＋ New job" }}</h1></div>
+  <div class="row-actions">
+    <button class="btn primary" type="submit" form="job-form">💾 Save job</button>
+    {% if job %}<a class="btn" href="{{ url_for('mailer.job_preview', job_id=job.id) }}" target="_blank">👁 Preview email</a>{% endif %}
+    <a class="btn" href="{{ url_for('mailer.index') }}">✕ Cancel</a>
+  </div>
+</div>
+
+<form id="job-form" method="post" action="{{ url_for('mailer.job_save') }}" class="stack-form">
+  <input type="hidden" name="id" value="{{ job.id if job else '' }}">
+  <input type="hidden" name="table_json" id="table-json">
+  <section class="card stack-form">
+    <h2>Email</h2>
+    <div class="inline-form">
+      <input name="name" placeholder="Job name (e.g. Daily SIT status)" required value="{{ job.name if job else '' }}" class="grow">
+      <input name="subject" placeholder="Subject (blank = template subject; {{ '{{date}}' }} {{ '{{job}}' }} allowed)" value="{{ job.subject if job else '' }}" class="grow">
+    </div>
+    <div class="inline-form">
+      <select name="template_id"><option value="">Template: default layout</option>{% for t in templates %}<option value="{{ t.id }}" {{ 'selected' if job and job.template_id == t.id }}>{{ t.name }}</option>{% endfor %}</select>
+      <select name="receivers_id"><option value="">Receivers: (type below)</option>{% for g in receivers %}<option value="{{ g.id }}" {{ 'selected' if job and job.receivers_id == g.id }}>{{ g.name }} ({{ g.to|length }} to)</option>{% endfor %}</select>
+    </div>
+    <div class="inline-form">
+      <input name="to" placeholder="To — extra/override addresses, comma separated" value="{{ job.to if job else '' }}" class="grow">
+      <input name="cc" placeholder="Cc" value="{{ job.cc if job else '' }}" class="grow">
+      <input name="bcc" placeholder="Bcc" value="{{ job.bcc if job else '' }}">
+    </div>
+  </section>
+
+  <section class="card stack-form">
+    <h2>Data source</h2>
+    <div class="inline-form">
+      <label class="check-label"><input type="radio" name="source_type" value="table" {{ 'checked' if not job or s.type in ('table', None) }}> 📋 Saved table (editable below)</label>
+      <label class="check-label"><input type="radio" name="source_type" value="file" {{ 'checked' if s.type == 'file' }}> 📁 Local / OneDrive-synced .xlsx (live at send time)</label>
+      <label class="check-label"><input type="radio" name="source_type" value="url" {{ 'checked' if s.type == 'url' }}> 🔗 Download URL of an .xlsx (live at send time)</label>
+    </div>
+    <div class="inline-form" id="src-file"><input name="path" placeholder="e.g. C:\Users\me\OneDrive - Company\Reports\SIT status.xlsx  or  ~/OneDrive/Reports/status.xlsx" value="{{ s.path or '' }}" class="grow"></div>
+    <div class="inline-form" id="src-url"><input name="url" placeholder="https://…/status.xlsx (a link that downloads the workbook without sign-in)" value="{{ s.url or '' }}" class="grow"></div>
+    <div class="inline-form" id="src-range">
+      <input name="sheet" placeholder="Sheet name (blank = first)" value="{{ s.sheet or '' }}">
+      <input name="range" placeholder="Range e.g. A1:F30 (blank = all)" value="{{ s.range or '' }}">
+      <label class="check-label"><input type="checkbox" name="header_row" {{ 'checked' if s.get('header_row', True) }}> first row is the header</label>
+    </div>
+    <div id="src-table">
+      <div class="row-actions">
+        <button class="btn small" type="button" id="paste-btn">📋 Paste table from clipboard</button>
+        <button class="btn small" type="button" id="add-row">＋ Row</button>
+        <button class="btn small" type="button" id="add-col">＋ Column</button>
+        <span class="muted small-text">Select cells in Excel Online, Ctrl+C, then paste here. Click any cell to edit. Right-click a row/column header to delete it.</span>
+      </div>
+      <div class="table-wrap"><table class="grid-table" id="grid"></table></div>
+    </div>
+  </section>
+
+  <section class="card stack-form">
+    <h2>Schedule (runs while this workstation is open on your PC)</h2>
+    <div class="inline-form">
+      <label class="check-label"><input type="checkbox" name="sched_enabled" {{ 'checked' if sc.enabled }}> ⏰ enabled</label>
+      <input type="time" name="sched_time" value="{{ sc.time or '09:00' }}">
+      {% for d, label in days %}<label class="check-label"><input type="checkbox" name="sched_days" value="{{ d }}" {{ 'checked' if (d in (sc.days or [0,1,2,3,4])) }}> {{ label }}</label>{% endfor %}
+    </div>
+  </section>
+</form>
+
+<script id="table-data" type="application/json">{{ (s.table or {"headers": [], "rows": []})|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script>
+const grid = document.getElementById("grid");
+let table = JSON.parse(document.getElementById("table-data").textContent);
+if (!table.headers) table.headers = []; if (!table.rows) table.rows = [];
+
+function renderGrid() {
+  grid.innerHTML = "";
+  const width = Math.max(table.headers.length, ...table.rows.map(r => r.length), 0);
+  while (table.headers.length < width) table.headers.push("");
+  table.rows.forEach(r => { while (r.length < width) r.push(""); });
+  const head = document.createElement("tr");
+  head.appendChild(document.createElement("th"));
+  table.headers.forEach((h, c) => {
+    const th = document.createElement("th"); th.contentEditable = true; th.textContent = h;
+    th.oninput = () => table.headers[c] = th.textContent;
+    th.oncontextmenu = e => { e.preventDefault(); if (confirm("Delete this column?")) { table.headers.splice(c, 1); table.rows.forEach(r => r.splice(c, 1)); renderGrid(); } };
+    head.appendChild(th);
+  });
+  grid.appendChild(head);
+  table.rows.forEach((row, ri) => {
+    const tr = document.createElement("tr");
+    const num = document.createElement("th"); num.textContent = ri + 1; num.className = "muted";
+    num.oncontextmenu = e => { e.preventDefault(); if (confirm("Delete this row?")) { table.rows.splice(ri, 1); renderGrid(); } };
+    tr.appendChild(num);
+    row.forEach((v, c) => {
+      const td = document.createElement("td"); td.contentEditable = true; td.textContent = v;
+      td.oninput = () => table.rows[ri][c] = td.textContent;
+      tr.appendChild(td);
+    });
+    grid.appendChild(tr);
+  });
+  if (!width) grid.innerHTML = '<tr><td class="muted">Empty — paste a table from the clipboard.</td></tr>';
+}
+function parseHtmlTable(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const t = doc.querySelector("table"); if (!t) return null;
+  const rows = [...t.querySelectorAll("tr")].map(tr => [...tr.querySelectorAll("th,td")].map(c => c.textContent.replace(/\s+/g, " ").trim()));
+  return rows.filter(r => r.some(v => v));
+}
+function parseTsv(text) { return text.replace(/\r/g, "").split("\n").filter(l => l.trim()).map(l => l.split("\t")); }
+async function pasteTable() {
+  let rows = null;
+  try {
+    const items = await navigator.clipboard.read();
+    for (const it of items) {
+      if (it.types.includes("text/html")) rows = parseHtmlTable(await (await it.getType("text/html")).text());
+      if (!rows && it.types.includes("text/plain")) rows = parseTsv(await (await it.getType("text/plain")).text());
+    }
+  } catch (e) {
+    const text = prompt("Clipboard access was blocked — paste the copied cells here:");
+    if (text) rows = parseTsv(text);
+  }
+  if (!rows || !rows.length) return alert("No table found in the clipboard — copy cells from Excel first.");
+  table = { headers: rows[0], rows: rows.slice(1) };
+  document.querySelector('input[name=source_type][value=table]').checked = true;
+  syncSource(); renderGrid();
+}
+document.getElementById("paste-btn").onclick = pasteTable;
+document.getElementById("add-row").onclick = () => { table.rows.push(table.headers.map(() => "")); renderGrid(); };
+document.getElementById("add-col").onclick = () => { table.headers.push("New"); table.rows.forEach(r => r.push("")); renderGrid(); };
+function syncSource() {
+  const t = document.querySelector("input[name=source_type]:checked").value;
+  document.getElementById("src-file").hidden = t !== "file";
+  document.getElementById("src-url").hidden = t !== "url";
+  document.getElementById("src-range").hidden = t === "table";
+  document.getElementById("src-table").hidden = t !== "table";
+}
+document.querySelectorAll("input[name=source_type]").forEach(r => r.onchange = syncSource);
+document.getElementById("job-form").onsubmit = () => { document.getElementById("table-json").value = JSON.stringify(table); };
+document.addEventListener("paste", e => {
+  if (document.getElementById("src-table").hidden) return;
+  if (e.target.closest && e.target.closest("#grid")) return; // editing one cell
+  const html = e.clipboardData.getData("text/html"), text = e.clipboardData.getData("text/plain");
+  const rows = (html && parseHtmlTable(html)) || (text && parseTsv(text));
+  if (rows && rows.length > 1) { e.preventDefault(); table = { headers: rows[0], rows: rows.slice(1) }; renderGrid(); }
+});
+syncSource(); renderGrid();
+</script>
+{% endblock %}
