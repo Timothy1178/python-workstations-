@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Form recipe · QA Form Recaller</title><link rel="stylesheet" href="common.css"></head>
+<body>
+<main>
+  <h1>📝 Edit form recipe</h1>
+  <div class="muted" id="meta"></div>
+  <div class="row">
+    <label class="f grow">Recipe name <input id="name"></label>
+    <label class="f grow">Page (origin + path this recipe belongs to) <input id="url"></label>
+    <label class="f">Delay between fields (ms) <input id="delay" type="number" min="0" step="10" style="width:90px"></label>
+  </div>
+  <div class="row">
+    <button class="primary" id="save">💾 Save</button>
+    <button id="add">＋ Add field</button>
+    <button id="close">✕ Close</button>
+    <span class="status" id="status" style="margin:0"></span>
+  </div>
+  <table>
+    <thead><tr><th></th><th style="width:26%">Field</th><th style="width:10%">Type</th><th>Value</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <p class="muted">Field = how the plugin finds the input (label, then id / name / placeholder, then CSS path). Value = what gets filled in: checkboxes and radios take on/off, selects take the option's value or visible text, multi-selects take one value per line. Drag ⋮⋮ to reorder — fields fill in this order.</p>
+</main>
+<script src="editor.js"></script>
+</body></html>

@@ -34,8 +34,10 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   for the wiki-librarian agent prompt.
 - **Web Plugins** (`modules/plugins/`) — browser extensions for QA work,
   downloadable as zips and loaded unpacked into Chrome/Edge. Extensions
-  live under `plugins/<slug>/`; first one is **QA Multi Screen Cap**
-  (multi-shot screenshots with area selection).
+  live under `plugins/<slug>/`: **QA Multi Screen Cap** (multi-shot
+  screenshots with area selection, sends evidence to the current test
+  case) and **QA Form Recaller** (record, edit and replay web form
+  fill-ins).
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a

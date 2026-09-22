@@ -5,6 +5,23 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.10.0 — 2026-09-22
+
+- **New plugin — QA Form Recaller** (v1.0.0, Chrome & Edge): record
+  what you fill into any web form and replay it later. 📥 Snapshot
+  captures every filled field on the page (Alt+Shift+R); ⏺ Record
+  watches the form as you fill it and keeps the order you touched
+  fields; ▶ Play refills the form in one click (Alt+Shift+P replays the
+  page's last recipe) and reports filled / not-found fields. Handles
+  text, number, date, email, textarea, select, multi-select, checkbox,
+  radio and contenteditable rich-text fields, firing real input/change
+  events so React/Angular/Vue forms accept the values. Full-page
+  editor: rename, edit values, remove/reorder fields, add a field by
+  label, set the per-field delay, duplicate for variants. Robust field
+  matching (id → data-testid → name → aria-label → placeholder → label
+  text → CSS path); recipes grouped by page URL; passwords skipped
+  unless opted in; JSON export/import to share with the team.
+
 ## 1.9.0 — 2026-09-22
 
 - **Screen cap plugin ↔ workstation link** (plugin v1.3.0): the

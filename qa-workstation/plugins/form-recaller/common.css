@@ -1,0 +1,38 @@
+body { margin: 0; font: 13px -apple-system, "Segoe UI", Roboto, sans-serif; color: #1f2937; background: #fff; }
+body.popup { width: 380px; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+header strong { font-size: 14px; }
+.muted { color: #6b7280; font-size: 11px; }
+.actions { display: flex; gap: 6px; padding: 10px 12px; flex-wrap: wrap; align-items: center; }
+button { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; }
+button:hover { border-color: #2563eb; }
+button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+button.rec { background: #dc2626; border-color: #dc2626; color: #fff; }
+button.danger { color: #dc2626; }
+button:disabled { opacity: .5; cursor: default; }
+.status { margin: 0 12px 6px; padding: 6px 10px; border-radius: 8px; font-size: 11px; line-height: 1.4; background: #f3f4f6; color: #374151; min-height: 14px; }
+.status.ok { background: #ecfdf5; color: #065f46; }
+.status.bad { background: #fef2f2; color: #991b1b; }
+.section { padding: 4px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+.list { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; }
+.recipe { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; }
+.recipe .name { font-weight: 600; margin-bottom: 2px; }
+.recipe .bar { display: flex; gap: 4px; margin-top: 6px; }
+.recipe .bar button { padding: 3px 7px; font-size: 11px; }
+.check { display: inline-flex; gap: 5px; align-items: center; font-size: 11px; color: #6b7280; }
+.empty { padding: 20px 12px; text-align: center; color: #6b7280; line-height: 1.6; }
+/* editor page */
+main { max-width: 1000px; margin: 0 auto; padding: 20px; }
+main h1 { font-size: 20px; margin: 0 0 4px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; align-items: flex-end; }
+label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: #374151; }
+input, select, textarea { font: inherit; border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 8px; }
+.grow { flex: 1; min-width: 200px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th { text-align: left; font-size: 11px; text-transform: uppercase; color: #6b7280; padding: 6px; border-bottom: 1px solid #e5e7eb; }
+td { padding: 6px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+td input, td select, td textarea { width: 100%; }
+td textarea { min-height: 50px; resize: vertical; }
+.pill { font-size: 10px; background: #f3f4f6; border-radius: 999px; padding: 1px 7px; color: #6b7280; white-space: nowrap; }
+.loc { font-size: 10px; color: #9ca3af; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+.drag { cursor: grab; color: #9ca3af; user-select: none; }
