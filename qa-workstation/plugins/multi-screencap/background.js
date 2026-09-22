@@ -45,6 +45,71 @@ async function captureHD(tabId, clipCss, scale) {
   }
 }
 
+// ---------- workstation connection ----------
+const DEFAULT_WS = "http://127.0.0.1:5010";
+
+async function getSettings() {
+  const { settings = {} } = await chrome.storage.local.get("settings");
+  return { workstation: DEFAULT_WS, clearAfterSend: true, ...settings };
+}
+
+function wsBase(settings) {
+  return (settings.workstation || DEFAULT_WS).replace(/\/+$/, "");
+}
+
+async function workstationCurrent() {
+  const settings = await getSettings();
+  try {
+    const res = await fetch(`${wsBase(settings)}/testcases/api/current`, { cache: "no-store" });
+    if (!res.ok) return { ok: false, error: `workstation answered ${res.status}` };
+    const data = await res.json();
+    return { ok: true, current: data.current, workstation: wsBase(settings) };
+  } catch (e) {
+    return { ok: false, error: "workstation not reachable at " + wsBase(settings) };
+  }
+}
+
+function dataUrlToBlob(dataUrl) {
+  const [head, b64] = dataUrl.split(",");
+  const type = (head.match(/data:([^;]+)/) || [, "image/png"])[1];
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type });
+}
+
+// Upload gallery shots (all, or the given ids) to the workstation's
+// current case — oldest first so the evidence numbering follows the
+// order they were taken. Runs here so a closing popup can't cut it off.
+async function sendToWorkstation(ids) {
+  const state = await workstationCurrent();
+  if (!state.ok) return state;
+  if (!state.current) return { ok: false, error: "no current case — click a case in the workstation builder or run viewer first" };
+  const settings = await getSettings();
+  let list = await getShots();
+  if (ids && ids.length) list = list.filter((s) => ids.includes(s.id));
+  if (!list.length) return { ok: false, error: "nothing to send" };
+  const fd = new FormData();
+  [...list].reverse().forEach((s) => {
+    const stamp = s.ts.replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
+    fd.append("shots", dataUrlToBlob(s.dataUrl), `qa-cap-${stamp}.png`);
+  });
+  const cur = state.current;
+  const url = `${state.workstation}/testcases/plan/${encodeURIComponent(cur.plan_id)}/shots/${encodeURIComponent(cur.case_uid)}`;
+  try {
+    const res = await fetch(url, { method: "POST", body: fd });
+    if (!res.ok) return { ok: false, error: `upload failed (${res.status})` };
+    const data = await res.json();
+    if (settings.clearAfterSend) {
+      const sentIds = new Set(list.map((s) => s.id));
+      await setShots((await getShots()).filter((s) => !sentIds.has(s.id)));
+    }
+    return { ok: true, sent: list.length, total: (data.shots || []).length, current: cur };
+  } catch (e) {
+    return { ok: false, error: "upload failed: " + e.message };
+  }
+}
+
 async function getShots() {
   const { shots = [] } = await chrome.storage.local.get("shots");
   return shots;
@@ -175,6 +240,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     else if (msg.type === "capture-last-area") await captureLastArea();
     else if (msg.type === "clear-shots") await setShots([]);
     else if (msg.type === "open-panel") await openPanel();
+    else if (msg.type === "ws-current") { sendResponse(await workstationCurrent()); return; }
+    else if (msg.type === "send-to-workstation") { sendResponse(await sendToWorkstation(msg.ids)); return; }
     else if (msg.type === "open-shortcuts") {
       const isEdge = msg.isEdge;
       await chrome.tabs.create({

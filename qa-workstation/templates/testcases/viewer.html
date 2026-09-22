@@ -51,9 +51,24 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 }
 
+let reportedUid = null;
+function reportCurrent(uid) {
+  if (!uid || uid === reportedUid) return;
+  reportedUid = uid;
+  fetch("{{ url_for('testcases.current_case') }}", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan_id: "{{ plan.id }}", case_uid: uid }),
+  }).catch(() => {});
+}
+// Evidence sent from the screen cap plugin shows up without a reload.
+window.addEventListener("focus", () => { if (CASES[current]) loadShots(CASES[current].uid); });
+setInterval(() => { if (!document.hidden && CASES[current]) loadShots(CASES[current].uid); }, 5000);
+
 function render(idx) {
   current = idx;
   const c = CASES[idx];
+  reportCurrent(c.uid);
   items.forEach((el, i) => el.classList.toggle("active", i === idx));
   let html = `<div class="case-nav">
       <button class="btn small" id="prev" ${idx === 0 ? "disabled" : ""}>← Prev</button>

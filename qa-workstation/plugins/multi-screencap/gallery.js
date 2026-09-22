@@ -10,10 +10,64 @@ const count = document.getElementById("count");
 const lastAreaBtn = document.getElementById("cap-last-area");
 const scaleSel = document.getElementById("scale");
 
+const wsStatus = document.getElementById("ws-status");
+const wsUrl = document.getElementById("ws-url");
+const wsClear = document.getElementById("ws-clear");
+const sendAllBtn = document.getElementById("send-all");
+const settingsRow = document.getElementById("settings-row");
+let wsCurrent = null;
+
 async function loadSettings() {
   const { settings = {} } = await chrome.storage.local.get("settings");
   scaleSel.value = String(settings.scale || 1);
+  wsUrl.value = settings.workstation || "http://127.0.0.1:5010";
+  wsClear.checked = settings.clearAfterSend !== false;
 }
+async function saveSetting(key, value) {
+  const { settings = {} } = await chrome.storage.local.get("settings");
+  settings[key] = value;
+  await chrome.storage.local.set({ settings });
+}
+wsUrl.onchange = () => { saveSetting("workstation", wsUrl.value.trim()); refreshWorkstation(); };
+wsClear.onchange = () => saveSetting("clearAfterSend", wsClear.checked);
+document.getElementById("settings-btn").onclick = () => settingsRow.hidden = !settingsRow.hidden;
+
+async function refreshWorkstation() {
+  const state = await chrome.runtime.sendMessage({ type: "ws-current" });
+  if (!state || !state.ok) {
+    wsCurrent = null;
+    wsStatus.textContent = "🧪 " + ((state && state.error) || "workstation not reachable") + " — is the QA Workstation running?";
+    wsStatus.className = "ws-status off";
+  } else if (!state.current) {
+    wsCurrent = null;
+    wsStatus.textContent = "🧪 Workstation connected — click a case in the builder or run viewer to pick the current case";
+    wsStatus.className = "ws-status warn";
+  } else {
+    wsCurrent = state.current;
+    const c = state.current;
+    wsStatus.textContent = `🧪 Current case: ${c.plan_name} · #${c.case_no} ${c.label} (${c.shots} image${c.shots === 1 ? "" : "s"} so far)`;
+    wsStatus.className = "ws-status on";
+  }
+  sendAllBtn.disabled = !wsCurrent;
+}
+
+async function sendShots(ids, btn) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "⏳ Sending…";
+  const res = await chrome.runtime.sendMessage({ type: "send-to-workstation", ids });
+  if (res && res.ok) {
+    btn.textContent = `✓ Sent ${res.sent}`;
+    wsStatus.textContent = `✓ ${res.sent} image${res.sent === 1 ? "" : "s"} added to #${res.current.case_no} ${res.current.label} — now ${res.total} in total`;
+    wsStatus.className = "ws-status on";
+  } else {
+    btn.textContent = "✕ Failed";
+    wsStatus.textContent = "✕ " + ((res && res.error) || "send failed");
+    wsStatus.className = "ws-status off";
+  }
+  setTimeout(() => { btn.textContent = label; btn.disabled = !wsCurrent; refreshWorkstation(); }, 1800);
+}
+sendAllBtn.onclick = () => sendShots(null, sendAllBtn);
 scaleSel.onchange = async () => {
   const { settings = {} } = await chrome.storage.local.get("settings");
   settings.scale = Number(scaleSel.value) || 1;
@@ -97,6 +151,10 @@ async function render() {
     const meta = document.createElement("span");
     meta.className = "meta";
     meta.textContent = (s.kind === "area" ? "✂️" : "📸") + " " + new Date(s.ts).toLocaleTimeString();
+    const send = document.createElement("button");
+    send.textContent = "📤";
+    send.title = "Send this capture to the workstation's current case";
+    send.onclick = () => sendShots([s.id], send);
     const copy = document.createElement("button");
     copy.textContent = "📋";
     copy.title = "Copy — then paste into Excel or the workstation";
@@ -113,7 +171,7 @@ async function render() {
       await chrome.storage.local.set({ shots: list });
       chrome.action.setBadgeText({ text: list.length ? String(list.length) : "" });
     };
-    bar.append(meta, copy, save, del);
+    bar.append(meta, send, copy, save, del);
     card.append(img, bar);
     grid.appendChild(card);
   });
@@ -155,4 +213,5 @@ chrome.storage.onChanged.addListener((changes) => {
 
 render();
 refreshLastAreaBtn();
-loadSettings();
+loadSettings().then(refreshWorkstation);
+setInterval(refreshWorkstation, 5000);

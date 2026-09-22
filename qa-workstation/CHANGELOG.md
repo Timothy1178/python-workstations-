@@ -5,6 +5,20 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.9.0 — 2026-09-22
+
+- **Screen cap plugin ↔ workstation link** (plugin v1.3.0): the
+  workstation now tracks the **current test case** — the row you last
+  clicked in the builder, or the case open in the run viewer
+  (`/testcases/api/current`). The plugin's popup and floating panel
+  show it live ("Current case: DEMO-001 · #2 Login with wrong
+  password · 3 images so far") and a **📤 Send all to case** button
+  uploads every capture into it in the order they were taken; each
+  thumbnail also has its own 📤. Gallery clears after a successful send
+  (toggle in ⚙️, along with the workstation URL). The builder and run
+  viewer refresh their evidence thumbnails automatically, so sent
+  images appear without a reload.
+
 ## 1.8.0 — 2026-09-22
 
 - **Test case builder — 🖼 Evidence column**: attach multiple images to

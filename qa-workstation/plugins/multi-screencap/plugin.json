@@ -1,7 +1,7 @@
 {
   "name": "QA Multi Screen Cap",
   "slug": "multi-screencap",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "icon": "📸",
   "browsers": [
     "Chrome",
@@ -9,13 +9,13 @@
   ],
   "description": "Take multiple screenshots — visible page, drag-selected area, or your saved area — at screen, 2× or 3× quality; keep the last 10 in a small floating window, and drag or copy-paste them into Excel or the workstation.",
   "features": [
+    "📤 Connected to the workstation: shows the current test case (the row you clicked in the builder or the case open in the run viewer) and one click sends every capture into it — per-capture 📤 too",
     "🔍 Quality setting: Auto (screen), 2× HD or 3× Ultra — higher-resolution rendering so captures stay crisp when enlarged in Excel or the test plan",
     "🗔 Small floating window that stays open while you work — the gallery lives there",
     "🖱 Drag any thumbnail straight into Excel, a folder, or the workstation's 📎 chat box",
     "📋 One-click copy, then paste (Ctrl/Cmd+V) into Excel, Word, chats…",
     "✂️ Drag-select a capture area once — it's saved, so ↻ / Alt+Shift+A re-captures the same spot with no dragging",
     "📸 Visible-page capture (Alt+Shift+F); all shortcuts changeable via the ⌨️ button",
-    "🔟 Keeps the last 10 captures across pages and tabs (oldest drops off); 💾 saves them all into Downloads/screencaps/",
-    "🔗 Drag a thumbnail into the test case builder's 🖼 Evidence cell to attach it to a case"
+    "🔟 Keeps the last 10 captures across pages and tabs (oldest drops off); 💾 saves them all into Downloads/screencaps/"
   ]
 }

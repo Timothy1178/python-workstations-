@@ -36,6 +36,44 @@ DEFAULT_TEMPLATE = {
 }
 
 
+# ---------- current case (what the screen cap plugin sends to) ----------
+
+CURRENT_FILE = DATA_DIR / "current_case.json"
+
+
+def get_current():
+    if not CURRENT_FILE.exists():
+        return None
+    cur = json.loads(CURRENT_FILE.read_text(encoding="utf-8"))
+    plan = load_plan(cur.get("plan_id", ""))
+    if plan is None or not any(c["uid"] == cur.get("case_uid") for c in plan["cases"]):
+        return None  # plan or case was deleted since
+    return cur
+
+
+def set_current(plan_id, case_uid):
+    plan = load_plan(plan_id)
+    if plan is None:
+        return None
+    for i, case in enumerate(plan["cases"], start=1):
+        if case["uid"] == case_uid:
+            f = case.get("fields", {})
+            label = " ".join(x for x in (f.get("testing_bu", "").strip(),
+                                         f.get("title", "").strip()) if x)
+            cur = {
+                "plan_id": plan_id,
+                "plan_name": plan.get("name", plan_id),
+                "case_uid": case_uid,
+                "case_no": i,
+                "label": label or f"case {i}",
+                "set_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            DATA_DIR.mkdir(exist_ok=True)
+            CURRENT_FILE.write_text(json.dumps(cur, ensure_ascii=False), encoding="utf-8")
+            return cur
+    return None
+
+
 # ---------- screenshots (one folder per case) ----------
 
 def shots_dir(plan_id, case_uid):

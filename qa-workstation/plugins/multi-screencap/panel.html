@@ -23,6 +23,15 @@
     <option value="3">🔍 3× Ultra</option>
   </select>
 </div>
+<div class="ws-status" id="ws-status">🧪 Connecting to the workstation…</div>
+<div class="actions">
+  <button class="primary" id="send-all" disabled title="Upload every capture in the gallery to the workstation's current test case">📤 Send all to case</button>
+  <button id="settings-btn" title="Workstation settings">⚙️</button>
+</div>
+<div class="settings-row" id="settings-row" hidden>
+  <label>Workstation URL <input id="ws-url" type="url" placeholder="http://127.0.0.1:5010"></label>
+  <label class="check"><input id="ws-clear" type="checkbox"> clear gallery after sending</label>
+</div>
 <div class="grid" id="grid"></div>
 <div class="empty" id="empty" hidden>No captures yet.<br>Capture with the buttons above or the shortcuts —<br>Alt+Shift+F page · Alt+Shift+S area · Alt+Shift+A saved area.<br>This window stays open while you work.</div>
 <div class="tip">Drag a thumbnail into Excel, a folder, or the workstation's 📎 chat box — or 📋 copy it and paste (Ctrl/Cmd+V). Newest capture is first; 10 are kept, oldest drops off.</div>

@@ -128,6 +128,35 @@ def assist_chat(plan_id):
     return jsonify({"ok": "error" not in result, **result})
 
 
+# ---------- current case + screen cap plugin API ----------
+
+@bp.after_request
+def _allow_plugin(resp):
+    # The QA Multi Screen Cap extension talks to these endpoints from its
+    # own origin; the workstation is local-only, so a permissive CORS
+    # policy on this blueprint is fine.
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return resp
+
+
+@bp.route("/api/current", methods=["GET", "POST"])
+def current_case():
+    """Which case evidence should go to: set by the builder / run viewer
+    as the tester moves around, read by the screen cap plugin."""
+    if request.method == "POST":
+        data = request.get_json(force=True) or {}
+        cur = store.set_current(data.get("plan_id", ""), data.get("case_uid", ""))
+        if cur is None:
+            return jsonify({"ok": False, "error": "unknown plan or case"}), 404
+        return jsonify({"ok": True, "current": cur})
+    cur = store.get_current()
+    if cur:
+        cur = {**cur, "shots": len(store.list_shots(cur["plan_id"], cur["case_uid"]))}
+    return jsonify({"current": cur})
+
+
 # ---------- screenshots ----------
 
 @bp.route("/plan/<plan_id>/shots/<case_uid>", methods=["GET", "POST"])

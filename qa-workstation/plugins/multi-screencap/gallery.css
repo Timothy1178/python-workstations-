@@ -25,3 +25,10 @@ select { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; paddin
 .view-wrap { padding: 12px; }
 .view-wrap img { max-width: 100%; border: 1px solid #e5e7eb; background: #fff; }
 .view-wrap img.actual { max-width: none; }
+.ws-status { margin: 0 12px 6px; padding: 6px 10px; border-radius: 8px; font-size: 11px; line-height: 1.4; background: #f3f4f6; color: #374151; }
+.ws-status.on { background: #ecfdf5; color: #065f46; }
+.ws-status.warn { background: #fffbeb; color: #92400e; }
+.ws-status.off { background: #fef2f2; color: #991b1b; }
+.settings-row { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; font-size: 12px; }
+.settings-row input[type="url"] { width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 8px; font: inherit; margin-top: 2px; }
+.settings-row .check { display: flex; gap: 6px; align-items: center; }

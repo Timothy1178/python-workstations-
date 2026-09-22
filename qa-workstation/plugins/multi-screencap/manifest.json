@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "QA Multi Screen Cap",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Take multiple screenshots \u2014 visible page, drag-selected area, or your saved area \u2014 at screen, 2\u00d7 or 3\u00d7 quality; keep the last 10 in a floating window and drag or paste them anywhere.",
   "action": {
     "default_popup": "popup.html",
