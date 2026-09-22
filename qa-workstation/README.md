@@ -36,8 +36,8 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   downloadable as zips and loaded unpacked into Chrome/Edge. Extensions
   live under `plugins/<slug>/`: **QA Multi Screen Cap** (multi-shot
   screenshots with area selection, sends evidence to the current test
-  case) and **QA Form Recaller** (record, edit and replay web form
-  fill-ins).
+  case) and **AIMAS Recaller** (record, edit and replay web form
+  fill-ins, incl. search-select dropdowns and date pickers).
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a

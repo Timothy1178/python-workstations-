@@ -1,0 +1,21 @@
+{
+  "name": "AIMAS Recaller",
+  "slug": "aimas-recaller",
+  "version": "1.1.0",
+  "icon": "📝",
+  "browsers": [
+    "Chrome",
+    "Edge"
+  ],
+  "description": "Record what you fill into any web form — AIMAS, CRM, any site — save it as a named recipe, edit the values, and replay it with one click. Handles plain fields, type-search-then-select dropdowns, and date pickers (fixed, today, today ± N days).",
+  "features": [
+    "📥 Snapshot: one click captures every filled field on the page into a new recipe (Alt+Shift+R)",
+    "⏺ Record: watch the form as you fill it — fields are captured in the order you touch them, so dependent dropdowns replay correctly",
+    "▶ Play: refills the whole form in one click (Alt+Shift+P replays the page's last recipe) and reports which fields were filled or not found",
+    "🔎 Type-search-then-select: searchable dropdowns (Select2, react-select, autocomplete, comboboxes) — types your search text, waits for the list, clicks the recorded option; keyboard fallback if the list is slow",
+    "📅 Date picker settings per field: fixed date, today, or today ± N days at replay time; format (DD/MM/YYYY, YYYY-MM-DD, DD MMM YYYY…); typed keystrokes for masked pickers or native set for <input type=date>",
+    "✏️ Editor: rename, change values, remove/reorder fields, set widget type (plain / search-select / date), delay between fields, duplicate for variants",
+    "🎯 Robust field matching — id, name, data-testid, aria-label, placeholder, label text, then CSS path; real input/change events so React/Angular/Vue forms accept values",
+    "🌐 Recipes grouped by page URL; passwords skipped unless you opt in; export/import recipes as JSON to share with the team"
+  ]
+}

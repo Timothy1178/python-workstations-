@@ -1,4 +1,4 @@
-// QA Form Recaller — service worker. Recipes live in chrome.storage.local:
+// AIMAS Recaller — service worker. Recipes live in chrome.storage.local:
 // {id, name, url, created, updated, delay, fields:[{type, label, loc, value}]}
 // Page work is done by page.js injected on demand into the active tab.
 
@@ -87,7 +87,13 @@ async function play(recipeId) {
   if (!recipe) return { ok: false, error: "recipe not found" };
   const tab = await activeTab();
   if (!tab || !/^https?:|^file:/.test(tab.url || "")) return { ok: false, error: "open the form's page first" };
-  const report = await inPage(tab.id, (fields, delay) => window.__qaForm.fill(fields, { delay }), [recipe.fields, recipe.delay || 60]);
+  const { settings = {} } = await chrome.storage.local.get("settings");
+  const opts = {
+    delay: recipe.delay == null ? 60 : recipe.delay,
+    optionWait: Number(settings.optionWait) || 1500,   // how long to wait for a search-select's option list
+    dateFormat: settings.dateFormat || "DD/MM/YYYY",   // default for typed date fields without their own format
+  };
+  const report = await inPage(tab.id, (fields, o) => window.__qaForm.fill(fields, o), [recipe.fields, opts]);
   const { lastPlayed = {} } = await chrome.storage.local.get("lastPlayed");
   lastPlayed[pageKey(tab.url)] = recipe.id;
   await chrome.storage.local.set({ lastPlayed });

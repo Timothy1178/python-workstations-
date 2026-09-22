@@ -36,3 +36,7 @@ td textarea { min-height: 50px; resize: vertical; }
 .pill { font-size: 10px; background: #f3f4f6; border-radius: 999px; padding: 1px 7px; color: #6b7280; white-space: nowrap; }
 .loc { font-size: 10px; color: #9ca3af; font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
 .drag { cursor: grab; color: #9ca3af; user-select: none; }
+.vbox { display: flex; flex-direction: column; gap: 4px; }
+.vbox .mini { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+.vbox .check { display: flex; gap: 6px; align-items: center; font-size: 11px; color: #374151; }
+.vbox .check input { width: auto; }

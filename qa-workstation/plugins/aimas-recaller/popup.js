@@ -1,4 +1,4 @@
-// QA Form Recaller — popup: list recipes (this page first), play, record.
+// AIMAS Recaller — popup: list recipes (this page first), play, record.
 const status = document.getElementById("status");
 const hereList = document.getElementById("here");
 const allList = document.getElementById("all");

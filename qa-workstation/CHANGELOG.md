@@ -5,6 +5,20 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.11.0 — 2026-09-22
+
+- **AIMAS Recaller v1.1.0** (renamed from QA Form Recaller): two new
+  field kinds, detected automatically and switchable per field in the
+  editor. 🔎 **Search-select**: for searchable dropdowns (Select2,
+  react-select, autocomplete, comboboxes) the recipe stores the text you
+  typed and the option you clicked; replay types the search, waits for
+  the option list, and clicks the match (partial-text match, keyboard
+  fallback; wait time adjustable). 📅 **Date**: per-field setting —
+  fixed date, today, or today ± N days computed at replay time — with
+  a format choice (DD/MM/YYYY, YYYY-MM-DD, DD MMM YYYY…) and a "type
+  keystrokes + Enter" mode for masked date pickers (native value set for
+  `<input type=date>`); a default format lives in the editor header.
+
 ## 1.10.0 — 2026-09-22
 
 - **New plugin — QA Form Recaller** (v1.0.0, Chrome & Edge): record
