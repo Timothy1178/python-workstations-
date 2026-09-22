@@ -7,6 +7,44 @@
 const MAX_SHOTS = 10;
 let panelWindowId = null;
 
+async function getScale() {
+  const { settings = {} } = await chrome.storage.local.get("settings");
+  const s = Number(settings.scale) || 1;
+  return s > 1 ? s : 1;
+}
+
+async function pageMetrics(tabId) {
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => ({
+      dpr: window.devicePixelRatio || 1,
+      scrollX: window.scrollX, scrollY: window.scrollY,
+      width: window.innerWidth, height: window.innerHeight,
+    }),
+  });
+  return result;
+}
+
+// High-resolution capture: the DevTools protocol renders the clip at
+// `scale` CSS-pixel multiples, independent of the screen's own scaling —
+// so 2× on a normal monitor is as sharp as a Retina capture, and 3× stays
+// crisp when the image is enlarged in Excel. Chrome shows an "is
+// debugging this browser" bar while attached; we detach immediately.
+async function captureHD(tabId, clipCss, scale) {
+  const target = { tabId };
+  await chrome.debugger.attach(target, "1.3");
+  try {
+    const { data } = await chrome.debugger.sendCommand(target, "Page.captureScreenshot", {
+      format: "png",
+      fromSurface: true,
+      clip: { x: clipCss.x, y: clipCss.y, width: clipCss.w, height: clipCss.h, scale },
+    });
+    return "data:image/png;base64," + data;
+  } finally {
+    await chrome.debugger.detach(target).catch(() => {});
+  }
+}
+
 async function getShots() {
   const { shots = [] } = await chrome.storage.local.get("shots");
   return shots;
@@ -44,6 +82,16 @@ async function targetTab() {
 async function captureVisible() {
   const { win, tab } = await targetTab();
   if (!tab) return;
+  const scale = await getScale();
+  if (scale > 1) {
+    try {
+      const m = await pageMetrics(tab.id);
+      // CDP clips are page coordinates (scroll included), in CSS px.
+      const clip = { x: m.scrollX, y: m.scrollY, w: m.width, h: m.height };
+      await addShot(await captureHD(tab.id, clip, scale), tab, "visible");
+      return;
+    } catch (e) { /* debugger unavailable on this page — fall back */ }
+  }
   const dataUrl = await chrome.tabs.captureVisibleTab(win.id, { format: "png" });
   await addShot(dataUrl, tab, "visible");
 }
@@ -74,14 +122,19 @@ async function cropInTab(tabId, dataUrl, rect, dpr) {
 async function captureArea(rect) {
   const { win, tab } = await targetTab();
   if (!tab || !rect) return;
-  const [{ result: dpr }] = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: () => window.devicePixelRatio || 1,
-  });
-  const frame = await chrome.tabs.captureVisibleTab(win.id, { format: "png" });
-  const cropped = await cropInTab(tab.id, frame, rect, dpr);
-  await addShot(cropped, tab, "area");
   await chrome.storage.local.set({ lastArea: rect }); // reusable without dragging
+  const scale = await getScale();
+  const m = await pageMetrics(tab.id);
+  if (scale > 1) {
+    try {
+      const clip = { x: rect.x + m.scrollX, y: rect.y + m.scrollY, w: rect.w, h: rect.h };
+      await addShot(await captureHD(tab.id, clip, scale), tab, "area");
+      return;
+    } catch (e) { /* debugger unavailable on this page — fall back */ }
+  }
+  const frame = await chrome.tabs.captureVisibleTab(win.id, { format: "png" });
+  const cropped = await cropInTab(tab.id, frame, rect, m.dpr);
+  await addShot(cropped, tab, "area");
 }
 
 async function startAreaSelect() {

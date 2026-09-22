@@ -5,6 +5,28 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.8.0 — 2026-09-22
+
+- **Test case builder — 🖼 Evidence column**: attach multiple images to
+  any case by pasting (Ctrl/Cmd+V — e.g. straight from the screen cap
+  plugin's 📋), dropping files or plugin thumbnails onto the row, or
+  picking several files. Thumbnail strip with hover-delete and a
+  lightbox (←/→ to browse, Esc to close). Images are stored with the
+  case and shared with the run viewer.
+- **Excel export — clearer evidence worksheet**: the ScreenCap sheet
+  gets a shaded band per case with the image count, numbered captions
+  under each image, and each SIT row's Case ID is a hyperlink to its
+  evidence block, with an "↑ back to SIT" link beside it. Display size
+  capped at 1000 px wide; embedded pixels stay full resolution.
+- **Multi Screen Cap v1.2.0 — clearer captures**: 🔍 quality setting
+  (Auto / 2× HD / 3× Ultra) renders captures at higher resolution via
+  the browser's DevTools screenshot API, so they stay crisp when
+  enlarged in Excel or the test plan (Chrome shows a brief "debugging"
+  bar during HD capture; falls back to normal capture where the API is
+  unavailable). Thumbnails now drop into web pages as real files (the
+  builder's Evidence cell accepts them), and previews open in a proper
+  viewer page with actual-size / copy / save.
+
 ## 1.7.2 — 2026-09-14
 
 - **Privacy fix**: the whole `data/` folder is now gitignored and the

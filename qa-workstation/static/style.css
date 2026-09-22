@@ -566,3 +566,63 @@ tr.agent-touched td { background: var(--touch-bg); transition: background 1s; }
   white-space: pre;
   resize: vertical;
 }
+
+/* ---------- test case evidence images ---------- */
+.col-evidence { min-width: 230px; }
+.evidence { display: flex; flex-direction: column; gap: 6px; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+.thumb { position: relative; }
+.thumb img {
+  height: 64px;
+  max-width: 130px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: zoom-in;
+  display: block;
+}
+.thumb img:hover { border-color: var(--accent); }
+.thumb button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--danger);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+}
+.thumb:hover button { display: block; }
+.ev-actions { display: flex; gap: 8px; align-items: center; }
+.evidence-col.drop-hot { outline: 2px dashed var(--accent); background: var(--hover); }
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .85);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+}
+.lightbox figure { margin: 0; text-align: center; max-width: 92vw; }
+.lightbox img { max-width: 90vw; max-height: 82vh; border-radius: 8px; background: #fff; }
+.lightbox figcaption { color: #e5e7eb; margin-top: 10px; font-size: 13px; display: flex; gap: 12px; justify-content: center; align-items: center; }
+.lb-nav {
+  border: none;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  font-size: 34px;
+  width: 48px;
+  height: 64px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.lb-nav:hover { background: rgba(255,255,255,.3); }
