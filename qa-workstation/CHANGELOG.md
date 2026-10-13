@@ -5,6 +5,30 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.13.0 — 2026-10-13
+
+- **Test case builder — 📂 Import Excel / CSV**: bring test cases in
+  from any workbook. The import dialog picks the sheet and header row
+  automatically (the workstation's own exported plan round-trips as is,
+  SIT sheet / row 8), suggests a column → field mapping from the header
+  names (Test Steps, Expected Result, Scenario, Status, Comments… all
+  recognised; custom templates match on their own labels) and shows a
+  preview before anything lands. Options: fill blank Testing BU / Case
+  from the row above (Excel merged cells), append or replace, and
+  "Status"-style columns become run results (passed/FAIL/n.a. normalised).
+  Imported rows are highlighted and saved only when you press Save. The
+  Test Cases page also gets **Import from Excel** → new plan.
+- **Builder UI redesign**: sticky header bar with case count and a
+  live save-state pill (saved / unsaved / saving / error); 🔍 filter
+  rows by any text; ☰ Full text / ≡ Compact density (remembered);
+  sticky column headers inside a scrolling table; the active row is
+  highlighted and the BU/Case group breaks are visible; per-row tools
+  on hover (⧉ duplicate, ＋ insert below, ↑ ↓ move, ✕ remove with
+  confirm); row number plus overall position; placeholders in empty
+  cells; cleaner borderless cells that outline on hover/focus; footer
+  summary (cases · BUs · evidence images); an empty-state card with
+  Add / Import / Draft-with-assistant shortcuts; Ctrl+S hint.
+
 ## 1.12.0 — 2026-09-22
 
 - **New module — 📧 Mailer** + **new plugin — QA Table Mailer**

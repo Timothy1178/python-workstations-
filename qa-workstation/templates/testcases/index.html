@@ -14,6 +14,17 @@
 </section>
 
 <section class="card">
+  <h2>Import from Excel / CSV</h2>
+  <p class="muted small-text">Bring an existing test plan in as a new plan — any sheet or column order; you confirm the column mapping in the builder. The workstation's own exported workbook round-trips as is.</p>
+  <form method="post" action="{{ url_for('testcases.import_new_plan') }}" class="inline-form" enctype="multipart/form-data">
+    <label class="btn">📄 Choose file <input type="file" name="file" accept=".xlsx,.xlsm,.csv,.txt,.tsv" required onchange="this.closest('form').querySelector('.file-name').textContent = this.files[0] ? this.files[0].name : ''"></label>
+    <span class="file-name muted small-text"></span>
+    <input name="name" placeholder="Plan name (defaults to the file name)">
+    <button class="btn primary" type="submit">📂 Import</button>
+  </form>
+</section>
+
+<section class="card">
   <h2>Plans</h2>
   {% if plans %}
   <table class="list-table">

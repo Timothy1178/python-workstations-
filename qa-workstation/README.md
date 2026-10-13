@@ -27,6 +27,10 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
 - **Test Cases** (`modules/testcases/`) — template-driven test case builder
   and a test-run viewer. The columns come from `data/template.json`; replace
   it with your own template to change the layout, no code changes needed.
+  📂 **Import Excel / CSV** reads an existing plan (any sheet / column
+  order — the dialog detects the header row, suggests the column mapping
+  and previews the rows); 📥 **Export** writes the CCASIA test plan
+  workbook, which imports back as is.
 - **QA Wiki** (`modules/wiki/`) — the team's knowledge base: Markdown
   pages with categories, tags and search, plus an agent-assisted editor
   (paste a real document, the agent drafts the page). See

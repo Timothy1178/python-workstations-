@@ -4,7 +4,7 @@ import re
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    jsonify, send_file, send_from_directory)
 
-from . import store
+from . import store, importer
 
 bp = Blueprint("testcases", __name__, url_prefix="/testcases")
 
@@ -48,7 +48,8 @@ def builder(plan_id):
     if plan is None:
         return redirect(url_for("testcases.index"))
     return render_template(
-        "testcases/builder.html", plan=plan, template=store.load_template())
+        "testcases/builder.html", plan=plan, template=store.load_template(),
+        import_token=request.args.get("import", ""))
 
 
 @bp.route("/plan/<plan_id>/cases", methods=["POST"])
@@ -67,6 +68,9 @@ def save_cases(plan_id):
             case["fields"] = item.get("fields", {})
         else:
             case = store.new_case(item.get("fields", {}))
+            # Rows imported from a workbook may carry run results already
+            if isinstance(item.get("run"), dict) and item["run"]:
+                case["run"] = item["run"]
         cases.append(case)
     # Case IDs follow row order, numbered 1..x within each Testing BU +
     # Case pair — reordering or editing either field renumbers them.
@@ -80,6 +84,79 @@ def save_cases(plan_id):
     store.save_plan(plan)
     return jsonify({"ok": True, "count": len(cases),
                     "uids": [c["uid"] for c in cases]})
+
+
+# ---------- Excel / CSV import ----------
+
+@bp.route("/import", methods=["POST"])
+def import_new_plan():
+    """Index page: upload a workbook -> new plan -> builder opens the
+    import dialog on it (the tester still confirms the column mapping)."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return redirect(url_for("testcases.index"))
+    name = request.form.get("name", "").strip() or f.filename.rsplit(".", 1)[0]
+    plan = store.create_plan(name, request.form.get("description", "").strip())
+    token = importer.park_upload(f.read(), f.filename)
+    return redirect(url_for("testcases.builder", plan_id=plan["id"], **{"import": token}))
+
+
+@bp.route("/plan/<plan_id>/import/preview", methods=["POST"])
+def import_preview(plan_id):
+    """Step 1: upload (multipart 'file') or re-read a parked upload
+    ('token' + 'sheet' / 'header_row') and return sheets, headers, the
+    suggested mapping and the data rows."""
+    if store.load_plan(plan_id) is None:
+        return jsonify({"ok": False, "error": "plan not found"}), 404
+    f = request.files.get("file")
+    token = request.form.get("token", "")
+    if f and f.filename:
+        raw, filename = f.read(), f.filename
+        token = importer.park_upload(raw, filename)
+    else:
+        path = importer.parked_file(token)
+        if not path:
+            return jsonify({"ok": False, "error": "upload expired — pick the file again"}), 410
+        raw, filename = path.read_bytes(), path.name
+    try:
+        hr = request.form.get("header_row")
+        result = importer.preview(
+            raw, filename, store.load_template(),
+            sheet=request.form.get("sheet") or None,
+            header_row=int(hr) if hr else None)
+    except Exception as e:  # corrupt / not a workbook
+        return jsonify({"ok": False, "error": f"could not read the file: {e}"}), 400
+    if "error" in result:
+        return jsonify({"ok": False, **result}), 400
+    return jsonify({"ok": True, "token": token, "filename": filename, **result})
+
+
+@bp.route("/plan/<plan_id>/import", methods=["POST"])
+def import_cases(plan_id):
+    """Step 2: rows + mapping -> cases for the builder table. Nothing is
+    saved here — the rows land in the table and the tester presses Save."""
+    if store.load_plan(plan_id) is None:
+        return jsonify({"ok": False, "error": "plan not found"}), 404
+    data = request.get_json(force=True) or {}
+    path = importer.parked_file(data.get("token", ""))
+    if not path:
+        return jsonify({"ok": False, "error": "upload expired — pick the file again"}), 410
+    template = store.load_template()
+    try:
+        sheets = importer.read_sheets(path.read_bytes(), path.name)
+        rows = sheets.get(data.get("sheet")) or next(iter(sheets.values()))
+        hi = max(1, int(data.get("header_row", 1)))
+        body = rows[hi:]
+        selected = data.get("rows")  # optional list of data-row indexes
+        if isinstance(selected, list):
+            body = [body[i] for i in selected if 0 <= i < len(body)]
+        cases = importer.build_cases(
+            body, data.get("mapping", {}), template,
+            fill_down=bool(data.get("fill_down", True)))
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"import failed: {e}"}), 400
+    importer.discard(data.get("token", ""))
+    return jsonify({"ok": True, "cases": cases, "count": len(cases)})
 
 
 # ---------- Viewer / test runner ----------
