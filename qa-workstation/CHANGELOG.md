@@ -5,6 +5,23 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.14.0 — 2026-10-21
+
+- **New module — 🧾 Msg5 Json**: the Transaction String Editor as a
+  workstation page. Paste the transaction JSON (`playloadJson` XML
+  payload), load its fields, edit, generate the updated string, copy /
+  download / decoded-XML preview, "use as source" to keep iterating.
+  **Auto +1**: with the 🔢 toggle on (saved in the config), pressing
+  New UUID also raises the transaction number by one. **Saved
+  messages**: name and save any JSON (the generated one if present),
+  reload it later, update in place or save as a copy, notes, filter,
+  delete — stored in `data/msg5/messages/`. **Edit box fields**: pick
+  any tag from the loaded payload (listed with its value) or type one,
+  give it a label / type (text, number, date, datetime) / required /
+  every-occurrence / insert-after-tag, and it becomes an input in the
+  Fields box from then on; reorder, edit or remove fields, reset to
+  the defaults — all saved in `data/msg5/config.json` (gitignored).
+
 ## 1.13.0 — 2026-10-13
 
 - **Test case builder — 📂 Import Excel / CSV**: bring test cases in

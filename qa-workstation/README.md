@@ -48,6 +48,11 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   receiver groups, scheduled jobs with live data from a OneDrive-synced
   `.xlsx`. Fed by the **QA Table Mailer** plugin (copy cells in Excel
   Online → grab → edit → send / save as job).
+- **Msg5 Json** (`modules/msg5/`) — transaction string editor: load a
+  Msg5 JSON with an XML-entity payload, edit its fields (configurable:
+  add any payload tag to the edit box, saved in `data/msg5/config.json`),
+  New UUID with optional transaction number +1, generate / copy /
+  download, and a library of named saved messages.
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a

@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+{% block title %}Msg5 Json · QA Workstation{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>🧾 Msg5 Json</h1>
+    <p class="muted">Paste the complete transaction JSON string, load its fields, make changes, then generate and copy the updated string. Save named messages to reuse them, and add any payload tag to the edit box.</p>
+  </div>
+  <div class="row-actions">
+    <label class="check-label toggle-pill" title="When you press New UUID, the transaction number goes up by one — saved in the config">
+      <input type="checkbox" id="auto-inc" {{ 'checked' if config.auto_increment }}> 🔢 New UUID → transaction number +1
+    </label>
+  </div>
+</div>
+
+<div class="msg5-layout">
+  <!-- ---------- saved messages ---------- -->
+  <aside class="card msg-side">
+    <h2>💾 Saved messages <span class="pill" id="msg-count">{{ messages|length }}</span></h2>
+    <label class="search-box"><span>🔍</span><input id="msg-filter" placeholder="Filter by name…" autocomplete="off"></label>
+    <div class="msg-list" id="msg-list"></div>
+    <div class="msg-save">
+      <h3>Save current JSON</h3>
+      <input id="save-name" placeholder="Name (e.g. Msg5 sale – club card)">
+      <input id="save-notes" placeholder="Notes (optional)">
+      <div class="row-actions">
+        <button class="btn primary" id="save-new">💾 Save as new</button>
+        <button class="btn" id="save-update" hidden>✓ Update</button>
+      </div>
+      <div class="muted small-text" id="save-status">Saves the updated JSON if generated, otherwise the source.</div>
+    </div>
+  </aside>
+
+  <div class="msg-main">
+    <!-- ---------- source ---------- -->
+    <section class="card">
+      <div class="page-head tight">
+        <h2>Source JSON <span class="muted small-text" id="loaded-label"></span></h2>
+        <div class="row-actions">
+          <button class="btn small" id="paste-btn" title="Paste from the clipboard">📋 Paste</button>
+          <button class="btn small" id="clear-btn">Clear</button>
+        </div>
+      </div>
+      <textarea id="source" class="mono" spellcheck="false" placeholder='Paste {"id":"...","playloadJson":"&amp;lt;Root&amp;gt;..."} here'></textarea>
+      <div class="row-actions top-gap">
+        <button class="btn primary" id="load-btn">⬇ Load fields</button>
+        <span class="status" id="load-status"></span>
+      </div>
+    </section>
+
+    <!-- ---------- fields ---------- -->
+    <section class="card">
+      <div class="page-head tight">
+        <h2>Fields</h2>
+        <button class="btn small" id="fields-config-btn" title="Choose which payload tags are editable here">⚙️ Edit box fields</button>
+      </div>
+      <div class="field-grid" id="field-grid">
+        <label class="field id-field">ID
+          <div class="id-row"><input id="f-id" type="text"><button class="btn" id="uuid-btn" type="button" title="Generate a new UUID">🆕 New UUID</button></div>
+          <small class="muted" id="id-hint"></small>
+        </label>
+        <!-- configured fields render here -->
+      </div>
+      <div class="row-actions top-gap">
+        <button class="btn primary" id="generate-btn">⚙️ Generate updated string</button>
+        <label class="check-label"><input id="pretty" type="checkbox" {{ 'checked' if config.pretty }}> Pretty-print JSON</label>
+        <span class="status" id="edit-status"></span>
+      </div>
+    </section>
+
+    <!-- ---------- output ---------- -->
+    <section class="card">
+      <h2>Updated JSON</h2>
+      <textarea id="output" class="mono" spellcheck="false" readonly></textarea>
+      <div class="row-actions top-gap">
+        <button class="btn primary" id="copy-btn">📋 Copy</button>
+        <button class="btn" id="download-btn">⬇ Download .json</button>
+        <button class="btn" id="use-output-btn" title="Put the updated JSON back into Source so you can edit it again">↩ Use as source</button>
+        <span class="status" id="copy-status"></span>
+      </div>
+      <details class="top-gap">
+        <summary>Decoded XML preview</summary>
+        <textarea id="xml-preview" class="mono" spellcheck="false" readonly></textarea>
+      </details>
+    </section>
+  </div>
+</div>
+
+<!-- ---------- edit box fields (config) ---------- -->
+<div class="preview-overlay" id="config-overlay" hidden>
+  <div class="preview-modal card config-modal">
+    <div class="page-head">
+      <div>
+        <h2>⚙️ Edit box fields</h2>
+        <p class="muted small-text">Which payload tags appear as inputs in the Fields box. Saved in <code>data/msg5/config.json</code> and used every time.</p>
+      </div>
+      <button class="btn small" id="config-close">✕ Close</button>
+    </div>
+
+    <div class="import-body">
+      <h3>Add a field</h3>
+      <div class="add-field">
+        <label>Tag from the loaded payload
+          <select id="af-pick"><option value="">— load a JSON to list its tags —</option></select>
+        </label>
+        <label>or type the tag name
+          <input id="af-tag" placeholder="e.g. CashierID">
+        </label>
+        <label>Label
+          <input id="af-label" placeholder="Shown in the edit box">
+        </label>
+        <label>Type
+          <select id="af-type">
+            {% for t in field_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="check-label"><input type="checkbox" id="af-required"> Required</label>
+        <label class="check-label"><input type="checkbox" id="af-all" checked> Update every occurrence</label>
+        <label>If missing, insert after tag
+          <input id="af-after" placeholder="optional, e.g. CashierID">
+        </label>
+        <button class="btn primary" id="af-add">＋ Add field</button>
+      </div>
+      <div class="muted small-text" id="af-status"></div>
+
+      <h3 class="top-gap">Current fields <span class="muted small-text">— drag not needed: use ↑ ↓; edits save immediately</span></h3>
+      <div class="table-wrap">
+        <table class="list-table fields-table" id="fields-table"></table>
+      </div>
+      <div class="row-actions top-gap">
+        <button class="btn" id="fields-reset">↺ Reset to defaults</button>
+        <span class="muted small-text">Defaults: Transaction number, Business date, Club card, Start / End date and time.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="cfg-data" type="application/json">{{ config|tojson }}</script>
+<script id="msg-data" type="application/json">{{ messages|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const CONFIG_URL = "{{ url_for('msg5.config') }}";
+  const MSGS_URL = "{{ url_for('msg5.messages') }}";
+  let config = JSON.parse($('cfg-data').textContent);
+  let messages = JSON.parse($('msg-data').textContent);
+  let currentJson = null;      // parsed source object
+  let currentDoc = null;       // parsed payload XML (for tag listing)
+  let payloadKey = 'playloadJson';
+  let loaded = null;           // {id, name} of the saved message in the editor
+
+  // ---------- helpers (from the original Transaction String Editor) ----------
+  function status(el, text, ok = true) {
+    el.textContent = text;
+    el.className = 'status ' + (text ? (ok ? 'ok' : 'bad') : '');
+  }
+  function decodeEntities(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
+  function encodeXml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function parseXml(encoded) {
+    const doc = new DOMParser().parseFromString(decodeEntities(encoded), 'application/xml');
+    const err = doc.querySelector('parsererror');
+    if (err) throw new Error('Payload XML is invalid: ' + err.textContent.trim().replace(/\s+/g, ' '));
+    return doc;
+  }
+  const elements = (doc, name) => Array.from(doc.getElementsByTagName(name));
+  function firstText(doc, name) { const el = elements(doc, name)[0]; return el ? el.textContent : ''; }
+  function xmlToLocal(v) {
+    if (!v) return '';
+    const m = v.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::(\d{2}))?/);
+    return m ? `${m[1]}T${m[2]}:${m[3] || '00'}` : '';
+  }
+  function localToXml(v) { if (!v) return ''; return v.length === 16 ? v + ':00.000' : v + '.000'; }
+  function toInput(f, v) { return f.type === 'datetime' ? xmlToLocal(v) : v; }
+  function fromInput(f, v) { return f.type === 'datetime' ? localToXml(v) : v; }
+
+  function applyField(doc, f, value) {
+    const list = elements(doc, f.tag);
+    if (list.length) {
+      (f.all ? list : [list[0]]).forEach(el => { el.textContent = value; });
+      return 'updated';
+    }
+    if (!value) {
+      if (f.required) throw new Error('Missing <' + f.tag + '> in payload.');
+      return 'unchanged';
+    }
+    const el = doc.createElement(f.tag);
+    el.textContent = value;
+    if (f.insert_after) {
+      const anchor = elements(doc, f.insert_after)[0];
+      if (!anchor || !anchor.parentNode) throw new Error('Cannot insert <' + f.tag + '>: <' + f.insert_after + '> was not found.');
+      anchor.parentNode.insertBefore(el, anchor.nextSibling);
+    } else {
+      doc.documentElement.appendChild(el);
+    }
+    return 'inserted';
+  }
+
+  // ---------- fields box (from config) ----------
+  function renderFields() {
+    const grid = $('field-grid');
+    grid.querySelectorAll('.field.cfg').forEach(el => el.remove());
+    for (const f of config.fields) {
+      const lab = document.createElement('label');
+      lab.className = 'field cfg';
+      lab.dataset.key = f.key;
+      const inp = document.createElement('input');
+      inp.id = 'f-' + f.key;
+      inp.type = f.type === 'datetime' ? 'datetime-local' : f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
+      if (f.type === 'datetime') inp.step = '1';
+      if (f.type === 'number') { inp.step = '1'; }
+      inp.placeholder = f.required ? '' : 'Optional';
+      lab.append(document.createTextNode(f.label + (f.required ? '' : '')), inp);
+      const small = document.createElement('small');
+      small.className = 'muted';
+      small.textContent = (f.hint || ('<' + f.tag + '>' + (f.all ? ', every occurrence' : ', first occurrence only'))) + (f.required ? ' · required' : '');
+      lab.appendChild(small);
+      grid.appendChild(lab);
+    }
+    if (currentDoc) fillFields(currentDoc);
+  }
+  function fillFields(doc) {
+    for (const f of config.fields) {
+      const inp = $('f-' + f.key);
+      if (inp) inp.value = toInput(f, firstText(doc, f.tag));
+    }
+  }
+  function incField() { return config.fields.find(f => f.tag === config.increment_tag) || config.fields.find(f => f.type === 'number'); }
+  function updateIdHint() {
+    const f = incField();
+    $('id-hint').textContent = config.auto_increment && f ? `New UUID also adds 1 to ${f.label}.` : '';
+  }
+
+  // ---------- load / generate ----------
+  function loadSource() {
+    try {
+      const raw = $('source').value.trim();
+      if (!raw) throw new Error('Paste the JSON string first.');
+      currentJson = JSON.parse(raw);
+      if (!currentJson || Array.isArray(currentJson) || typeof currentJson !== 'object') throw new Error('The source must be one JSON object.');
+      payloadKey = Object.prototype.hasOwnProperty.call(currentJson, 'playloadJson') ? 'playloadJson'
+                 : Object.prototype.hasOwnProperty.call(currentJson, 'payloadJson') ? 'payloadJson' : '';
+      if (!payloadKey || typeof currentJson[payloadKey] !== 'string') throw new Error('Missing string property "playloadJson" (or "payloadJson").');
+      currentDoc = parseXml(currentJson[payloadKey]);
+      $('f-id').value = currentJson.id ?? '';
+      fillFields(currentDoc);
+      $('xml-preview').value = new XMLSerializer().serializeToString(currentDoc);
+      $('output').value = '';
+      fillTagPicker(currentDoc);
+      status($('load-status'), `Loaded ${config.fields.length} fields.`);
+      status($('edit-status'), '');
+      return true;
+    } catch (e) {
+      currentJson = null; currentDoc = null;
+      status($('load-status'), e.message, false);
+      return false;
+    }
+  }
+  $('load-btn').addEventListener('click', loadSource);
+
+  $('generate-btn').addEventListener('click', () => {
+    try {
+      if (!currentJson) throw new Error('Load the source JSON first.');
+      const result = structuredClone(currentJson);
+      const doc = parseXml(result[payloadKey]);
+      const id = $('f-id').value.trim();
+      if (!id) throw new Error('ID is required.');
+      result.id = id;
+      const notes = [];
+      for (const f of config.fields) {
+        const v = ($('f-' + f.key)?.value || '').trim();
+        if (f.required && !v) throw new Error(f.label + ' is required.');
+        const action = applyField(doc, f, fromInput(f, v));
+        if (action === 'inserted') notes.push(f.label + ' was inserted.');
+      }
+      const serialized = new XMLSerializer().serializeToString(doc);
+      result[payloadKey] = encodeXml(serialized);
+      $('output').value = JSON.stringify(result, null, $('pretty').checked ? 2 : 0);
+      $('xml-preview').value = serialized;
+      status($('edit-status'), 'Updated successfully. ' + notes.join(' '));
+      status($('copy-status'), '');
+      $('save-status').textContent = 'Save stores the updated JSON.';
+    } catch (e) {
+      status($('edit-status'), e.message, false);
+    }
+  });
+
+  $('uuid-btn').addEventListener('click', () => {
+    $('f-id').value = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+    });
+    let note = 'New UUID set.';
+    if (config.auto_increment) {
+      const f = incField();
+      const inp = f && $('f-' + f.key);
+      if (inp) {
+        const cur = parseInt(inp.value, 10);
+        const next = Number.isFinite(cur) ? cur + 1 : 1;
+        inp.value = String(next);
+        note += ` ${f.label}: ${Number.isFinite(cur) ? cur : '(empty)'} → ${next}.`;
+      }
+    }
+    status($('edit-status'), note);
+  });
+
+  $('auto-inc').addEventListener('change', async () => {
+    config.auto_increment = $('auto-inc').checked;
+    updateIdHint();
+    await saveConfig({ auto_increment: config.auto_increment });
+  });
+  $('pretty').addEventListener('change', () => saveConfig({ pretty: $('pretty').checked }));
+
+  $('copy-btn').addEventListener('click', async () => {
+    try {
+      if (!$('output').value) throw new Error('Generate the updated string first.');
+      await navigator.clipboard.writeText($('output').value);
+      status($('copy-status'), 'Copied to clipboard.');
+    } catch (e) {
+      $('output').select();
+      const copied = document.execCommand('copy');
+      status($('copy-status'), copied ? 'Copied to clipboard.' : e.message, copied);
+    }
+  });
+  $('download-btn').addEventListener('click', () => {
+    if (!$('output').value) return status($('copy-status'), 'Generate the updated string first.', false);
+    const blob = new Blob([$('output').value], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = ((loaded && loaded.name) || 'updated-transaction').replace(/[^\w\- ]+/g, '').trim() + '.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  $('use-output-btn').addEventListener('click', () => {
+    if (!$('output').value) return status($('copy-status'), 'Generate the updated string first.', false);
+    $('source').value = $('output').value;
+    loadSource();
+    status($('copy-status'), 'Updated JSON is now the source.');
+  });
+  $('paste-btn').addEventListener('click', async () => {
+    try {
+      $('source').value = await navigator.clipboard.readText();
+      loadSource();
+    } catch (e) { status($('load-status'), 'Clipboard not available — paste with Ctrl/Cmd+V.', false); }
+  });
+  $('clear-btn').addEventListener('click', () => {
+    currentJson = null; currentDoc = null; loaded = null;
+    ['source', 'f-id', 'output', 'xml-preview', 'save-name', 'save-notes'].forEach(id => $(id).value = '');
+    config.fields.forEach(f => { const i = $('f-' + f.key); if (i) i.value = ''; });
+    [$('load-status'), $('edit-status'), $('copy-status')].forEach(el => status(el, ''));
+    setLoaded(null);
+    fillTagPicker(null);
+  });
+
+  // ---------- saved messages ----------
+  function setLoaded(m) {
+    loaded = m;
+    $('loaded-label').textContent = m ? `· ${m.name}` : '';
+    $('save-update').hidden = !m;
+    $('save-update').textContent = m ? `✓ Update "${m.name}"` : '✓ Update';
+    renderMessages();
+  }
+  function renderMessages() {
+    const q = $('msg-filter').value.trim().toLowerCase();
+    const list = $('msg-list');
+    list.innerHTML = '';
+    const shown = messages.filter(m => !q || (m.name + ' ' + (m.notes || '')).toLowerCase().includes(q));
+    $('msg-count').textContent = messages.length;
+    if (!shown.length) {
+      list.innerHTML = `<div class="muted small-text msg-empty">${messages.length ? 'No match.' : 'Nothing saved yet — load a JSON, then Save as new.'}</div>`;
+      return;
+    }
+    for (const m of shown) {
+      const item = document.createElement('div');
+      item.className = 'msg-item' + (loaded && loaded.id === m.id ? ' on' : '');
+      item.innerHTML = `<button type="button" class="msg-open"><strong></strong><span class="muted small-text"></span></button>
+        <button type="button" class="icon-btn danger" title="Delete">✕</button>`;
+      item.querySelector('strong').textContent = m.name;
+      item.querySelector('span').textContent = (m.notes ? m.notes + ' · ' : '') + m.updated + ' · ' + (m.size / 1024).toFixed(1) + ' KB';
+      item.querySelector('.msg-open').onclick = () => openMessage(m.id);
+      item.querySelector('.icon-btn').onclick = async () => {
+        if (!confirm(`Delete "${m.name}"?`)) return;
+        const r = await fetch(`${MSGS_URL}/${m.id}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (d.ok) { messages = d.messages; if (loaded && loaded.id === m.id) setLoaded(null); renderMessages(); }
+      };
+      list.appendChild(item);
+    }
+  }
+  async function openMessage(id) {
+    const r = await fetch(`${MSGS_URL}/${id}`);
+    const d = await r.json();
+    if (!d.ok) return;
+    $('source').value = d.message.json;
+    $('save-name').value = d.message.name;
+    $('save-notes').value = d.message.notes || '';
+    setLoaded({ id: d.message.id, name: d.message.name });
+    loadSource();
+    $('save-status').textContent = 'Loaded. Edit, generate, then Update to overwrite or Save as new.';
+  }
+  async function saveMessage(asNew) {
+    const text = $('output').value || $('source').value;
+    if (!text.trim()) { $('save-status').textContent = '⚠ Nothing to save — load or generate a JSON first.'; return; }
+    const name = $('save-name').value.trim() || (loaded && loaded.name) || '';
+    if (!name) { $('save-status').textContent = '⚠ Give it a name first.'; $('save-name').focus(); return; }
+    const r = await fetch(MSGS_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: asNew ? '' : (loaded ? loaded.id : ''), name, notes: $('save-notes').value, json: text }),
+    });
+    const d = await r.json();
+    if (!d.ok) { $('save-status').textContent = '⚠ ' + d.error; return; }
+    messages = d.messages;
+    setLoaded({ id: d.message.id, name: d.message.name });
+    $('save-status').textContent = `✓ Saved "${d.message.name}" (${$('output').value ? 'updated JSON' : 'source'}) at ${d.message.updated}.`;
+  }
+  $('save-new').onclick = () => saveMessage(true);
+  $('save-update').onclick = () => saveMessage(false);
+  $('msg-filter').addEventListener('input', renderMessages);
+
+  // ---------- edit box fields (config) ----------
+  async function saveConfig(patch) {
+    const r = await fetch(CONFIG_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) });
+    const d = await r.json();
+    if (d.ok) { config = d.config; $('auto-inc').checked = config.auto_increment; updateIdHint(); }
+    return d;
+  }
+  const overlay = $('config-overlay');
+  $('fields-config-btn').onclick = () => { renderFieldsTable(); overlay.hidden = false; };
+  $('config-close').onclick = () => overlay.hidden = true;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.hidden = true; });
+
+  function fillTagPicker(doc) {
+    const sel = $('af-pick');
+    sel.innerHTML = '<option value="">— pick a tag from the loaded payload —</option>';
+    if (!doc) { sel.options[0].textContent = '— load a JSON to list its tags —'; return; }
+    const seen = new Map();
+    doc.querySelectorAll('*').forEach(el => {
+      if (el.children.length) return; // leaf elements only
+      if (!seen.has(el.tagName)) seen.set(el.tagName, { value: el.textContent.trim(), count: 0 });
+      seen.get(el.tagName).count++;
+    });
+    for (const [tag, info] of seen) {
+      const o = document.createElement('option');
+      o.value = tag;
+      const used = config.fields.some(f => f.tag === tag);
+      o.textContent = `${tag} = ${info.value.slice(0, 40)}${info.count > 1 ? ` (×${info.count})` : ''}${used ? ' ✓ in box' : ''}`;
+      sel.appendChild(o);
+    }
+  }
+  $('af-pick').onchange = () => {
+    const tag = $('af-pick').value;
+    if (!tag) return;
+    $('af-tag').value = tag;
+    if (!$('af-label').value) $('af-label').value = tag.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
+    const v = currentDoc ? firstText(currentDoc, tag) : '';
+    $('af-type').value = /^\d{4}-\d{2}-\d{2}T/.test(v) ? 'datetime' : /^\d{4}-\d{2}-\d{2}$/.test(v) ? 'date' : /^-?\d+(\.\d+)?$/.test(v) ? 'number' : 'text';
+  };
+  $('af-add').onclick = async () => {
+    const tag = $('af-tag').value.trim();
+    if (!tag) { $('af-status').textContent = '⚠ Pick or type a tag name.'; return; }
+    if (config.fields.some(f => f.tag === tag)) { $('af-status').textContent = `⚠ <${tag}> is already in the edit box.`; return; }
+    const field = {
+      tag, label: $('af-label').value.trim() || tag, type: $('af-type').value,
+      required: $('af-required').checked, all: $('af-all').checked, insert_after: $('af-after').value.trim(),
+    };
+    await saveConfig({ fields: config.fields.concat([field]) });
+    renderFields(); renderFieldsTable(); fillTagPicker(currentDoc);
+    ['af-tag', 'af-label', 'af-after'].forEach(id => $(id).value = '');
+    $('af-pick').value = ''; $('af-required').checked = false; $('af-all').checked = true;
+    $('af-status').textContent = `✓ Added "${field.label}" — it is in the Fields box now and saved for next time.`;
+  };
+  function renderFieldsTable() {
+    const t = $('fields-table');
+    t.innerHTML = '<tr><th>Label</th><th>Tag</th><th>Type</th><th>Req.</th><th>All</th><th>Insert after</th><th></th></tr>';
+    config.fields.forEach((f, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input data-k="label" value=""></td>
+        <td><input data-k="tag" value="" class="mono-in"></td>
+        <td><select data-k="type">{% for t in field_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></td>
+        <td class="center"><input type="checkbox" data-k="required"></td>
+        <td class="center"><input type="checkbox" data-k="all"></td>
+        <td><input data-k="insert_after" value="" placeholder="—"></td>
+        <td class="row-tools-h">
+          <button type="button" class="icon-btn" data-act="up" title="Move up">↑</button>
+          <button type="button" class="icon-btn" data-act="down" title="Move down">↓</button>
+          <button type="button" class="icon-btn danger" data-act="del" title="Remove from the edit box">✕</button>
+        </td>`;
+      tr.querySelector('[data-k=label]').value = f.label;
+      tr.querySelector('[data-k=tag]').value = f.tag;
+      tr.querySelector('[data-k=type]').value = f.type;
+      tr.querySelector('[data-k=required]').checked = !!f.required;
+      tr.querySelector('[data-k=all]').checked = !!f.all;
+      tr.querySelector('[data-k=insert_after]').value = f.insert_after || '';
+      tr.querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('change', async () => {
+        const fields = structuredClone(config.fields);
+        const k = inp.dataset.k;
+        fields[i][k] = inp.type === 'checkbox' ? inp.checked : inp.value.trim();
+        if (k === 'tag') fields[i].key = '';  // re-derived from the tag
+        await saveConfig({ fields });
+        renderFields(); renderFieldsTable();
+      }));
+      tr.querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
+        const fields = structuredClone(config.fields);
+        if (b.dataset.act === 'del') {
+          if (!confirm(`Remove "${f.label}" from the edit box?`)) return;
+          fields.splice(i, 1);
+        } else {
+          const j = b.dataset.act === 'up' ? i - 1 : i + 1;
+          if (j < 0 || j >= fields.length) return;
+          [fields[i], fields[j]] = [fields[j], fields[i]];
+        }
+        await saveConfig({ fields });
+        renderFields(); renderFieldsTable(); fillTagPicker(currentDoc);
+      });
+      t.appendChild(tr);
+    });
+    if (!config.fields.length) t.innerHTML += '<tr><td colspan="7" class="muted">No fields — add one above or reset to defaults.</td></tr>';
+  }
+  $('fields-reset').onclick = async () => {
+    if (!confirm('Replace the field list with the defaults?')) return;
+    await saveConfig({ reset_fields: true });
+    renderFields(); renderFieldsTable(); fillTagPicker(currentDoc);
+  };
+
+  // ---------- init ----------
+  renderFields();
+  updateIdHint();
+  renderMessages();
+})();
+</script>
+{% endblock %}
