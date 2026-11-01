@@ -18,9 +18,9 @@
   <aside class="card msg-side">
     <h2>📚 BU library <span class="pill" id="lib-count">{{ entries|length }}</span></h2>
     <label class="dropzone small-dz" id="lib-drop">
-      <input type="file" id="lib-files" accept=".docx,.json,.txt" multiple hidden>
+      <input type="file" id="lib-files" accept=".docx,.xlsx,.xlsm,.csv,.json,.txt" multiple hidden>
       <div>📄 <strong>Import BU docs</strong></div>
-      <div class="muted small-text">.docx · .json · .txt — drop several at once; the BU code is read from the message</div>
+      <div class="muted small-text">.docx · .xlsx · .csv · .json · .txt — drop several at once; every cell or paragraph holding a message is read, BU code from the message</div>
     </label>
     <div class="muted small-text" id="lib-import-status"></div>
     <label class="search-box"><span>🔍</span><input id="lib-filter" placeholder="Filter by BU or name…" autocomplete="off"></label>

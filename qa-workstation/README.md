@@ -49,8 +49,10 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   `.xlsx`. Fed by the **QA Table Mailer** plugin (copy cells in Excel
   Online → grab → edit → send / save as job).
 - **Msg5 Json** (`modules/msg5/`) — transaction string editor: load a
-  Msg5 JSON with an XML-entity payload, edit its fields (configurable:
-  add any payload tag to the edit box, saved in `data/msg5/config.json`),
+  Msg5 JSON with an XML-entity payload (paste, or 📂 from an Excel cell,
+  CSV, Word doc or .json), edit its fields (configurable: add any
+  message key or payload tag to the edit box, saved in
+  `data/msg5/config.json`),
   New UUID with optional transaction number +1, generate / copy /
   download, and a library of named saved messages.
 - **TLog Handler** (`modules/tlog/`) — "create msg5" request editor for

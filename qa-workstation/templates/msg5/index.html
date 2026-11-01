@@ -37,6 +37,8 @@
       <div class="page-head tight">
         <h2>Source JSON <span class="muted small-text" id="loaded-label"></span></h2>
         <div class="row-actions">
+          <button class="btn small" id="file-btn" title="Load the message from an Excel workbook (any cell), CSV, Word doc, .json or .txt">📂 Load from file</button>
+          <input type="file" id="file-input" accept=".xlsx,.xlsm,.csv,.docx,.json,.txt" hidden>
           <button class="btn small" id="paste-btn" title="Paste from the clipboard">📋 Paste</button>
           <button class="btn small" id="clear-btn">Clear</button>
         </div>
@@ -86,13 +88,33 @@
   </div>
 </div>
 
+<!-- ---------- pick a message from a file ---------- -->
+<div class="preview-overlay" id="pick-overlay" hidden>
+  <div class="preview-modal card">
+    <div class="page-head">
+      <div>
+        <h2>📂 Messages found in <span id="pick-file"></span></h2>
+        <p class="muted small-text">Click one to load it into the editor, or save them all as named messages.</p>
+      </div>
+      <div class="row-actions">
+        <button class="btn small" id="pick-save-all">💾 Save all to library</button>
+        <button class="btn small" id="pick-close">✕ Close</button>
+      </div>
+    </div>
+    <div class="import-body table-wrap">
+      <table class="list-table" id="pick-table"></table>
+    </div>
+    <div class="muted small-text top-gap" id="pick-status"></div>
+  </div>
+</div>
+
 <!-- ---------- edit box fields (config) ---------- -->
 <div class="preview-overlay" id="config-overlay" hidden>
   <div class="preview-modal card config-modal">
     <div class="page-head">
       <div>
         <h2>⚙️ Edit box fields</h2>
-        <p class="muted small-text">Which payload tags appear as inputs in the Fields box. Saved in <code>data/msg5/config.json</code> and used every time.</p>
+        <p class="muted small-text">Which message keys and payload tags appear as inputs in the Fields box. Saved in <code>data/msg5/config.json</code> and used every time.</p>
       </div>
       <button class="btn small" id="config-close">✕ Close</button>
     </div>
@@ -100,11 +122,14 @@
     <div class="import-body">
       <h3>Add a field</h3>
       <div class="add-field">
-        <label>Tag from the loaded payload
-          <select id="af-pick"><option value="">— load a JSON to list its tags —</option></select>
+        <label>From the loaded JSON
+          <select id="af-pick"><option value="">— load a JSON to list its keys and tags —</option></select>
         </label>
-        <label>or type the tag name
+        <label>or type the key / tag name
           <input id="af-tag" placeholder="e.g. CashierID">
+        </label>
+        <label>Source
+          <select id="af-source"><option value="xml">payload tag</option><option value="json">message key</option></select>
         </label>
         <label>Label
           <input id="af-label" placeholder="Shown in the edit box">
@@ -174,10 +199,29 @@
     return m ? `${m[1]}T${m[2]}:${m[3] || '00'}` : '';
   }
   function localToXml(v) { if (!v) return ''; return v.length === 16 ? v + ':00.000' : v + '.000'; }
-  function toInput(f, v) { return f.type === 'datetime' ? xmlToLocal(v) : v; }
-  function fromInput(f, v) { return f.type === 'datetime' ? localToXml(v) : v; }
+  const pad = n => String(n).padStart(2, '0');
+  const localString = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  function toInput(f, v) {
+    if (f.type === 'datetime') return xmlToLocal(v);
+    if (f.type === 'epochms') { const n = parseInt(v, 10); return Number.isFinite(n) ? localString(new Date(n)) : ''; }
+    return v == null ? '' : String(v);
+  }
+  function fromInput(f, v) {
+    if (f.type === 'datetime') return localToXml(v);
+    if (f.type === 'epochms') return v ? String(new Date(v).getTime()) : '';
+    return v;
+  }
+  function readValue(f) {
+    if (f.source === 'json') return currentJson ? currentJson[f.tag] : '';
+    return currentDoc ? firstText(currentDoc, f.tag) : '';
+  }
 
-  function applyField(doc, f, value) {
+  function applyField(doc, f, value, json) {
+    if (f.source === 'json') {
+      if (f.type === 'epochms' || f.type === 'number') { const n = Number(value); json[f.tag] = value !== '' && Number.isFinite(n) ? n : value; }
+      else json[f.tag] = value;
+      return 'updated';
+    }
     const list = elements(doc, f.tag);
     if (list.length) {
       (f.all ? list : [list[0]]).forEach(el => { el.textContent = value; });
@@ -209,14 +253,14 @@
       lab.dataset.key = f.key;
       const inp = document.createElement('input');
       inp.id = 'f-' + f.key;
-      inp.type = f.type === 'datetime' ? 'datetime-local' : f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
-      if (f.type === 'datetime') inp.step = '1';
+      inp.type = f.type === 'datetime' || f.type === 'epochms' ? 'datetime-local' : f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
+      if (inp.type === 'datetime-local') inp.step = '1';
       if (f.type === 'number') { inp.step = '1'; }
       inp.placeholder = f.required ? '' : 'Optional';
       lab.append(document.createTextNode(f.label + (f.required ? '' : '')), inp);
       const small = document.createElement('small');
       small.className = 'muted';
-      small.textContent = (f.hint || ('<' + f.tag + '>' + (f.all ? ', every occurrence' : ', first occurrence only'))) + (f.required ? ' · required' : '');
+      small.textContent = (f.hint || (f.source === 'json' ? `message key "${f.tag}"` : '<' + f.tag + '>' + (f.all ? ', every occurrence' : ', first occurrence only'))) + (f.required ? ' · required' : '');
       lab.appendChild(small);
       grid.appendChild(lab);
     }
@@ -225,10 +269,10 @@
   function fillFields(doc) {
     for (const f of config.fields) {
       const inp = $('f-' + f.key);
-      if (inp) inp.value = toInput(f, firstText(doc, f.tag));
+      if (inp) inp.value = toInput(f, readValue(f));
     }
   }
-  function incField() { return config.fields.find(f => f.tag === config.increment_tag) || config.fields.find(f => f.type === 'number'); }
+  function incField() { return config.fields.find(f => f.tag === config.increment_tag && f.source !== 'json') || config.fields.find(f => f.type === 'number'); }
   function updateIdHint() {
     const f = incField();
     $('id-hint').textContent = config.auto_increment && f ? `New UUID also adds 1 to ${f.label}.` : '';
@@ -273,7 +317,7 @@
       for (const f of config.fields) {
         const v = ($('f-' + f.key)?.value || '').trim();
         if (f.required && !v) throw new Error(f.label + ' is required.');
-        const action = applyField(doc, f, fromInput(f, v));
+        const action = applyField(doc, f, fromInput(f, v), result);
         if (action === 'inserted') notes.push(f.label + ' was inserted.');
       }
       const serialized = new XMLSerializer().serializeToString(doc);
@@ -339,6 +383,51 @@
     loadSource();
     status($('copy-status'), 'Updated JSON is now the source.');
   });
+  // ---------- load from a file (Excel cell / CSV / docx / json / txt) ----------
+  const READ_URL = "{{ url_for('msg5.read_file') }}";
+  const BULK_URL = "{{ url_for('msg5.save_bulk') }}";
+  const pickOverlay = $('pick-overlay');
+  let picked = [];
+  $('file-btn').onclick = () => $('file-input').click();
+  $('file-input').onchange = async () => {
+    const f = $('file-input').files[0];
+    $('file-input').value = '';
+    if (!f) return;
+    const fd = new FormData(); fd.append('file', f, f.name);
+    status($('load-status'), `Reading ${f.name}…`);
+    let d;
+    try { d = await (await fetch(READ_URL, { method: 'POST', body: fd })).json(); } catch (e) { d = { error: e.message }; }
+    if (!d.ok) { status($('load-status'), d.error || 'could not read the file', false); return; }
+    picked = d.messages;
+    if (picked.length === 1) { useMessage(picked[0]); return; }
+    $('pick-file').textContent = `${d.filename} (${picked.length})`;
+    $('pick-table').innerHTML = '<tr><th>#</th><th>Name</th><th>Where</th><th>Message</th><th>Size</th><th></th></tr>' +
+      picked.map((m, i) => `<tr><td class="muted">${i + 1}</td><td><strong></strong></td><td class="muted small-text"></td><td class="muted small-text"></td><td class="muted small-text">${(m.json.length / 1024).toFixed(1)} KB</td><td><button type="button" class="btn small primary" data-i="${i}">⬇ Load</button></td></tr>`).join('');
+    [...$('pick-table').querySelectorAll('tr')].slice(1).forEach((tr, i) => {
+      tr.querySelector('strong').textContent = picked[i].name;
+      tr.querySelectorAll('td.muted.small-text')[0].textContent = picked[i].where || '';
+      tr.querySelectorAll('td.muted.small-text')[1].textContent = picked[i].label || '';
+    });
+    $('pick-table').querySelectorAll('button[data-i]').forEach(b => b.onclick = () => { useMessage(picked[+b.dataset.i]); pickOverlay.hidden = true; });
+    $('pick-status').textContent = '';
+    pickOverlay.hidden = false;
+  };
+  function useMessage(m) {
+    $('source').value = m.json;
+    setLoaded(null);
+    $('save-name').value = m.name || '';
+    $('save-notes').value = m.where ? `from file · ${m.where}` : '';
+    loadSource();
+    status($('load-status'), `Loaded "${m.name}"${m.where ? ' from ' + m.where : ''} · ${config.fields.length} fields.`);
+  }
+  $('pick-save-all').onclick = async () => {
+    const d = await (await fetch(BULK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: picked.map(m => ({ name: m.name, json: m.json, notes: m.where ? `from file · ${m.where}` : '' })) }) })).json();
+    if (d.ok) { messages = d.messages; renderMessages(); $('pick-status').textContent = `✓ Saved ${d.saved} messages to the library.`; }
+  };
+  $('pick-close').onclick = () => pickOverlay.hidden = true;
+  pickOverlay.addEventListener('click', e => { if (e.target === pickOverlay) pickOverlay.hidden = true; });
+
   $('paste-btn').addEventListener('click', async () => {
     try {
       $('source').value = await navigator.clipboard.readText();
@@ -430,40 +519,45 @@
   $('fields-config-btn').onclick = () => { renderFieldsTable(); overlay.hidden = false; };
   $('config-close').onclick = () => overlay.hidden = true;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.hidden = true; });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { overlay.hidden = true; pickOverlay.hidden = true; } });
 
   function fillTagPicker(doc) {
     const sel = $('af-pick');
-    sel.innerHTML = '<option value="">— pick a tag from the loaded payload —</option>';
-    if (!doc) { sel.options[0].textContent = '— load a JSON to list its tags —'; return; }
+    sel.innerHTML = '<option value="">— pick from the loaded JSON —</option>';
+    if (!doc || !currentJson) { sel.options[0].textContent = '— load a JSON to list its keys and tags —'; return; }
+    const used = new Set(config.fields.map(f => (f.source || 'xml') + ':' + f.tag));
+    const addOpt = (source, tag, value, count) => {
+      const o = document.createElement('option');
+      o.value = source + ':' + tag;
+      o.textContent = `${source === 'json' ? 'key' : 'tag'} ${tag} = ${String(value).slice(0, 40)}${count > 1 ? ` (×${count})` : ''}${used.has(source + ':' + tag) ? ' ✓ in box' : ''}`;
+      sel.appendChild(o);
+    };
+    // the message's own keys (id is always editable; the payload is the XML)
+    for (const [k, v] of Object.entries(currentJson)) if (k !== payloadKey && k !== 'id') addOpt('json', k, v, 1);
     const seen = new Map();
     doc.querySelectorAll('*').forEach(el => {
       if (el.children.length) return; // leaf elements only
       if (!seen.has(el.tagName)) seen.set(el.tagName, { value: el.textContent.trim(), count: 0 });
       seen.get(el.tagName).count++;
     });
-    for (const [tag, info] of seen) {
-      const o = document.createElement('option');
-      o.value = tag;
-      const used = config.fields.some(f => f.tag === tag);
-      o.textContent = `${tag} = ${info.value.slice(0, 40)}${info.count > 1 ? ` (×${info.count})` : ''}${used ? ' ✓ in box' : ''}`;
-      sel.appendChild(o);
-    }
+    for (const [tag, info] of seen) addOpt('xml', tag, info.value, info.count);
   }
   $('af-pick').onchange = () => {
-    const tag = $('af-pick').value;
-    if (!tag) return;
+    const pick = $('af-pick').value;
+    if (!pick) return;
+    const [source, tag] = pick.split(/:(.*)/);
+    $('af-source').value = source;
     $('af-tag').value = tag;
     if (!$('af-label').value) $('af-label').value = tag.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
-    const v = currentDoc ? firstText(currentDoc, tag) : '';
-    $('af-type').value = /^\d{4}-\d{2}-\d{2}T/.test(v) ? 'datetime' : /^\d{4}-\d{2}-\d{2}$/.test(v) ? 'date' : /^-?\d+(\.\d+)?$/.test(v) ? 'number' : 'text';
+    const v = source === 'json' ? String(currentJson[tag] ?? '') : (currentDoc ? firstText(currentDoc, tag) : '');
+    $('af-type').value = source === 'json' && /^\d{13}$/.test(v) ? 'epochms' : /^\d{4}-\d{2}-\d{2}T/.test(v) ? 'datetime' : /^\d{4}-\d{2}-\d{2}$/.test(v) ? 'date' : /^-?\d+(\.\d+)?$/.test(v) ? 'number' : 'text';
   };
   $('af-add').onclick = async () => {
-    const tag = $('af-tag').value.trim();
-    if (!tag) { $('af-status').textContent = '⚠ Pick or type a tag name.'; return; }
-    if (config.fields.some(f => f.tag === tag)) { $('af-status').textContent = `⚠ <${tag}> is already in the edit box.`; return; }
+    const tag = $('af-tag').value.trim(), source = $('af-source').value;
+    if (!tag) { $('af-status').textContent = '⚠ Pick or type a key / tag name.'; return; }
+    if (config.fields.some(f => f.tag === tag && (f.source || 'xml') === source)) { $('af-status').textContent = `⚠ ${tag} is already in the edit box.`; return; }
     const field = {
-      tag, label: $('af-label').value.trim() || tag, type: $('af-type').value,
+      tag, source, label: $('af-label').value.trim() || tag, type: $('af-type').value,
       required: $('af-required').checked, all: $('af-all').checked, insert_after: $('af-after').value.trim(),
     };
     await saveConfig({ fields: config.fields.concat([field]) });
@@ -474,11 +568,12 @@
   };
   function renderFieldsTable() {
     const t = $('fields-table');
-    t.innerHTML = '<tr><th>Label</th><th>Tag</th><th>Type</th><th>Req.</th><th>All</th><th>Insert after</th><th></th></tr>';
+    t.innerHTML = '<tr><th>Label</th><th>Source</th><th>Key / tag</th><th>Type</th><th>Req.</th><th>All</th><th>Insert after</th><th></th></tr>';
     config.fields.forEach((f, i) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input data-k="label" value=""></td>
+        <td><select data-k="source"><option value="xml">tag</option><option value="json">key</option></select></td>
         <td><input data-k="tag" value="" class="mono-in"></td>
         <td><select data-k="type">{% for t in field_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></td>
         <td class="center"><input type="checkbox" data-k="required"></td>
@@ -491,6 +586,7 @@
         </td>`;
       tr.querySelector('[data-k=label]').value = f.label;
       tr.querySelector('[data-k=tag]').value = f.tag;
+      tr.querySelector('[data-k=source]').value = f.source || 'xml';
       tr.querySelector('[data-k=type]').value = f.type;
       tr.querySelector('[data-k=required]').checked = !!f.required;
       tr.querySelector('[data-k=all]').checked = !!f.all;
@@ -518,7 +614,7 @@
       });
       t.appendChild(tr);
     });
-    if (!config.fields.length) t.innerHTML += '<tr><td colspan="7" class="muted">No fields — add one above or reset to defaults.</td></tr>';
+    if (!config.fields.length) t.innerHTML += '<tr><td colspan="8" class="muted">No fields — add one above or reset to defaults.</td></tr>';
   }
   $('fields-reset').onclick = async () => {
     if (!confirm('Replace the field list with the defaults?')) return;

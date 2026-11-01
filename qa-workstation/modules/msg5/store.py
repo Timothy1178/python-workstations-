@@ -18,7 +18,7 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "msg5"
 MSG_DIR = DATA_DIR / "messages"
 CONFIG_FILE = DATA_DIR / "config.json"
 
-FIELD_TYPES = ("text", "number", "date", "datetime")
+FIELD_TYPES = ("text", "number", "date", "datetime", "epochms")
 
 DEFAULT_FIELDS = [
     {"key": "transactionNumber", "tag": "TransactionNumber", "label": "Transaction number",
@@ -86,10 +86,12 @@ def clean_field(f):
     tag = re.sub(r"[^A-Za-z0-9_.\-:]", "", str(f.get("tag", "")).strip())
     if not tag:
         return None
+    source = "json" if f.get("source") == "json" else "xml"
     key = re.sub(r"[^A-Za-z0-9_]", "", str(f.get("key", "")).strip()) or key_for(tag)
     ftype = f.get("type") if f.get("type") in FIELD_TYPES else "text"
     out = {
         "key": key,
+        "source": source,
         "tag": tag,
         "label": str(f.get("label", "")).strip() or tag,
         "type": ftype,

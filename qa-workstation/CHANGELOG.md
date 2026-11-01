@@ -5,6 +5,22 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.16.0 — 2026-11-01
+
+- **Msg5 Json — 📂 Load from file**: open the message straight from an
+  Excel workbook (every text cell of every sheet is scanned, the name
+  comes from the row's title cell), a CSV, a Word doc, .json or .txt.
+  One message loads directly; several open a chooser (name, sheet /
+  cell, BU · type · id, size) with ⬇ Load per row and 💾 Save all to
+  library.
+- **Msg5 Json — message keys as fields**: the ⚙️ Edit box fields picker
+  now lists the JSON's own keys (type, buCode, timestamp…) beside the
+  payload tags; a key field edits the JSON directly, with an `epochms`
+  type that shows a 13-digit timestamp as a date-time picker. Source
+  (key / tag) is shown and editable in the fields table.
+- **TLog Handler import** accepts .xlsx / .xlsm / .csv too (same shared
+  reader, `modules/msgfiles.py`).
+
 ## 1.15.0 — 2026-11-01
 
 - **New module — 📨 TLog Handler (create msg5)**: editor for the

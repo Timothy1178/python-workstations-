@@ -11,6 +11,7 @@ import json
 from flask import Blueprint, render_template, request, jsonify
 
 from . import store
+from modules import msgfiles
 
 bp = Blueprint("msg5", __name__, url_prefix="/msg5")
 
@@ -78,3 +79,32 @@ def message(mid):
     if m is None:
         return jsonify({"ok": False, "error": "not found"}), 404
     return jsonify({"ok": True, "message": m})
+
+
+# ---------- load messages from a file (Excel / CSV / docx / json / txt) ----------
+
+@bp.route("/api/read-file", methods=["POST"])
+def read_file():
+    """Multipart 'file' -> every message found in it (any Excel cell,
+    CSV cell or paragraph). The page loads one or saves them all."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"ok": False, "error": "no file"}), 400
+    try:
+        found = msgfiles.read_upload(f.filename, f.read())
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"could not read {f.filename}: {e}"}), 400
+    if not found:
+        return jsonify({"ok": False, "error": f"{f.filename}: no message with a playloadJson found"}), 400
+    return jsonify({"ok": True, "filename": f.filename, "messages": found})
+
+
+@bp.route("/api/messages/bulk", methods=["POST"])
+def save_bulk():
+    data = request.get_json(force=True) or {}
+    n = 0
+    for m in data.get("messages", []):
+        if isinstance(m, dict) and isinstance(m.get("json"), str) and m["json"].strip():
+            store.save_message("", str(m.get("name", "")), m["json"], str(m.get("notes", "")))
+            n += 1
+    return jsonify({"ok": True, "saved": n, "messages": store.list_messages()})

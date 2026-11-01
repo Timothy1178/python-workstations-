@@ -9,14 +9,11 @@ The messages are the UPDATE_TRANSACTION_STOCK_FROM_MSG5 Kafka payloads
 sent through Offset Explorer: {"id", "type", "buCode", "timestamp",
 "playloadJson": "<entity-encoded ActiveStore_SalesTransaction XML>"}.
 """
-import io
 import json
 import re
 import time
 import uuid
-import zipfile
 from pathlib import Path
-from xml.etree import ElementTree as ET
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "tlog"
 LIB_DIR = DATA_DIR / "library"
@@ -188,53 +185,10 @@ def bu_from_json(text):
 
 # ---------- reading the BU docs ----------
 
-W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
-
-
-def docx_text(raw):
-    """Paragraph text of a .docx (python-docx not needed)."""
-    with zipfile.ZipFile(io.BytesIO(raw)) as z:
-        root = ET.fromstring(z.read("word/document.xml"))
-    paras = []
-    for p in root.iter(W + "p"):
-        txt = "".join(t.text or "" for t in p.iter(W + "t"))
-        if txt.strip():
-            paras.append(txt)
-    return "\n".join(paras)
-
-
-def find_messages(text):
-    """Every top-level JSON object in the text that looks like a TLog
-    message (has a payload string)."""
-    dec = json.JSONDecoder()
-    out, i = [], 0
-    while True:
-        i = text.find("{", i)
-        if i < 0:
-            break
-        try:
-            obj, end = dec.raw_decode(text, i)
-        except ValueError:
-            i += 1
-            continue
-        if isinstance(obj, dict) and any(isinstance(obj.get(k), str) for k in ("playloadJson", "payloadJson")):
-            out.append(obj)
-        i = end
-    return out
+from modules import msgfiles  # noqa: E402
 
 
 def read_upload(filename, raw):
-    """-> list of {name, bu_code, json} found in a .docx / .json / .txt."""
-    stem = Path(filename).stem
-    ext = Path(filename).suffix.lower()
-    if ext == ".docx":
-        text = docx_text(raw)
-    else:
-        text = raw.decode("utf-8-sig", errors="replace")
-    msgs = find_messages(text)
-    found = []
-    for n, obj in enumerate(msgs, start=1):
-        bu = str(obj.get("buCode", "") or "").upper()
-        name = stem if len(msgs) == 1 else f"{stem} ({n})"
-        found.append({"name": name, "bu_code": bu, "json": json.dumps(obj, ensure_ascii=False)})
-    return found
+    """-> list of {name, bu_code, json} found in a .docx / .xlsx / .csv /
+    .json / .txt (any cell or paragraph holding the message)."""
+    return msgfiles.read_upload(filename, raw)
