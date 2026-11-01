@@ -88,9 +88,34 @@ def _fx(cid, spid, filt, dur):
     return (f'<p:animEffect transition="in" filter="{filt}"><p:cBhvr><p:cTn id="{cid}" dur="{dur}"/>'
             f'<p:tgtEl><p:spTgt spid="{spid}"/></p:tgtEl></p:cBhvr></p:animEffect>')
 
+def _rot(cid, spid, by, dur):
+    return (f'<p:animRot by="{by}"><p:cBhvr><p:cTn id="{cid}" dur="{dur}" fill="hold"/><p:tgtEl><p:spTgt spid="{spid}"/></p:tgtEl>'
+            f'<p:attrNameLst><p:attrName>r</p:attrName></p:attrNameLst></p:cBhvr></p:animRot>')
+
+def _scale(cid, spid, frm, to, dur, autorev=False):
+    ar = ' autoRev="1"' if autorev else ""
+    return (f'<p:animScale><p:cBhvr><p:cTn id="{cid}" dur="{dur}" fill="hold"{ar}/><p:tgtEl><p:spTgt spid="{spid}"/></p:tgtEl></p:cBhvr>'
+            f'<p:from x="{frm}" y="{frm}"/><p:to x="{to}" y="{to}"/></p:animScale>')
+
+def _motion(cid, spid, path, dur):
+    return (f'<p:animMotion origin="layout" path="{path}" pathEditMode="relative" ptsTypes=""><p:cBhvr><p:cTn id="{cid}" dur="{dur}" fill="hold"/>'
+            f'<p:tgtEl><p:spTgt spid="{spid}"/></p:tgtEl><p:attrNameLst><p:attrName>ppt_x</p:attrName><p:attrName>ppt_y</p:attrName></p:attrNameLst></p:cBhvr></p:animMotion>')
+
 EFFECTS = {
-    # name: (presetID, presetSubtype, builder(cid_iter, spid, dur) -> xml)
+    # name: (presetID, presetSubtype, builder(cid_iter, spid, dur) -> xml[, presetClass, extra cTn attrs])
     "fade":  (10, 0,  lambda c, s, d: _set_visible(next(c), s) + _fx(next(c), s, "fade", d)),
+    "wheel": (21, 1,  lambda c, s, d: _set_visible(next(c), s) + _fx(next(c), s, "wheel(1)", d)),
+    "split": (16, 16, lambda c, s, d: _set_visible(next(c), s) + _fx(next(c), s, "barn(inVertical)", d)),
+    "spinin": (53, 16, lambda c, s, d: _set_visible(next(c), s) + _fx(next(c), s, "fade", d) + _scale(next(c), s, 10000, 100000, d) + _rot(next(c), s, 21600000, d)),
+    # emphasis (object already visible)
+    "spin":     (8, 0, lambda c, s, d: _rot(next(c), s, 21600000, d), "emph", ""),
+    "spinloop": (8, 0, lambda c, s, d: _rot(next(c), s, 21600000, d), "emph", ' repeatCount="indefinite"'),
+    "spinback": (8, 0, lambda c, s, d: _rot(next(c), s, -21600000, d), "emph", ' repeatCount="indefinite"'),
+    "pulse":    (26, 0, lambda c, s, d: _scale(next(c), s, 100000, 108000, d, autorev=True), "emph", ' repeatCount="indefinite"'),
+    "grow":     (6, 0, lambda c, s, d: _scale(next(c), s, 100000, 115000, d), "emph", ""),
+    # motion path (relative to slide size)
+    "slideright": (0, 0, lambda c, s, d: _motion(next(c), s, "M 0 0 L 0.18 0 E", d), "path", ""),
+    "bounce":     (0, 0, lambda c, s, d: _motion(next(c), s, "M 0 0 C 0.02 -0.08 0.06 -0.08 0.08 0 C 0.09 -0.04 0.11 -0.04 0.12 0 E", d), "path", ""),
     "float": (42, 4,  lambda c, s, d: _set_visible(next(c), s) + _fx(next(c), s, "fade", d) + _anim(next(c), s, "ppt_y", "#ppt_y+0.06", "#ppt_y", d)),
     "wipe":  (22, 8,  lambda c, s, d: _set_visible(next(c), s) + _fx(next(c), s, "wipe(left)", d)),
     "wipedown": (22, 4, lambda c, s, d: _set_visible(next(c), s) + _fx(next(c), s, "wipe(down)", d)),
@@ -145,9 +170,8 @@ class Slide:
         return ('<a:effectLst><a:outerShdw blurRad="152400" dist="38100" dir="5400000" algn="t" rotWithShape="0">'
                 '<a:srgbClr val="000000"><a:alpha val="16000"/></a:srgbClr></a:outerShdw></a:effectLst>')
 
-    @staticmethod
-    def _runs(text, size, color, bold=False, italic=False, font=None):
-        """text: str or list of (str, {size,color,bold,italic,font}) runs."""
+    def _runs(self, text, size, color, bold=False, italic=False, font=None):
+        """text: str or list of (str, {size,color,bold,italic,font,link}) runs."""
         if isinstance(text, str):
             text = [(text, {})]
         out = []
@@ -160,7 +184,12 @@ class Slide:
             fill = f'<a:solidFill><a:srgbClr val="{col}"/></a:solidFill>' if col else ""
             if t == "\n":
                 out.append("<a:br/>"); continue
-            rpr = f'<a:rPr lang="en-US" sz="{int(sz * 100)}"{b}{i} dirty="0">{fill}{latin}</a:rPr>'
+            link = ""
+            if o.get("link"):
+                rid = f"rId{len(self.rels) + 1}"
+                self.rels.append((rid, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', f'slide{99 + int(o["link"])}.xml'))
+                link = f'<a:hlinkClick r:id="{rid}" action="ppaction://hlinksldjump"/>'
+            rpr = f'<a:rPr lang="en-US" sz="{int(sz * 100)}"{b}{i} dirty="0">{fill}{latin}{link}</a:rPr>'
             parts = str(t).split("\n")
             for k, part in enumerate(parts):
                 if k:
@@ -207,13 +236,35 @@ class Slide:
         self.shapes.append(xml)
         return sid
 
-    def shape(self, x, y, w, h, geom="rect", fill="E31836", line=None, line_w=0.75, shadow=False, radius=None, name="Shape", rot=0, transparency=0, dash=None):
+    def shape(self, x, y, w, h, geom="rect", fill="E31836", line=None, line_w=0.75, shadow=False, radius=None, name="Shape", rot=0, transparency=0, dash=None, link=None, adj=None):
         sid = self._id()
-        adj = f'<a:avLst><a:gd name="adj" fmla="val {int(radius)}"/></a:avLst>' if radius is not None else "<a:avLst/>"
+        hl = ""
+        if link:
+            rid = f"rId{len(self.rels) + 1}"
+            self.rels.append((rid, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide', f'slide{99 + int(link)}.xml'))
+            hl = f'<a:hlinkClick r:id="{rid}" action="ppaction://hlinksldjump"/>'
+        if adj is not None:
+            adjx = "<a:avLst>" + "".join(f'<a:gd name="{k}" fmla="val {int(v)}"/>' for k, v in adj.items()) + "</a:avLst>"
+        else:
+            adjx = f'<a:avLst><a:gd name="adj" fmla="val {int(radius)}"/></a:avLst>' if radius is not None else "<a:avLst/>"
+        adj = adjx
         rotation = f' rot="{int(rot * 60000)}"' if rot else ""
-        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{esc(name)} {sid}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
+        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{esc(name)} {sid}">{hl}</p:cNvPr><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
                f'<p:spPr><a:xfrm{rotation}><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/></a:xfrm>'
                f'<a:prstGeom prst="{geom}">{adj}</a:prstGeom>{self._fill(fill, transparency)}{self._line(line, line_w, dash)}{self._shadow(shadow)}</p:spPr>'
+               f'<p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>')
+        self.shapes.append(xml)
+        return sid
+
+    def gradient_rect(self, x, y, w, h, c1, c2, angle=90, name="Gradient", geom="rect", radius=None, transparency=0):
+        """Two-stop linear gradient fill (not possible in pptxgenjs)."""
+        sid = self._id()
+        adj = f'<a:avLst><a:gd name="adj" fmla="val {int(radius)}"/></a:avLst>' if radius is not None else "<a:avLst/>"
+        a = f'<a:alpha val="{int((100 - transparency) * 1000)}"/>' if transparency else ""
+        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{esc(name)} {sid}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
+               f'<p:spPr><a:xfrm><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/></a:xfrm><a:prstGeom prst="{geom}">{adj}</a:prstGeom>'
+               f'<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:srgbClr val="{c1}">{a}</a:srgbClr></a:gs><a:gs pos="100000"><a:srgbClr val="{c2}">{a}</a:srgbClr></a:gs></a:gsLst>'
+               f'<a:lin ang="{int(angle * 60000)}" scaled="0"/></a:gradFill><a:ln><a:noFill/></a:ln></p:spPr>'
                f'<p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>')
         self.shapes.append(xml)
         return sid
@@ -292,10 +343,13 @@ class Slide:
             outer = next(cid); inner = next(cid)
             effs = []
             for k, (spid, eff, delay, dur) in enumerate(items):
-                pid, psub, builder = EFFECTS[eff]
+                ent = EFFECTS[eff]
+                pid, psub, builder = ent[0], ent[1], ent[2]
+                pclass = ent[3] if len(ent) > 3 else "entr"
+                extra = ent[4] if len(ent) > 4 else ""
                 node = "clickEffect" if (k == 0 and trigger == "click") else ("afterEffect" if (k == 0) else "withEffect")
                 eid = next(cid)
-                effs.append(f'<p:par><p:cTn id="{eid}" presetID="{pid}" presetClass="entr" presetSubtype="{psub}" fill="hold" grpId="0" nodeType="{node}">'
+                effs.append(f'<p:par><p:cTn id="{eid}" presetID="{pid}" presetClass="{pclass}" presetSubtype="{psub}" fill="hold" grpId="0" nodeType="{node}"{extra}>'
                             f'<p:stCondLst><p:cond delay="{delay}"/></p:stCondLst><p:childTnLst>{builder(cid, spid, dur)}</p:childTnLst></p:cTn></p:par>')
                 build_ids.append(spid)
             outer_delay = "indefinite" if trigger == "click" else "0"
