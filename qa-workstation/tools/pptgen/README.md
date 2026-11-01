@@ -10,11 +10,19 @@ tools/pptgen/
   pptlib.py              # tiny OOXML slide builder: text, shapes, pictures, groups,
                          # entrance animations (fade / float / wipe / zoom / fly) and transitions
   build_whatsapp_deck.py # the WhatsApp chatbot registration deck
-  build_showcase_deck.py # the 35-slide design catalog / skills showcase (spin, pulse,
+  build_showcase_deck.py # the 58-slide design catalog / skills showcase (spin, pulse,
                          # motion paths, hyperlinked catalog, rings, funnel, mock-ups…)
   post_charts.py         # python-pptx step that adds native charts + a styled table
   icons.js               # renders react-icons to PNG in brand colours + grey image placeholders (node)
 ```
+
+Slide transitions: pass `transition=("gallery", 1500)` (name, ms) to `deck.slide()`.
+`pptlib.TRANSITIONS` covers the classic set plus PowerPoint 2010+ effects (gallery, cube,
+box, rotate, orbit, ferris, conveyor, vortex, switch, flip, doors, window, honeycomb,
+ripple, glitter, shred, flythrough, warp, flash, pan, reveal), the 2013 presets (fallover,
+drape, curtains, wind, prestige, fracture, crush, peeloff, pagecurl, airplane, origami)
+and Morph. Shapes whose name starts with `!!` keep that exact name, so Morph can match
+them across slides.
 
 Effects available in `pptlib.EFFECTS`: entrance `fade float rise wipe wipedown wheel
 split zoom spinin flyleft flyright flyup`; emphasis `spin spinloop spinback pulse grow`

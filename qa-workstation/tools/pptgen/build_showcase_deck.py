@@ -40,7 +40,7 @@ def skill_note(s, text):
     """Small grey note at the bottom explaining the technique shown."""
     s.text(L, 6.08, W, 0.3, [("Skill: ", {"bold": True, "color": RED}), (text, {})], size=10.5, color=GREY, italic=True, margin=(0, 0, 0, 0))
 
-SECTIONS = [("A", "Openers & dividers", 4, 3), ("B", "Text & layout", 7, 5), ("C", "Numbers & data", 13, 5), ("D", "Process & structure", 19, 8), ("E", "Visual effects", 28, 7)]
+SECTIONS = [("A", "Openers & dividers", 4, 3), ("B", "Text & layout", 7, 5), ("C", "Numbers & data", 13, 5), ("D", "Process & structure", 19, 8), ("E", "Visual effects", 28, 6), ("F", "Slide transitions", 35, 23)]
 
 # ================= 1 COVER =================
 s = deck.slide(1, "fade")
@@ -76,19 +76,19 @@ s.stagger(ids, "float", 120)
 # ================= 3 CATALOG =================
 s = content("Catalog — click a section to jump")
 ids = []
-cw = (W - 4 * 0.22) / 5
+cw = (W - 5 * 0.22) / 6
 for i, (letter, name, first, count) in enumerate(SECTIONS):
     x = L + i * (cw + 0.22)
     def b(g, x=x, letter=letter, name=name, first=first, count=count, i=i):
         card(g, x, 1.6, cw, 3.4, fill="FFFFFF", line=LINE, shadow=True)
-        g.shape(x, 1.6, cw, 1.25, geom="round2SameRect", fill=[RED, PURPLE, BLUE, GOLD, DARK][i], radius=8000, name="Card head", link=first)
+        g.shape(x, 1.6, cw, 1.25, geom="round2SameRect", fill=[RED, PURPLE, BLUE, GOLD, DARK, MAGENTA][i], radius=8000, name="Card head", link=first)
         g.text(x, 1.6, cw, 1.25, letter, size=48, color="FFFFFF", bold=True, align="ctr", valign="m", margin=(0, 0, 0, 0))
-        g.text(x + 0.2, 3.0, cw - 0.4, 0.7, name, size=16, color=DARK, bold=True, margin=(0, 0, 0, 0))
-        g.text(x + 0.2, 3.7, cw - 0.4, 0.4, f"{count} slide designs", size=11.5, color=GREY, margin=(0, 0, 0, 0))
-        g.text(x + 0.2, 4.4, cw - 0.4, 0.4, [("Open section →", {"link": first})], size=12, color=RED, bold=True, margin=(0, 0, 0, 0))
+        g.text(x + 0.15, 3.0, cw - 0.3, 0.7, name, size=14, color=DARK, bold=True, margin=(0, 0, 0, 0))
+        g.text(x + 0.15, 3.7, cw - 0.3, 0.4, f"{count} slides", size=11.5, color=GREY, margin=(0, 0, 0, 0))
+        g.text(x + 0.15, 4.4, cw - 0.3, 0.4, [("Open →", {"link": first})], size=12, color=RED, bold=True, margin=(0, 0, 0, 0))
     ids.append(s.group(x, 1.6, cw, 3.4, b, name=f"Section {letter}"))
 s.stagger(ids, "float", 120)
-tag(s, L, 5.3, "A · 3 openers", w=1.6); tag(s, L + 1.75, 5.3, "B · 5 text layouts", w=1.9); tag(s, L + 3.8, 5.3, "C · 5 data slides", w=1.8); tag(s, L + 5.75, 5.3, "D · 8 structure slides", w=2.2); tag(s, L + 8.1, 5.3, "E · 7 visual slides", w=1.9)
+tag(s, L, 5.3, "A · 3 openers", w=1.5); tag(s, L + 1.6, 5.3, "B · 5 text layouts", w=1.8); tag(s, L + 3.5, 5.3, "C · 5 data slides", w=1.7); tag(s, L + 5.3, 5.3, "D · 8 structure", w=1.6); tag(s, L + 7.0, 5.3, "E · 6 visual", w=1.4); tag(s, L + 8.5, 5.3, "F · 23 transitions + Morph", w=2.6)
 skill_note(s, "internal hyperlinks (ppaction://hlinksldjump) on shapes and text runs · staggered Float In builds")
 
 # ================= helpers for dividers =================
@@ -558,7 +558,124 @@ s.animate([(ringd, "zoom", 0, 500), (big, "float", 100, 600), (pts, "float", 400
 s.animate([(btn, "pulse", 0, 1200)], trigger="after")
 skill_note(s, "motion path (custom curve) on the paper plane · button pulses until the slide ends · dashed trail wipes in")
 
-# 35 thank you
+# ================= F · SLIDE TRANSITIONS =================
+divider_a(6, "F", "Slide transitions", "Each stage arrives with a different transition — press Next and watch")
+
+STAGES = [
+    ("gallery", "Gallery", "The slide spins in like a carousel — the classic stage-to-stage turn", "film", "light"),
+    ("cube", "Cube", "The stage rotates on a 3-D box; the new slide is the next face", "layer", "tint"),
+    ("rotate", "Rotate", "Dynamic content: only the content turns in, the background stays", "sync", "light"),
+    ("orbit", "Orbit", "The next stage swings around you like a planet", "globe", "red"),
+    ("ferris", "Ferris Wheel", "Slides ride a wheel into view — big, slow, theatrical", "star", "light"),
+    ("vortex", "Vortex", "The scene dissolves into a spinning stream of particles", "magic", "dark"),
+    ("switch", "Switch", "Two stages swap places in 3-D space", "sync", "light"),
+    ("flip", "Flip", "The slide turns over like a card", "th", "tint"),
+    ("doors", "Doors", "Double doors open onto the next stage", "store", "light"),
+    ("prestige", "Prestige", "Curtain and spotlight — the showman's reveal", "trophy", "red"),
+    ("origami", "Origami", "The slide folds itself into the next one", "leaf", "light"),
+    ("airplane", "Airplane", "Folds into a paper plane and flies away", "paperplane", "tint"),
+    ("pagecurl", "Page Curl", "Turn the page — good for chapter breaks", "filealt", "light"),
+    ("honeycomb", "Honeycomb", "Hex cells assemble the new stage", "th", "dark"),
+    ("ripple", "Ripple", "A drop in water from the centre", "heart", "light"),
+    ("fracture", "Fracture", "The glass shatters into the next slide", "bolt", "tint"),
+    ("curtains", "Curtains", "The stage curtain draws open", "play", "red"),
+    ("wheel", "Wheel", "Clock-hand reveal with eight spokes — the classic spinner", "clock", "light"),
+    ("flythrough", "Fly Through", "The camera flies into the next stage, with a bounce", "rocket", "dark"),
+]
+N = len(STAGES) + 3  # + morph pair + guide
+STYLE = {
+    "light": dict(bg=None, ink=DARK, sub=GREY, acc=RED, disc=PINK, dot=LINE),
+    "tint": dict(bg=("FCEEF0", "FFFFFF"), ink=DARK, sub=GREY, acc=RED, disc="FFFFFF", dot="E8C9CF"),
+    "red": dict(bg=(RED, "8E0E22"), ink="FFFFFF", sub="FFD6DC", acc=GOLD, disc="FFFFFF", dot="F08A9A"),
+    "dark": dict(bg=("2B2B2E", DARK), ink="FFFFFF", sub="C9CCD2", acc=GOLD, disc="3A3A3E", dot="55575C"),
+}
+
+def progress(s, i, st):
+    n = N
+    dw = 0.16; gap = 0.1
+    x0 = 6.667 - (n * dw + (n - 1) * gap) / 2
+    for k in range(n):
+        s.shape(x0 + k * (dw + gap), 6.55, dw, dw, geom="ellipse", fill=st["acc"] if k == i else st["dot"], name="Progress dot")
+    s.text(0.54, 6.45, 3.0, 0.35, f"Stage {i + 1} of {n}", size=11, color=st["sub"], bold=True, margin=(0, 0, 0, 0))
+    s.text(9.8, 6.45, 3.0, 0.35, "Next ▶", size=11, color=st["sub"], bold=True, align="r", margin=(0, 0, 0, 0))
+
+def stage(i, key, name, desc, icon, style):
+    st = STYLE[style]
+    s = deck.slide(7, (key, 1500))
+    if st["bg"]:
+        s.gradient_rect(0, 0, 13.333, 7.5, st["bg"][0], st["bg"][1], angle=45, name="Stage background")
+    lab = s.text(1.0, 1.25, 4, 0.4, "STAGE", size=13, color=st["acc"], bold=True, margin=(0, 0, 0, 0))
+    num = s.text(1.0, 1.55, 4, 1.6, f"{i + 1:02d}", size=96, color=st["acc"], bold=True, margin=(0, 0, 0, 0), font="Ubuntu")
+    t = s.text(1.0, 3.25, 6.8, 0.8, f"{name}", size=36, color=st["ink"], bold=True, margin=(0, 0, 0, 0), font="Ubuntu")
+    d = s.text(1.0, 4.05, 6.6, 0.9, desc, size=15, color=st["sub"], margin=(0, 0, 0, 0))
+    ticket = s.group(1.0, 5.05, 6.4, 1.1, lambda g: (
+        g.shape(1.0, 5.05, 6.4, 1.1, geom="roundRect", fill="FFFFFF" if style != "light" else CARD, radius=12000, shadow=style != "light", transparency=12 if style in ("red", "dark") else 0, name="Ticket"),
+        g.shape(1.0, 5.05, 0.12, 1.1, geom="rect", fill=st["acc"], name="Ticket stub"),
+        g.text(1.35, 5.15, 5.9, 0.4, [("Transition applied to this slide: ", {"color": GREY}), (name, {"bold": True, "color": RED})], size=12.5, color=DARK, margin=(0, 0, 0, 0)),
+        g.text(1.35, 5.55, 5.9, 0.5, "Duration 1.5 s · change it in Transitions › Duration, or pick Effect Options for direction. Copy this slide to reuse the effect.", size=10.5, color=GREY, margin=(0, 0, 0, 0))), name="Ticket")
+    cx, cy = 10.25, 3.55
+    disc = s.shape(cx - 1.9, cy - 1.9, 3.8, 3.8, geom="ellipse", fill=st["disc"], name="Stage disc", transparency=0 if style == "light" else 10)
+    ring = s.shape(cx - 2.25, cy - 2.25, 4.5, 4.5, geom="ellipse", fill=None, line=st["acc"], line_w=3, dash="dash", name="Stage ring")
+    badge = s.group(cx - 0.8, cy - 0.8, 1.6, 1.6, lambda g: (g.shape(cx - 0.8, cy - 0.8, 1.6, 1.6, geom="ellipse", fill=st["acc"], shadow=True, name="Icon disc"), g.image(ICON(icon, "white"), cx - 0.42, cy - 0.42, 0.84, 0.84, name=icon)), name="Stage icon")
+    progress(s, i, st)
+    s.animate([(ring, "spinloop", 0, 24000), (badge, "spinin", 0, 700), (lab, "fade", 200), (num, "float", 250), (t, "float", 400), (d, "fade", 600), (ticket, "float", 750)], trigger="after")
+    return s
+
+for i, (key, name, desc, icon, style) in enumerate(STAGES):
+    stage(i, key, name, desc, icon, style)
+
+# ---- Morph pair (shapes with identical names glide between the two slides)
+BALLS = [RED, PURPLE, BLUE, GOLD, MAGENTA]
+def morph_slide(after):
+    s = deck.slide(7, ("morph", 1500) if after else ("fade", 700))
+    s.title("Morph — " + ("after: same shapes, new positions" if after else "before: five balls in a row"), **TITLE)
+    for k, c in enumerate(BALLS):
+        if after:
+            ang = math.radians(200 + k * 35)
+            d2 = 0.7 + 0.35 * k
+            x, y = 9.3 + 2.7 * math.cos(ang) - d2 / 2, 3.9 + 1.9 * math.sin(ang) - d2 / 2
+            s.shape(x, y, d2, d2, geom="ellipse", fill=c, shadow=True, name=f"!!Ball {k + 1}")
+        else:
+            s.shape(1.0 + k * 1.3, 3.2, 0.9, 0.9, geom="ellipse", fill=c, shadow=True, name=f"!!Ball {k + 1}")
+    if after:
+        s.shape(0.9, 1.7, 5.2, 2.0, geom="roundRect", fill=RED, radius=10000, shadow=True, name="!!Card", rot=-4)
+        s.text(1.2, 1.9, 4.6, 1.6, [("Morph", {"bold": True, "size": 24}), ("\n", {}), ("The card grew, turned and changed colour; the balls flew into an arc — PowerPoint tweened everything.", {"size": 13})], size=13, color="FFFFFF", valign="m", margin=(0, 0, 0, 0), name="!!Card text")
+        s.shape(1.0, 4.6, 5.0, 0.35, geom="roundRect", fill=GOLD, radius=50000, name="!!Bar")
+        s.text(1.0, 5.1, 5.6, 0.9, "Rule: give matching shapes the same name on both slides (Selection Pane). Names starting with !! are matched even if the shapes differ.", size=11.5, color=GREY, margin=(0, 0, 0, 0))
+    else:
+        s.shape(8.3, 4.5, 3.2, 1.2, geom="roundRect", fill=CARD, radius=10000, shadow=False, name="!!Card")
+        s.text(8.5, 4.6, 2.8, 1.0, [("Morph", {"bold": True, "size": 16}), ("\n", {}), ("press Next →", {"size": 12})], size=12, color=DARK, valign="m", margin=(0, 0, 0, 0), name="!!Card text")
+        s.shape(1.0, 4.6, 2.0, 0.35, geom="roundRect", fill=LINE, radius=50000, name="!!Bar")
+        s.text(1.0, 5.1, 7.0, 0.9, "Next slide uses the Morph transition. Every shape here has a twin with the same name there — watch them move, grow and recolour.", size=12.5, color=GREY, margin=(0, 0, 0, 0))
+    progress(s, len(STAGES) + (1 if after else 0), STYLE["light"])
+    skill_note(s, "Morph transition (PowerPoint 2019 / 365) — objects matched by name; works for position, size, rotation and colour")
+    return s
+morph_slide(False); morph_slide(True)
+
+# ---- guide
+s = deck.slide(7, ("glitter", 1500))
+s.title("Transition guide — which one, when", **TITLE)
+cols3 = [("Subtle · everyday", RED, ["Fade · Push · Wipe", "Split · Wheel · Reveal", "Use on content slides", "0.7–1 s"]),
+         ("Exciting · dividers", PURPLE, ["Gallery · Cube · Doors · Flip", "Prestige · Curtains · Origami", "Page Curl · Airplane · Fracture", "Honeycomb · Ripple · Vortex · Switch", "1.5 s, one family per deck"]),
+         ("Dynamic content · stages", BLUE, ["Rotate · Orbit · Ferris Wheel", "Conveyor · Pan · Window · Fly Through", "Background stays, content moves —", "perfect for stage-to-stage flows", "1.5–2 s"])]
+cw = (W - 2 * 0.3) / 3
+ids = []
+for i, (h, c, items) in enumerate(cols3):
+    x = L + i * (cw + 0.3)
+    def b(g, x=x, h=h, c=c, items=items):
+        card(g, x, 1.6, cw, 3.3)
+        g.shape(x, 1.6, cw, 0.6, geom="round2SameRect", fill=c, radius=8000, name="Head")
+        g.text(x, 1.6, cw, 0.6, h, size=15, color="FFFFFF", bold=True, align="ctr", valign="m", margin=(0, 0, 0, 0))
+        g.text(x + 0.3, 2.4, cw - 0.6, 2.4, items, size=12.5, color=DARK, bullets=True, space_after=5, margin=(0, 0, 0, 0))
+    ids.append(s.group(x, 1.6, cw, 3.3, b, name=h))
+s.stagger(ids, "float", 150)
+tipb = s.group(L, 5.1, W, 0.85, lambda g: (card(g, L, 5.1, W, 0.85, fill=PINK, shadow=False), g.image(ICON("lightbulb", "red"), L + 0.3, 5.3, 0.45, 0.45, name="bulb"),
+    g.text(L + 1.0, 5.1, W - 1.3, 0.85, [("Morph", {"bold": True, "color": RED}), (" replaces most animation work: duplicate a slide, move things, apply Morph. Keep transitions consistent — one subtle effect for content, one showpiece for section breaks.", {})], size=13, color=DARK, valign="m", margin=(0, 0, 0, 0))), name="Tip")
+s.animate([(tipb, "float", 0)])
+progress(s, N - 1, STYLE["light"])
+skill_note(s, "this slide arrives with Glitter · every stage in this section is a copy-ready example of one transition")
+
+# ================= THANK YOU =================
 s = deck.slide(1, "fade")
 t = s.title("Thank you", x=0.57, y=2.75, w=6.0, h=1.1, size=40)
 q = s.text(0.6, 3.9, 6.4, 0.6, "Questions & discussion", size=20, color=RED, bold=True, margin=(0, 0, 0, 0))

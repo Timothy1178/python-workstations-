@@ -10,6 +10,39 @@ NS = ('xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
 E = lambda v: int(round(v * EMU))
 esc = lambda s: html.escape(str(s), quote=False)
 
+def _nm(name, sid):
+    """Shape name: '!!Exact' keeps the name verbatim (Morph matches on it)."""
+    return esc(name) if str(name).startswith("!!") else f"{esc(name)} {sid}"
+
+P14 = "http://schemas.microsoft.com/office/powerpoint/2010/main"
+P15 = "http://schemas.microsoft.com/office/powerpoint/2012/main"
+P159 = "http://schemas.microsoft.com/office/powerpoint/2015/09/main"
+# PowerPoint 2010+ transitions (written with an mc:AlternateContent fallback to Fade)
+TRANSITIONS = {
+    "fade": ("p", "<p:fade/>"), "push": ("p", '<p:push dir="l"/>'), "wipe": ("p", '<p:wipe dir="r"/>'),
+    "cover": ("p", '<p:cover dir="l"/>'), "split": ("p", '<p:split orient="horz" dir="out"/>'),
+    "wheel": ("p", '<p:wheel spokes="8"/>'), "zoom": ("p", '<p:zoom dir="in"/>'), "dissolve": ("p", "<p:dissolve/>"),
+    "newsflash": ("p", "<p:newsflash/>"), "wedge": ("p", "<p:wedge/>"), "blinds": ("p", '<p:blinds dir="horz"/>'),
+    "gallery": ("p14", '<p14:gallery dir="l"/>'), "cube": ("p14", '<p14:prism dir="l"/>'),
+    "box": ("p14", '<p14:prism dir="l" isInverted="1"/>'), "rotate": ("p14", '<p14:prism dir="l" isContent="1"/>'),
+    "orbit": ("p14", '<p14:prism dir="l" isContent="1" isInverted="1"/>'), "ferris": ("p14", '<p14:ferris dir="l"/>'),
+    "conveyor": ("p14", '<p14:conveyor dir="l"/>'), "vortex": ("p14", '<p14:vortex dir="r"/>'),
+    "switch": ("p14", '<p14:switch dir="l"/>'), "flip": ("p14", '<p14:flip dir="l"/>'),
+    "doors": ("p14", '<p14:doors dir="vert"/>'), "window": ("p14", '<p14:window dir="vert"/>'),
+    "honeycomb": ("p14", "<p14:honeycomb/>"), "ripple": ("p14", '<p14:ripple dir="center"/>'),
+    "glitter": ("p14", '<p14:glitter dir="l" pattern="hexagon"/>'), "shred": ("p14", '<p14:shred pattern="strip" dir="in"/>'),
+    "flythrough": ("p14", '<p14:flythrough dir="in" hasBounce="1"/>'), "warp": ("p14", '<p14:warp dir="in"/>'),
+    "flash": ("p14", "<p14:flash/>"), "pan": ("p14", '<p14:pan dir="l"/>'), "reveal": ("p14", '<p14:reveal thruBlk="1" dir="l"/>'),
+    "wheelreverse": ("p14", '<p14:wheelReverse spokes="4"/>'),
+    "fallover": ("p15", '<p15:prstTrans prst="fallOver"/>'), "drape": ("p15", '<p15:prstTrans prst="drape"/>'),
+    "curtains": ("p15", '<p15:prstTrans prst="curtains"/>'), "wind": ("p15", '<p15:prstTrans prst="wind"/>'),
+    "prestige": ("p15", '<p15:prstTrans prst="prestige"/>'), "fracture": ("p15", '<p15:prstTrans prst="fracture"/>'),
+    "crush": ("p15", '<p15:prstTrans prst="crush"/>'), "peeloff": ("p15", '<p15:prstTrans prst="peelOff"/>'),
+    "pagecurl": ("p15", '<p15:prstTrans prst="pageCurlDouble"/>'), "airplane": ("p15", '<p15:prstTrans prst="airplane"/>'),
+    "origami": ("p15", '<p15:prstTrans prst="origami"/>'),
+    "morph": ("p159", '<p159:morph option="byObject"/>'),
+}
+
 
 class Deck:
     def __init__(self, template_dir, build_dir):
@@ -228,7 +261,7 @@ class Slide:
         rotation = f' rot="{int(rot * 60000)}"' if rot else ""
         actr = ' anchorCtr="1"' if anchor_ctr else ""
         body = self._paras(paras, size, color, bold, italic, align, font, bullets, space_after, line_spacing)
-        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{esc(name)} {sid}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
+        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{_nm(name, sid)}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
                f'<p:spPr><a:xfrm{rotation}><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/></a:xfrm>'
                f'<a:prstGeom prst="{geom}">{adj}</a:prstGeom>{self._fill(fill)}{self._line(line)}{self._shadow(shadow)}</p:spPr>'
                f'<p:txBody><a:bodyPr wrap="square" lIns="{l}" tIns="{t}" rIns="{r}" bIns="{b}" rtlCol="0" anchor="{va}"{actr}>{fit}</a:bodyPr><a:lstStyle/>'
@@ -249,7 +282,7 @@ class Slide:
             adjx = f'<a:avLst><a:gd name="adj" fmla="val {int(radius)}"/></a:avLst>' if radius is not None else "<a:avLst/>"
         adj = adjx
         rotation = f' rot="{int(rot * 60000)}"' if rot else ""
-        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{esc(name)} {sid}">{hl}</p:cNvPr><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
+        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{_nm(name, sid)}">{hl}</p:cNvPr><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
                f'<p:spPr><a:xfrm{rotation}><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/></a:xfrm>'
                f'<a:prstGeom prst="{geom}">{adj}</a:prstGeom>{self._fill(fill, transparency)}{self._line(line, line_w, dash)}{self._shadow(shadow)}</p:spPr>'
                f'<p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>')
@@ -261,7 +294,7 @@ class Slide:
         sid = self._id()
         adj = f'<a:avLst><a:gd name="adj" fmla="val {int(radius)}"/></a:avLst>' if radius is not None else "<a:avLst/>"
         a = f'<a:alpha val="{int((100 - transparency) * 1000)}"/>' if transparency else ""
-        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{esc(name)} {sid}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
+        xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{_nm(name, sid)}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
                f'<p:spPr><a:xfrm><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/></a:xfrm><a:prstGeom prst="{geom}">{adj}</a:prstGeom>'
                f'<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:srgbClr val="{c1}">{a}</a:srgbClr></a:gs><a:gs pos="100000"><a:srgbClr val="{c2}">{a}</a:srgbClr></a:gs></a:gsLst>'
                f'<a:lin ang="{int(angle * 60000)}" scaled="0"/></a:gradFill><a:ln><a:noFill/></a:ln></p:spPr>'
@@ -288,7 +321,7 @@ class Slide:
         rid = self._img_rel(path)
         rotation = f' rot="{int(rot * 60000)}"' if rot else ""
         alpha = f'<a:alphaModFix amt="{int((100 - transparency) * 1000)}"/>' if transparency else ""
-        xml = (f'<p:pic><p:nvPicPr><p:cNvPr id="{sid}" name="{esc(name)} {sid}" descr="{esc(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>'
+        xml = (f'<p:pic><p:nvPicPr><p:cNvPr id="{sid}" name="{_nm(name, sid)}" descr="{esc(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>'
                f'<p:blipFill><a:blip r:embed="{rid}">{alpha}</a:blip><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
                f'<p:spPr><a:xfrm{rotation}><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>')
         self.shapes.append(xml)
@@ -313,7 +346,7 @@ class Slide:
         build(self)
         children = self.shapes[start:]
         del self.shapes[start:]
-        xml = (f'<p:grpSp><p:nvGrpSpPr><p:cNvPr id="{gid}" name="{esc(name)} {gid}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
+        xml = (f'<p:grpSp><p:nvGrpSpPr><p:cNvPr id="{gid}" name="{_nm(name, gid)}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
                f'<p:grpSpPr><a:xfrm><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/><a:chOff x="{E(x)}" y="{E(y)}"/><a:chExt cx="{E(w)}" cy="{E(h)}"/></a:xfrm></p:grpSpPr>'
                + "".join(children) + '</p:grpSp>')
         self.shapes.append(xml)
@@ -368,8 +401,18 @@ class Slide:
         t = self.transition
         if not t:
             return ""
-        inner = {"fade": "<p:fade/>", "push": '<p:push dir="l"/>', "wipe": '<p:wipe dir="r"/>', "cover": '<p:cover dir="l"/>', "split": '<p:split orient="horz" dir="out"/>'}[t]
-        return f'<p:transition spd="med">{inner}</p:transition>'
+        dur = None
+        if isinstance(t, tuple):
+            t, dur = t
+        kind, inner = TRANSITIONS[t]
+        if kind == "p":
+            return f'<p:transition spd="{"slow" if dur and dur >= 1500 else "med"}">{inner}</p:transition>'
+        ns = {"p14": P14, "p15": P15, "p159": P159}[kind]
+        d = f' p14:dur="{int(dur)}"' if dur else ""
+        extra_ns = f' xmlns:{kind}="{ns}"' if kind != "p14" else ""
+        return ('<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'
+                f'<mc:Choice xmlns:p14="{P14}"{extra_ns} Requires="{kind}"><p:transition spd="slow"{d}>{inner}</p:transition></mc:Choice>'
+                '<mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>')
 
     def xml(self):
         return ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
