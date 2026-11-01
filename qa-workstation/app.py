@@ -8,7 +8,7 @@ import importlib
 import pkgutil
 from pathlib import Path
 
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect
 
 import modules
 from version import __version__
@@ -56,6 +56,13 @@ def create_app():
             plans=plan_summaries()[:5],
             agents=load_agents(),
         )
+
+    @app.route("/msg5")
+    @app.route("/msg5/")
+    def msg5_moved():
+        # The Msg5 Json page was merged into TLog Handler (v1.18.0); its
+        # saved messages and custom fields migrate on first visit.
+        return redirect("/tlog/")
 
     return app
 

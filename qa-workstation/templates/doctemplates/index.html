@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Doc & PPT Templates · QA Workstation{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>📑 Doc &amp; PPT Templates</h1>
+    <p class="muted">Your Word, PowerPoint and other templates in one place. Upload here or drop files into <code>{{ folder }}</code> — templates the assistant generates are saved into the same folder and appear on this page.</p>
+  </div>
+  <div class="row-actions">
+    <span class="pill" id="total-count">{{ files|length }} files</span>
+  </div>
+</div>
+
+<div class="msg5-layout">
+  <aside class="card msg-side">
+    <h2>⬆ Add templates</h2>
+    <form method="post" action="{{ url_for('doctemplates.upload') }}" enctype="multipart/form-data" id="upload-form">
+      <label class="dropzone small-dz" id="dz">
+        <input type="file" name="files" id="files" multiple accept=".pptx,.ppt,.potx,.pptm,.docx,.doc,.dotx,.docm,.rtf,.odt,.xlsx,.xls,.xltx,.xlsm,.csv,.pdf,.md,.txt,.html,.json,.zip,.png,.jpg,.jpeg,.svg" hidden>
+        <div>📂 <strong>Choose files</strong> or drop them here</div>
+        <div class="muted small-text">pptx · docx · xlsx · pdf · md … several at once</div>
+      </label>
+      <div class="stack-form top-gap">
+        <input name="tags" id="up-tags" placeholder="Tags, comma separated (e.g. SIT report, UAT sign-off)">
+        <input name="notes" id="up-notes" placeholder="Notes (optional)">
+        <button class="btn primary" type="submit">⬆ Upload</button>
+      </div>
+      <div class="muted small-text top-gap" id="up-status"></div>
+    </form>
+    <h3 class="top-gap">Kinds</h3>
+    <div class="kind-list" id="kind-list">
+      <button type="button" class="kind-btn on" data-kind="">All <span class="pill">{{ files|length }}</span></button>
+      {% for key, k in kinds.items() %}
+      <button type="button" class="kind-btn" data-kind="{{ key }}">{{ k.icon }} {{ k.label }} <span class="pill">{{ counts[key] }}</span></button>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <div class="msg-main">
+    <section class="card">
+      <div class="page-head tight">
+        <label class="search-box"><span>🔍</span><input id="filter" placeholder="Search name, tag or notes…" autocomplete="off"></label>
+        <span class="muted small-text" id="shown-info"></span>
+      </div>
+      <div class="tpl-grid" id="grid"></div>
+      <div class="empty-state small-es" id="empty" hidden>
+        <div class="es-icon">📑</div>
+        <h2>No templates yet</h2>
+        <p class="muted">Upload your Word and PowerPoint templates on the left, or ask the assistant to create one — it will be saved here.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script id="files-data" type="application/json">{{ files|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let files = JSON.parse($('files-data').textContent);
+  let kind = '';
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fileUrl = (name, dl) => "{{ url_for('doctemplates.download', name='NAME') }}".replace('NAME', encodeURIComponent(name)) + (dl ? '?dl=1' : '');
+  const apiUrl = name => "{{ url_for('doctemplates.api_file', name='NAME') }}".replace('NAME', encodeURIComponent(name));
+
+  function render() {
+    const q = $('filter').value.trim().toLowerCase();
+    const shown = files.filter(f => (!kind || f.kind === kind) && (!q || `${f.name} ${f.tags.join(' ')} ${f.notes}`.toLowerCase().includes(q)));
+    $('grid').innerHTML = '';
+    $('empty').hidden = files.length > 0;
+    $('shown-info').textContent = files.length ? `${shown.length} of ${files.length}` : '';
+    $('total-count').textContent = `${files.length} file${files.length === 1 ? '' : 's'}`;
+    for (const f of shown) {
+      const card = document.createElement('div');
+      card.className = 'tpl-card';
+      card.innerHTML = `
+        <div class="tpl-head"><span class="tpl-icon">${f.icon}</span>
+          <div class="tpl-title"><a href="${fileUrl(f.name)}" target="_blank" rel="noopener" title="Open"></a>
+          <div class="muted small-text">${esc(f.kind_label)} · ${esc(f.size_kb)} · ${esc(f.modified)}${f.source && f.source !== 'upload' ? ' · ' + esc(f.source) : ''}</div></div></div>
+        <div class="tpl-tags"></div>
+        <textarea class="tpl-notes" rows="2" placeholder="Notes…"></textarea>
+        <div class="row-actions">
+          <a class="btn small primary" href="${fileUrl(f.name, true)}">⬇ Download</a>
+          <button type="button" class="btn small" data-act="tags">🏷 Tags</button>
+          <button type="button" class="btn small" data-act="rename">✏️ Rename</button>
+          <button type="button" class="btn small danger" data-act="del">✕</button>
+        </div>`;
+      card.querySelector('.tpl-title a').textContent = f.name;
+      card.querySelector('.tpl-tags').innerHTML = f.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('') || '<span class="muted small-text">no tags</span>';
+      const notes = card.querySelector('.tpl-notes'); notes.value = f.notes;
+      notes.addEventListener('change', () => patch(f.name, { notes: notes.value }));
+      card.querySelector('[data-act=tags]').onclick = () => { const t = prompt('Tags, comma separated:', f.tags.join(', ')); if (t !== null) patch(f.name, { tags: t }); };
+      card.querySelector('[data-act=rename]').onclick = () => { const n = prompt('New file name:', f.name); if (n && n !== f.name) patch(f.name, { rename: n }); };
+      card.querySelector('[data-act=del]').onclick = async () => {
+        if (!confirm(`Delete "${f.name}"?`)) return;
+        const d = await (await fetch(apiUrl(f.name), { method: 'DELETE' })).json();
+        if (d.ok) { files = d.files; render(); }
+      };
+      $('grid').appendChild(card);
+    }
+    document.querySelectorAll('.kind-btn').forEach(b => {
+      const k = b.dataset.kind; b.classList.toggle('on', k === kind);
+      b.querySelector('.pill').textContent = k ? files.filter(f => f.kind === k).length : files.length;
+    });
+  }
+  async function patch(name, body) {
+    const d = await (await fetch(apiUrl(name), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+    if (d.ok) { files = d.files; render(); } else alert(d.error || 'failed');
+  }
+  $('filter').addEventListener('input', render);
+  $('kind-list').addEventListener('click', e => { const b = e.target.closest('.kind-btn'); if (!b) return; kind = b.dataset.kind; render(); });
+
+  // upload without leaving the page
+  const dz = $('dz');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('hot'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('hot'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('hot'); upload([...e.dataTransfer.files]); });
+  $('files').onchange = () => { upload([...$('files').files]); $('files').value = ''; };
+  $('upload-form').addEventListener('submit', e => { e.preventDefault(); $('files').click(); });
+  async function upload(list) {
+    if (!list.length) return;
+    const fd = new FormData();
+    list.forEach(f => fd.append('files', f, f.name));
+    fd.append('tags', $('up-tags').value); fd.append('notes', $('up-notes').value);
+    $('up-status').textContent = `Uploading ${list.length} file${list.length > 1 ? 's' : ''}…`;
+    const d = await (await fetch("{{ url_for('doctemplates.upload') }}?json=1", { method: 'POST', body: fd })).json();
+    files = d.files || files; render();
+    $('up-status').textContent = `✓ ${d.saved.length} saved` + (d.skipped.length ? ` · ⚠ skipped (type not allowed): ${d.skipped.join(', ')}` : '');
+    $('up-notes').value = '';
+  }
+  render();
+})();
+</script>
+{% endblock %}

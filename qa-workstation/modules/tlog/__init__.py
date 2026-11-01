@@ -12,6 +12,7 @@ import time
 from flask import Blueprint, render_template, request, jsonify, send_file
 
 from . import store, csvset
+from modules import msgfiles
 
 bp = Blueprint("tlog", __name__, url_prefix="/tlog")
 
@@ -25,6 +26,7 @@ MODULE_INFO = {
 
 @bp.route("/")
 def index():
+    store.migrate_msg5()
     return render_template("tlog/index.html",
                            config=store.load_config(),
                            entries=store.list_entries(),
@@ -98,6 +100,36 @@ def import_files():
             added.append({"id": e["id"], "name": e["name"], "bu_code": e["bu_code"]})
     return jsonify({"ok": bool(added) or not errors, "added": added, "errors": errors,
                     "entries": store.list_entries()})
+
+
+@bp.route("/api/read-file", methods=["POST"])
+def read_file():
+    """Multipart 'file' -> every message found in it (Excel cell, CSV
+    cell, Word paragraph, .json / .txt) without saving anything; the
+    page loads one into the editor or saves them all as templates."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"ok": False, "error": "no file"}), 400
+    try:
+        found = msgfiles.read_upload(f.filename, f.read())
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"could not read {f.filename}: {e}"}), 400
+    if not found:
+        return jsonify({"ok": False, "error": f"{f.filename}: no message with a playloadJson found"}), 400
+    return jsonify({"ok": True, "filename": f.filename, "messages": found})
+
+
+@bp.route("/api/library/bulk", methods=["POST"])
+def library_bulk():
+    data = request.get_json(force=True) or {}
+    n = 0
+    for m in data.get("messages", []):
+        if isinstance(m, dict) and isinstance(m.get("json"), str) and m["json"].strip():
+            store.save_entry("", str(m.get("name", "")), m["json"], bu_code=str(m.get("bu_code", "")),
+                             kind="template" if data.get("kind") == "template" else "request",
+                             notes=str(m.get("notes", "")))
+            n += 1
+    return jsonify({"ok": True, "saved": n, "entries": store.list_entries()})
 
 
 # ---------- CSV set (ORDER / PAYMENT / ITEMS / PROMOTION + .ok) ----------

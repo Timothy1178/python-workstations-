@@ -192,3 +192,40 @@ def read_upload(filename, raw):
     """-> list of {name, bu_code, json} found in a .docx / .xlsx / .csv /
     .json / .txt (any cell or paragraph holding the message)."""
     return msgfiles.read_upload(filename, raw)
+
+
+# ---------- one-time migration from the retired Msg5 Json page ----------
+
+MSG5_DIR = Path(__file__).resolve().parents[2] / "data" / "msg5"
+MIGRATED = DATA_DIR / ".msg5_migrated"
+
+
+def migrate_msg5():
+    """Saved messages -> library requests; custom edit-box fields -> the
+    TLog config (group "Msg5"); auto-increment toggle. Runs once."""
+    if MIGRATED.exists() or not MSG5_DIR.exists():
+        return None
+    moved = {"messages": 0, "fields": 0}
+    for p in sorted((MSG5_DIR / "messages").glob("*.json")) if (MSG5_DIR / "messages").exists() else []:
+        m = _read(p)
+        if m and isinstance(m.get("json"), str) and m["json"].strip():
+            save_entry("", m.get("name", p.stem), m["json"], kind="request",
+                       notes=(m.get("notes", "") + " · from Msg5 Json").strip(" ·"))
+            moved["messages"] += 1
+    cfg_file = MSG5_DIR / "config.json"
+    if cfg_file.exists():
+        old = _read(cfg_file) or {}
+        cfg = load_config()
+        have = {(f.get("source", "xml"), f["tag"]) for f in cfg["fields"]}
+        for f in old.get("fields", []):
+            f = clean_field({**f, "group": "Msg5"})
+            if f and (f["source"], f["tag"]) not in have:
+                cfg["fields"].append(f)
+                have.add((f["source"], f["tag"]))
+                moved["fields"] += 1
+        if "auto_increment" in old:
+            cfg["auto_increment"] = bool(old["auto_increment"])
+        save_config(cfg)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    MIGRATED.write_text(json.dumps(moved), encoding="utf-8")
+    return moved

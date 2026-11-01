@@ -5,6 +5,27 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.18.0 — 2026-11-01
+
+- **Msg5 Json merged into TLog Handler.** The two pages overlapped; the
+  only feature the TLog Msg5 request tab lacked — 📂 **Load from file**
+  (open a message from an Excel cell, CSV, Word doc, .json or .txt
+  without saving it, with a chooser when a file holds several and
+  "Save all as templates") — is now on the TLog tab. The Msg5 Json page
+  is retired: `/msg5` redirects to `/tlog`, and on first visit its
+  saved messages become TLog library requests and its custom edit-box
+  fields join the TLog config (group "Msg5"), together with the
+  auto-increment toggle. Note: an Excel cell holds at most 32,767
+  characters, so longer messages (e.g. the WTCID / WTCTH samples) must
+  be kept in .docx / .json / .txt rather than Excel.
+- **New module — 📑 Doc & PPT Templates**: a file holder for Word,
+  PowerPoint, Excel, PDF and text templates. Drag-and-drop upload with
+  tags and notes, kind filter and search, cards with open / download /
+  rename / tags / notes / delete. Files live flat in `data/templates/`
+  (gitignored) and the folder is scanned on every view, so templates
+  the assistant generates — via `modules.doctemplates.store_file()` or
+  by writing into the folder — appear without an upload.
+
 ## 1.17.0 — 2026-11-01
 
 - **TLog Handler — 🗂 TLog CSV set** (second tab): one editor for the

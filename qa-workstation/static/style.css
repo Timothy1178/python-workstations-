@@ -891,3 +891,19 @@ input.auto { background: var(--soft); color: var(--muted); font-style: italic; }
 .lay-table tr.shared-row td:nth-child(2) input { font-weight: 700; color: var(--accent); }
 label.inline { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
 label.inline input { width: auto; }
+
+/* ---------- Doc & PPT Templates ---------- */
+.kind-list { display: flex; flex-direction: column; gap: 2px; }
+.kind-btn { font: inherit; font-size: 13px; text-align: left; background: none; border: none; border-radius: 8px; padding: 7px 10px; cursor: pointer; color: var(--ink); display: flex; justify-content: space-between; align-items: center; }
+.kind-btn:hover { background: var(--hover); }
+.kind-btn.on { background: var(--tag-bg); color: var(--accent); font-weight: 600; }
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 10px; }
+.tpl-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--panel); }
+.tpl-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.tpl-head { display: flex; gap: 10px; align-items: flex-start; }
+.tpl-icon { font-size: 28px; line-height: 1; }
+.tpl-title { min-width: 0; }
+.tpl-title a { font-weight: 600; color: var(--ink); text-decoration: none; word-break: break-all; }
+.tpl-title a:hover { color: var(--accent); }
+.tpl-tags { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; }
+.tpl-notes { font-size: 12px; resize: vertical; min-height: 36px; }

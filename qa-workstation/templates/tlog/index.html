@@ -51,6 +51,8 @@
       <div class="page-head tight">
         <h2>Source message <span class="muted small-text" id="loaded-label"></span></h2>
         <div class="row-actions">
+          <button class="btn small" id="file-btn" title="Load a message from an Excel workbook (any cell), CSV, Word doc, .json or .txt without saving it">📂 Load from file</button>
+          <input type="file" id="file-input" accept=".xlsx,.xlsm,.csv,.docx,.json,.txt" hidden>
           <button class="btn small" id="paste-btn">📋 Paste</button>
           <button class="btn small" id="clear-btn">Clear</button>
         </div>
@@ -124,6 +126,24 @@
         <textarea id="xml-preview" class="mono" spellcheck="false" readonly></textarea>
       </details>
     </section>
+  </div>
+</div>
+
+<!-- ---------- pick a message from a file ---------- -->
+<div class="preview-overlay" id="pick-overlay" hidden>
+  <div class="preview-modal card">
+    <div class="page-head">
+      <div>
+        <h2>📂 Messages found in <span id="pick-file"></span></h2>
+        <p class="muted small-text">Click one to load it into the editor, or save them all to the library.</p>
+      </div>
+      <div class="row-actions">
+        <button class="btn small" id="pick-save-all">📄 Save all as templates</button>
+        <button class="btn small" id="pick-close">✕ Close</button>
+      </div>
+    </div>
+    <div class="import-body table-wrap"><table class="list-table" id="pick-table"></table></div>
+    <div class="muted small-text top-gap" id="pick-status"></div>
   </div>
 </div>
 
@@ -494,6 +514,45 @@
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
   $('use-output-btn').onclick = () => { if (!$('output').value) return status($('copy-status'), 'Generate the string first.', false); $('source').value = $('output').value; loadSource(); };
+  // ---------- load from a file (Excel cell / CSV / docx / json / txt) ----------
+  const READ_URL = "{{ url_for('tlog.read_file') }}", BULK_URL = "{{ url_for('tlog.library_bulk') }}";
+  const pickOverlay = $('pick-overlay');
+  let picked = [];
+  $('file-btn').onclick = () => $('file-input').click();
+  $('file-input').onchange = async () => {
+    const f = $('file-input').files[0]; $('file-input').value = '';
+    if (!f) return;
+    const fd = new FormData(); fd.append('file', f, f.name);
+    status($('load-status'), `Reading ${f.name}…`);
+    let d; try { d = await (await fetch(READ_URL, { method: 'POST', body: fd })).json(); } catch (e) { d = { error: e.message }; }
+    if (!d.ok) { status($('load-status'), d.error || 'could not read the file', false); return; }
+    picked = d.messages;
+    if (picked.length === 1) { useMessage(picked[0]); return; }
+    $('pick-file').textContent = `${d.filename} (${picked.length})`;
+    $('pick-table').innerHTML = '<tr><th>#</th><th>Name</th><th>Where</th><th>Message</th><th>Size</th><th></th></tr>' +
+      picked.map((m, i) => `<tr><td class="muted">${i + 1}</td><td><strong></strong></td><td class="muted small-text"></td><td class="muted small-text"></td><td class="muted small-text">${(m.json.length / 1024).toFixed(1)} KB</td><td><button type="button" class="btn small primary" data-i="${i}">⬇ Load</button></td></tr>`).join('');
+    [...$('pick-table').querySelectorAll('tr')].slice(1).forEach((tr, i) => {
+      tr.querySelector('strong').textContent = picked[i].name;
+      const cells = tr.querySelectorAll('td.muted.small-text');
+      cells[0].textContent = picked[i].where || ''; cells[1].textContent = picked[i].label || '';
+    });
+    $('pick-table').querySelectorAll('button[data-i]').forEach(b => b.onclick = () => { useMessage(picked[+b.dataset.i]); pickOverlay.hidden = true; });
+    $('pick-status').textContent = ''; pickOverlay.hidden = false;
+  };
+  function useMessage(m) {
+    $('source').value = m.json; setLoaded(null);
+    $('save-name').value = m.name || ''; $('save-notes').value = m.where ? `from file · ${m.where}` : '';
+    loadSource();
+    status($('load-status'), `Loaded "${m.name}"${m.where ? ' from ' + m.where : ''} — not saved yet.`);
+  }
+  $('pick-save-all').onclick = async () => {
+    const d = await (await fetch(BULK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'template', messages: picked.map(m => ({ name: m.name, bu_code: m.bu_code, json: m.json, notes: m.where ? `from file · ${m.where}` : '' })) }) })).json();
+    if (d.ok) { entries = d.entries; renderLibrary(); $('pick-status').textContent = `✓ Saved ${d.saved} templates to the library.`; }
+  };
+  $('pick-close').onclick = () => pickOverlay.hidden = true;
+  pickOverlay.addEventListener('click', e => { if (e.target === pickOverlay) pickOverlay.hidden = true; });
+
   $('paste-btn').onclick = async () => { try { $('source').value = await navigator.clipboard.readText(); loadSource(); } catch (e) { status($('load-status'), 'Clipboard not available — paste with Ctrl/Cmd+V.', false); } };
   $('clear-btn').onclick = () => {
     currentJson = null; workDoc = null; setLoaded(null);
@@ -590,7 +649,7 @@
   $('fields-config-btn').onclick = () => { renderFieldsTable(); overlay.hidden = false; };
   $('config-close').onclick = () => overlay.hidden = true;
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.hidden = true; });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { overlay.hidden = true; pickOverlay.hidden = true; } });
 
   function fillPicker() {
     const sel = $('af-pick');

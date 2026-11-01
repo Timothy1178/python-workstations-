@@ -48,21 +48,20 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   receiver groups, scheduled jobs with live data from a OneDrive-synced
   `.xlsx`. Fed by the **QA Table Mailer** plugin (copy cells in Excel
   Online → grab → edit → send / save as job).
-- **Msg5 Json** (`modules/msg5/`) — transaction string editor: load a
-  Msg5 JSON with an XML-entity payload (paste, or 📂 from an Excel cell,
-  CSV, Word doc or .json), edit its fields (configurable: add any
-  message key or payload tag to the edit box, saved in
-  `data/msg5/config.json`),
-  New UUID with optional transaction number +1, generate / copy /
-  download, and a library of named saved messages.
 - **TLog Handler** (`modules/tlog/`) — "create msg5" request editor for
-  Offset Explorer: import the BU documents as templates, edit grouped
-  fields (configurable), items and tenders with recalculated totals,
-  copy the one-line string; library and config under `data/tlog/`.
+  Offset Explorer: import the BU documents as templates or load a
+  message from an Excel cell / CSV / Word doc / .json, edit grouped
+  fields (configurable: any message key or payload tag), items and
+  tenders with recalculated totals, New UUID with transaction number
+  +1, copy the one-line string; library and config under `data/tlog/`.
   Second tab **TLog CSV set**: transaction-based editor for the ORDER /
   ORDER_PAYMENT / ORDERITEMS / ORDERITEMS_PROMOTION files with shared
   fields, Msg5 fill, editable column layout and a zip of the 4 CSVs +
   4 `.ok` files named `{TYPE}_{BU}_{YYYYMMDD}_{SEQ}`.
+- **Doc & PPT Templates** (`modules/doctemplates/`) — file holder for
+  Word / PowerPoint / Excel / PDF templates with tags, notes, search and
+  download; files live in `data/templates/` and generated templates are
+  saved there too.
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a
