@@ -863,3 +863,31 @@ textarea.src-small { min-height: 96px; }
 .lines-table td:last-child { width: 30px; }
 .lines-table th { white-space: nowrap; }
 .toggle-pill { font-size: 12px; }
+
+/* ---------- TLog CSV set ---------- */
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.tab { padding: 8px 14px; text-decoration: none; color: var(--muted); border-bottom: 2px solid transparent; font-size: 14px; }
+.tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab:hover { color: var(--ink); }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.set-grid label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.set-grid .id-row { margin-top: 0; }
+.file-names { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.file-names .pill { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
+details.txn { border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; background: var(--panel); }
+details.txn > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; font-weight: 600; }
+details.txn > summary::-webkit-details-marker { display: none; }
+details.txn > summary::before { content: "▸"; color: var(--muted); margin-right: 8px; }
+details.txn[open] > summary::before { content: "▾"; }
+details.txn[open] > summary { border-bottom: 1px solid var(--line); background: var(--th-bg); border-radius: var(--radius) var(--radius) 0 0; }
+.txn-body { padding: 4px 14px 14px; }
+.txn-sec h3 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.field-grid.dense { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px 12px; }
+.field-grid.dense .field { font-size: 12px; }
+.field-grid.dense .field input { padding: 6px 8px; }
+input.auto { background: var(--soft); color: var(--muted); font-style: italic; }
+.small-es { padding: 24px; }
+.lay-table input, .lay-table select { padding: 4px 6px; min-width: 70px; }
+.lay-table tr.shared-row td:nth-child(2) input { font-weight: 700; color: var(--accent); }
+label.inline { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+label.inline input { width: auto; }

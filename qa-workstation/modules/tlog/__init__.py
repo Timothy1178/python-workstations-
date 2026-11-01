@@ -7,10 +7,11 @@ in the browser; this module keeps the library and the field config
 under data/tlog/ (gitignored).
 """
 import json
+import time
 
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, send_file
 
-from . import store
+from . import store, csvset
 
 bp = Blueprint("tlog", __name__, url_prefix="/tlog")
 
@@ -97,3 +98,87 @@ def import_files():
             added.append({"id": e["id"], "name": e["name"], "bu_code": e["bu_code"]})
     return jsonify({"ok": bool(added) or not errors, "added": added, "errors": errors,
                     "entries": store.list_entries()})
+
+
+# ---------- CSV set (ORDER / PAYMENT / ITEMS / PROMOTION + .ok) ----------
+
+@bp.route("/csv")
+def csv_page():
+    lay = csvset.load_layout()
+    return render_template("tlog/csvset.html", layout=lay, shared=csvset.shared_names(lay),
+                           sets=csvset.list_sets(), entries=store.list_entries(),
+                           file_types=csvset.FILE_TYPES, child_of=csvset.CHILD_OF,
+                           formats=csvset.FORMATS, autos=csvset.AUTOS)
+
+
+@bp.route("/api/csv/layout", methods=["GET", "POST"])
+def csv_layout():
+    if request.method == "POST":
+        data = request.get_json(force=True) or {}
+        if data.get("reset"):
+            lay = csvset.save_layout(csvset.DEFAULT_LAYOUT)
+        else:
+            lay = csvset.load_layout()
+            for k in ("name_format", "ref_base"):
+                if k in data:
+                    lay[k] = data[k]
+            if isinstance(data.get("files"), dict):
+                for ft, cols in data["files"].items():
+                    if ft in csvset.FILE_TYPES and isinstance(cols, list):
+                        lay["files"][ft] = cols
+            lay = csvset.save_layout(lay)
+        return jsonify({"ok": True, "layout": lay, "shared": csvset.shared_names(lay)})
+    lay = csvset.load_layout()
+    return jsonify({"ok": True, "layout": lay, "shared": csvset.shared_names(lay)})
+
+
+@bp.route("/api/csv/sets", methods=["GET", "POST"])
+def csv_sets():
+    if request.method == "POST":
+        data = request.get_json(force=True) or {}
+        s = csvset.save_set(data.get("id", ""), data)
+        return jsonify({"ok": True, "set": {k: s[k] for k in ("id", "name", "bu", "date", "seq", "updated")},
+                        "sets": csvset.list_sets()})
+    return jsonify({"ok": True, "sets": csvset.list_sets()})
+
+
+@bp.route("/api/csv/sets/<sid>", methods=["GET", "DELETE"])
+def csv_set(sid):
+    if request.method == "DELETE":
+        if not csvset.delete_set(sid):
+            return jsonify({"ok": False, "error": "not found"}), 404
+        return jsonify({"ok": True, "sets": csvset.list_sets()})
+    s = csvset.get_set(sid)
+    if s is None:
+        return jsonify({"ok": False, "error": "not found"}), 404
+    return jsonify({"ok": True, "set": s})
+
+
+@bp.route("/api/csv/import", methods=["POST"])
+def csv_import():
+    """Multipart 'files': the 4 CSVs (and/or .ok, or a zip) -> transactions."""
+    ups = [(f.filename, f.read()) for f in request.files.getlist("files") if f.filename]
+    if not ups:
+        return jsonify({"ok": False, "error": "no files"}), 400
+    try:
+        result = csvset.import_set(csvset.load_layout(), ups)
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"could not read the files: {e}"}), 400
+    if "error" in result:
+        return jsonify({"ok": False, **result}), 400
+    return jsonify({"ok": True, **result})
+
+
+@bp.route("/api/csv/export", methods=["POST"])
+def csv_export():
+    """JSON {bu, date, seq, files: {TYPE: [[cell,...],...]}} -> zip of
+    4 CSV + 4 empty .ok files named per the template."""
+    data = request.get_json(force=True) or {}
+    lay = csvset.load_layout()
+    bu = str(data.get("bu", "")).strip().upper() or "BU"
+    date = (str(data.get("date", "")).strip() or time.strftime("%Y%m%d"))[:8]
+    seq = str(data.get("seq", "")).strip() or "1"
+    files = data.get("files") if isinstance(data.get("files"), dict) else {}
+    buf = csvset.build_zip(lay, bu, date, seq, files)
+    return send_file(buf, as_attachment=True, mimetype="application/zip",
+                     download_name=f"TLOG_{bu}_{date}_{seq}.zip")

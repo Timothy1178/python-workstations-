@@ -59,6 +59,10 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   Offset Explorer: import the BU documents as templates, edit grouped
   fields (configurable), items and tenders with recalculated totals,
   copy the one-line string; library and config under `data/tlog/`.
+  Second tab **TLog CSV set**: transaction-based editor for the ORDER /
+  ORDER_PAYMENT / ORDERITEMS / ORDERITEMS_PROMOTION files with shared
+  fields, Msg5 fill, editable column layout and a zip of the 4 CSVs +
+  4 `.ok` files named `{TYPE}_{BU}_{YYYYMMDD}_{SEQ}`.
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a

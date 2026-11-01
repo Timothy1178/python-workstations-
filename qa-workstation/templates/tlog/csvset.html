@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+{% block title %}TLog CSV set · QA Workstation{% endblock %}
+{% block content %}
+<div class="tabs">
+  <a class="tab" href="{{ url_for('tlog.index') }}">📨 Msg5 request</a>
+  <a class="tab on" href="{{ url_for('tlog.csv_page') }}">🗂 TLog CSV set</a>
+</div>
+<div class="page-head">
+  <div>
+    <h1>🗂 TLog CSV set — ORDER · PAYMENT · ITEMS · PROMOTION</h1>
+    <p class="muted">One editor for the four files. Each transaction is entered once: the shared fields (member, date-time, store, till, transaction number, receipt, BU) flow into every file. Download the zip with the 4 CSVs and their <code>.ok</code> files, named <code>{{ layout.name_format }}</code>.</p>
+  </div>
+  <div class="row-actions">
+    <button class="btn" id="layout-btn" title="Column names, defaults, number formats and Msg5 mapping per file">⚙️ Layout</button>
+    <button class="btn primary" id="zip-btn">📦 Download zip</button>
+  </div>
+</div>
+
+<div class="msg5-layout">
+  <aside class="card msg-side">
+    <h2>💾 Saved sets <span class="pill" id="sets-count">{{ sets|length }}</span></h2>
+    <label class="dropzone small-dz" id="set-drop">
+      <input type="file" id="set-files" accept=".csv,.ok,.zip" multiple hidden>
+      <div>📂 <strong>Import a set</strong></div>
+      <div class="muted small-text">drop the 4 CSVs (or a zip) — rows become transactions</div>
+    </label>
+    <div class="muted small-text" id="import-status"></div>
+    <div class="msg-list lib-list" id="sets-list"></div>
+    <div class="msg-save">
+      <h3>Save this set</h3>
+      <input id="set-name" placeholder="Set name (e.g. WWHK membership 2 txns)">
+      <div class="row-actions">
+        <button class="btn primary" id="save-new">💾 Save as new</button>
+        <button class="btn" id="save-update" hidden>✓ Update</button>
+      </div>
+      <div class="muted small-text" id="save-status"></div>
+    </div>
+  </aside>
+
+  <div class="msg-main">
+    <section class="card">
+      <h2>File set</h2>
+      <div class="set-grid">
+        <label>BU <input id="set-bu" placeholder="WWHK"></label>
+        <label>File date (YYYYMMDD) <div class="id-row"><input id="set-date" placeholder="20240829" maxlength="8"><button class="btn small" id="date-today" type="button">today</button></div></label>
+        <label>Sequence <input id="set-seq" placeholder="54"></label>
+        <label>Reference base <input id="set-ref" placeholder="0006957324" title="Prefix of the order / line references: base + type code + 2-digit transaction index"></label>
+      </div>
+      <div class="file-names" id="file-names"></div>
+    </section>
+
+    <section class="card">
+      <div class="page-head tight">
+        <h2>Transactions <span class="pill" id="txn-count">0</span></h2>
+        <div class="row-actions">
+          <button class="btn" id="add-txn">＋ Add transaction</button>
+          <button class="btn" id="add-msg5">📨 Add from Msg5</button>
+        </div>
+      </div>
+      <div id="txns"></div>
+      <div class="empty-state small-es" id="txn-empty" hidden>
+        <p class="muted">No transactions yet — add one by hand, fill one from a Msg5 message, or import an existing set on the left.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="page-head tight">
+        <h2>Preview</h2>
+        <div class="seg" id="preview-tabs">
+          {% for ft in file_types %}<button type="button" data-ft="{{ ft }}" class="{{ 'on' if loop.first }}">{{ ft }}</button>{% endfor %}
+        </div>
+      </div>
+      <div class="muted small-text" id="preview-name"></div>
+      <textarea id="preview" class="mono" spellcheck="false" readonly></textarea>
+      <div class="row-actions top-gap">
+        <button class="btn small" id="copy-preview">📋 Copy this file</button>
+        <span class="status" id="preview-status"></span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ---------- add from Msg5 ---------- -->
+<div class="preview-overlay" id="msg5-overlay" hidden>
+  <div class="preview-modal card">
+    <div class="page-head">
+      <div><h2>📨 Add a transaction from a Msg5 message</h2>
+        <p class="muted small-text">Shared fields, items, tenders and promotion lines are filled from the message through the layout's Msg5 mapping.</p></div>
+      <button class="btn small" id="msg5-close">✕ Close</button>
+    </div>
+    <div class="import-body">
+      <h3>From the TLog library</h3>
+      <div class="msg-list lib-list" id="msg5-lib"></div>
+      <h3 class="top-gap">or paste the message JSON</h3>
+      <textarea id="msg5-paste" class="mono src-small" spellcheck="false" placeholder='{"id":"…","buCode":"…","playloadJson":"&amp;lt;Root&amp;gt;…"}'></textarea>
+      <div class="row-actions top-gap">
+        <button class="btn primary" id="msg5-use">⬇ Add transaction</button>
+        <span class="status" id="msg5-status"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- layout editor ---------- -->
+<div class="preview-overlay" id="layout-overlay" hidden>
+  <div class="preview-modal card config-modal">
+    <div class="page-head">
+      <div><h2>⚙️ CSV layout</h2>
+        <p class="muted small-text">The template has no header row, so these names are best guesses — rename freely. A name used in ORDER and a child file is a <strong>shared</strong> field. Blank name = always-empty column. Saved in <code>data/tlog/csv_layout.json</code>.</p></div>
+      <button class="btn small" id="layout-close">✕ Close</button>
+    </div>
+    <div class="import-body">
+      <div class="row-actions">
+        <label class="inline">File name format <input id="lay-format" class="mono-in" style="width:280px"></label>
+        <div class="seg" id="lay-tabs">{% for ft in file_types %}<button type="button" data-ft="{{ ft }}" class="{{ 'on' if loop.first }}">{{ ft }}</button>{% endfor %}</div>
+        <span class="muted small-text" id="lay-info"></span>
+      </div>
+      <div class="table-wrap top-gap"><table class="list-table fields-table lay-table" id="lay-table"></table></div>
+      <div class="row-actions top-gap">
+        <button class="btn small" id="lay-add">＋ Add column</button>
+        <button class="btn small" id="lay-reset">↺ Reset all to defaults</button>
+        <span class="muted small-text">Auto: lineno = row number · txnref = base + ref + transaction index · sum_items_net / sum_items_qty / count_items / sum_payments · line_net = price × qty when blank · total_if_blank. Msg5: payload tag, or <code>json:key</code>.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="lay-data" type="application/json">{{ layout|tojson }}</script>
+<script id="shared-data" type="application/json">{{ shared|tojson }}</script>
+<script id="sets-data" type="application/json">{{ sets|tojson }}</script>
+<script id="lib-data" type="application/json">{{ entries|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const FILE_TYPES = {{ file_types|tojson }};
+  const CHILD_OF = {{ child_of|tojson }};
+  const KIND_OF = { ORDERITEMS: 'items', ORDER_PAYMENT: 'payments', ORDERITEMS_PROMOTION: 'promotions' };
+  const FT_OF = { items: 'ORDERITEMS', payments: 'ORDER_PAYMENT', promotions: 'ORDERITEMS_PROMOTION' };
+  const FORMATS = {{ formats|tojson }}, AUTOS = {{ autos|tojson }};
+  const LAYOUT_URL = "{{ url_for('tlog.csv_layout') }}", SETS_URL = "{{ url_for('tlog.csv_sets') }}";
+  const IMPORT_URL = "{{ url_for('tlog.csv_import') }}", EXPORT_URL = "{{ url_for('tlog.csv_export') }}", LIB_URL = "{{ url_for('tlog.library') }}";
+  let layout = JSON.parse($('lay-data').textContent);
+  let shared = JSON.parse($('shared-data').textContent);
+  let sets = JSON.parse($('sets-data').textContent);
+  const entries = JSON.parse($('lib-data').textContent);
+  let state = { id: '', name: '', transactions: [] };
+  let previewFt = FILE_TYPES[0], layFt = FILE_TYPES[0];
+
+  const pad2 = n => String(n).padStart(2, '0');
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+  const cols = ft => layout.files[ft];
+  const named = ft => cols(ft).filter(c => c.name);
+  const isShared = name => shared.includes(name);
+  function fmt(v, f) {
+    if (!f || v === '' || v == null || !/^-?\d+(\.\d+)?$/.test(String(v))) return v ?? '';
+    const d = { dec3: 3, dec4: 4, dec9: 9 }[f];
+    return d ? Number(v).toFixed(d) : v;
+  }
+  function status(el, text, ok = true) { el.textContent = text; el.className = 'status ' + (text ? (ok ? 'ok' : 'bad') : ''); }
+  const setMeta = () => ({ bu: $('set-bu').value.trim().toUpperCase(), date: $('set-date').value.trim(), seq: $('set-seq').value.trim(), ref_base: $('set-ref').value.trim() });
+  function fileName(ft, ext) {
+    const m = setMeta();
+    return layout.name_format.replace('{TYPE}', ft).replace('{BU}', m.bu || 'BU').replace('{YYYYMMDD}', m.date || 'YYYYMMDD').replace('{SEQ}', m.seq || 'SEQ').replace(/[^\w\-.]/g, '') + '.' + ext;
+  }
+
+  // ---------- compute rows (same rules as the export) ----------
+  function itemsNet(t) { return t.items.reduce((s, r) => s + num(lineNet(r)), 0); }
+  function lineNet(r) { return (r.NetAmount ?? '') !== '' ? r.NetAmount : String(Math.round(num(r.UnitPrice) * num(r.Quantity) * 10000) / 10000); }
+  function autoValue(c, t, ti, row, ri, kind) {
+    switch (c.auto) {
+      case 'lineno': return String(ri + 1);
+      case 'txnref': return ($('set-ref').value.trim() || '') + (c.ref || '') + pad2(ti + 1);
+      case 'sum_items_net': return String(Math.round(itemsNet(t) * 10000) / 10000);
+      case 'sum_items_qty': return String(t.items.reduce((s, r) => s + num(r.Quantity), 0));
+      case 'count_items': return String(t.items.length);
+      case 'sum_payments': return String(t.payments.reduce((s, r) => s + num(r.Amount), 0));
+      case 'line_net': return lineNet(row || {});
+      case 'total_if_blank': return (row && (row[c.name] ?? '') !== '') ? row[c.name] : String(Math.round(itemsNet(t) * 10000) / 10000);
+    }
+    return '';
+  }
+  const editableAuto = a => a === 'line_net' || a === 'total_if_blank';
+  function cellValue(c, t, ti, row, ri, kind) {
+    if (!c.name) return '';
+    if (c.auto && !(editableAuto(c.auto) && row && (row[c.name] ?? '') !== '')) return fmt(autoValue(c, t, ti, row, ri, kind), c.format);
+    if (kind !== 'order' && isShared(c.name)) return fmt(t.order[c.name] ?? c.default, c.format);
+    const src = kind === 'order' ? t.order : row;
+    return fmt((src[c.name] ?? '') !== '' ? src[c.name] : c.default, c.format);
+  }
+  function buildFiles() {
+    const files = {};
+    for (const ft of FILE_TYPES) files[ft] = [];
+    state.transactions.forEach((t, ti) => {
+      files.ORDER.push(cols('ORDER').map(c => cellValue(c, t, ti, null, 0, 'order')));
+      for (const [ft, kind] of Object.entries(KIND_OF)) t[kind].forEach((row, ri) => files[ft].push(cols(ft).map(c => cellValue(c, t, ti, row, ri, kind))));
+    });
+    return files;
+  }
+  const csvText = rows => rows.length ? rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n') : '\r\n';
+
+  // ---------- render ----------
+  function render() {
+    renderTxns(); renderPreview(); renderNames();
+    $('txn-count').textContent = state.transactions.length;
+    $('txn-empty').hidden = state.transactions.length > 0;
+  }
+  function renderNames() {
+    $('file-names').innerHTML = FILE_TYPES.map(ft => `<span class="pill mono-in">${esc(fileName(ft, 'csv'))}</span>`).join(' ') + ` <span class="muted small-text">+ the same 4 names as empty .ok files</span>`;
+  }
+  function renderPreview() {
+    const files = buildFiles();
+    $('preview').value = csvText(files[previewFt]);
+    $('preview-name').textContent = `${fileName(previewFt, 'csv')} · ${files[previewFt].length} row${files[previewFt].length === 1 ? '' : 's'} · ${cols(previewFt).length} columns`;
+  }
+  function txnTitle(t, i) {
+    const o = t.order;
+    return `#${i + 1} · Txn ${o.TransactionNumber || '—'} · ${o.MemberCard || 'no member'} · ${t.items.length} item${t.items.length === 1 ? '' : 's'} · ${t.payments.length} payment${t.payments.length === 1 ? '' : 's'} · total ${fmt(String(Math.round(itemsNet(t) * 10000) / 10000), 'dec4')}`;
+  }
+  function renderTxns() {
+    const wrap = $('txns');
+    const open = new Set([...wrap.querySelectorAll('details[open]')].map(d => d.dataset.i));
+    wrap.innerHTML = '';
+    state.transactions.forEach((t, ti) => {
+      const d = document.createElement('details');
+      d.className = 'txn'; d.dataset.i = ti;
+      d.open = open.size ? open.has(String(ti)) : ti === state.transactions.length - 1;
+      d.innerHTML = `<summary><span class="txn-title"></span><span class="row-actions">
+        <button type="button" class="icon-btn" data-act="dup" title="Duplicate (transaction number +1)">⧉</button>
+        <button type="button" class="icon-btn" data-act="up" title="Move up">↑</button>
+        <button type="button" class="icon-btn" data-act="down" title="Move down">↓</button>
+        <button type="button" class="icon-btn danger" data-act="del" title="Remove">✕</button></span></summary>`;
+      d.querySelector('.txn-title').textContent = txnTitle(t, ti);
+      d.querySelector('.row-actions').addEventListener('click', e => {
+        const b = e.target.closest('[data-act]'); if (!b) return; e.preventDefault();
+        const a = b.dataset.act;
+        if (a === 'del') { if (!confirm('Remove this transaction?')) return; state.transactions.splice(ti, 1); }
+        else if (a === 'dup') { const c = structuredClone(t); bumpNumbers(c.order); state.transactions.splice(ti + 1, 0, c); }
+        else { const j = a === 'up' ? ti - 1 : ti + 1; if (j < 0 || j >= state.transactions.length) return; [state.transactions[ti], state.transactions[j]] = [state.transactions[j], state.transactions[ti]]; }
+        render();
+      });
+      const body = document.createElement('div'); body.className = 'txn-body';
+      // shared
+      body.appendChild(fieldBlock('Shared fields — copied into all 4 files', named('ORDER').filter((c, i, a) => isShared(c.name) && a.findIndex(x => x.name === c.name) === i), t, ti));
+      body.appendChild(fieldBlock('Order', named('ORDER').filter((c, i, a) => !isShared(c.name) && a.findIndex(x => x.name === c.name) === i), t, ti));
+      for (const kind of ['items', 'payments', 'promotions']) body.appendChild(linesBlock(kind, t, ti));
+      d.appendChild(body); wrap.appendChild(d);
+    });
+  }
+  function fieldBlock(title, columns, t, ti) {
+    const sec = document.createElement('div'); sec.className = 'txn-sec';
+    sec.innerHTML = `<h3>${esc(title)}</h3>`;
+    const grid = document.createElement('div'); grid.className = 'field-grid dense';
+    for (const c of columns) {
+      const lab = document.createElement('label'); lab.className = 'field';
+      const inp = document.createElement('input');
+      inp.dataset.name = c.name;
+      inp.value = t.order[c.name] ?? '';
+      inp.placeholder = c.auto && !editableAuto(c.auto) ? cellValue(c, t, ti, null, 0, 'order') : (c.default || '');
+      if (c.auto && !editableAuto(c.auto)) { inp.readOnly = true; inp.classList.add('auto'); inp.title = 'computed: ' + c.auto; }
+      inp.addEventListener('input', () => { t.order[c.name] = inp.value; renderPreview(); });
+      inp.addEventListener('change', () => { const title = document.querySelector(`details[data-i="${ti}"] .txn-title`); if (title) title.textContent = txnTitle(t, ti); });
+      lab.append(document.createTextNode(c.label || c.name), inp);
+      const small = document.createElement('small'); small.className = 'muted';
+      small.textContent = c.name + (c.auto ? ' · auto ' + c.auto : '') + (c.msg5 ? ' · msg5 ' + c.msg5 : '');
+      lab.appendChild(small); grid.appendChild(lab);
+    }
+    sec.appendChild(grid); return sec;
+  }
+  function linesBlock(kind, t, ti) {
+    const ft = FT_OF[kind];
+    const columns = named(ft).filter(c => !isShared(c.name));
+    const sec = document.createElement('div'); sec.className = 'txn-sec';
+    const label = { items: '🛒 Items', payments: '💳 Payments', promotions: '🏷 Promotions' }[kind];
+    sec.innerHTML = `<h3>${label} <span class="muted small-text">(${ft})</span></h3>`;
+    const wrap = document.createElement('div'); wrap.className = 'table-wrap';
+    const tbl = document.createElement('table'); tbl.className = 'grid-table lines-table';
+    tbl.innerHTML = '<tr><th>#</th>' + columns.map(c => `<th title="${esc(c.name)}">${esc(c.label || c.name)}${c.auto ? ' <span class="muted">⚙</span>' : ''}</th>`).join('') + '<th></th></tr>';
+    t[kind].forEach((row, ri) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="muted">${ri + 1}</td>`;
+      for (const c of columns) {
+        const td = document.createElement('td'); const inp = document.createElement('input');
+        inp.dataset.name = c.name;
+        const fixed = c.auto && !editableAuto(c.auto);
+        inp.value = fixed ? cellValue(c, t, ti, row, ri, kind) : (row[c.name] ?? '');
+        inp.placeholder = fixed ? '' : (c.auto ? cellValue(c, t, ti, row, ri, kind) : (c.default || ''));
+        if (fixed) { inp.readOnly = true; inp.classList.add('auto'); }
+        inp.addEventListener('input', () => { row[c.name] = inp.value; renderPreview(); if (kind === 'items') refreshTitle(t, ti); });
+        td.appendChild(inp); tr.appendChild(td);
+      }
+      const del = document.createElement('td'); del.innerHTML = '<button type="button" class="icon-btn danger" title="Remove line">✕</button>';
+      del.firstChild.onclick = () => { t[kind].splice(ri, 1); render(); };
+      tr.appendChild(del); tbl.appendChild(tr);
+    });
+    wrap.appendChild(tbl); sec.appendChild(wrap);
+    const add = document.createElement('button'); add.type = 'button'; add.className = 'btn small top-gap'; add.textContent = '＋ Add line';
+    add.onclick = () => { const prev = t[kind].slice(-1)[0]; const row = prev ? structuredClone(prev) : {}; for (const c of columns) if (c.auto) delete row[c.name]; t[kind].push(row); render(); };
+    sec.appendChild(add);
+    return sec;
+  }
+  function refreshTitle(t, ti) { const el = document.querySelector(`details[data-i="${ti}"] .txn-title`); if (el) el.textContent = txnTitle(t, ti); }
+  function bumpNumbers(o) {
+    for (const k of ['TransactionNumber', 'ReceiptNo']) if (/^\d+$/.test(o[k] || '')) o[k] = String(parseInt(o[k], 10) + 1);
+  }
+
+  // ---------- transactions ----------
+  function newTxn(from) {
+    const t = { order: {}, items: [], payments: [], promotions: [] };
+    if (from) { t.order = structuredClone(from.order); bumpNumbers(t.order); }
+    else for (const c of named('ORDER')) if (c.default && !c.auto) t.order[c.name] = c.default;
+    if (!from && setMeta().bu) for (const n of ['BUCode', 'OrderBU']) if (n in t.order || named('ORDER').some(c => c.name === n)) t.order[n] = setMeta().bu;
+    return t;
+  }
+  $('add-txn').onclick = () => { state.transactions.push(newTxn(state.transactions.slice(-1)[0])); render(); };
+
+  // Msg5 -> transaction through the layout's msg5 mapping
+  function decodeEntities(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
+  function msg5Value(spec, json, scope) {
+    if (!spec) return undefined;
+    if (spec.startsWith('json:')) { const v = json[spec.slice(5)]; return v == null ? undefined : String(v); }
+    const el = scope.getElementsByTagName(spec)[0];
+    if (!el) return undefined;
+    const v = el.textContent.trim();
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/);
+    return m ? `${m[1]}/${m[2]}/${m[3]} ${m[4]}` : v;
+  }
+  function txnFromMsg5(text) {
+    const json = JSON.parse(text);
+    const key = 'playloadJson' in json ? 'playloadJson' : 'payloadJson';
+    const doc = new DOMParser().parseFromString(decodeEntities(json[key] || ''), 'application/xml');
+    if (doc.querySelector('parsererror')) throw new Error('payload XML is invalid');
+    const t = newTxn(null);
+    for (const c of named('ORDER')) { const v = msg5Value(c.msg5, json, doc); if (v !== undefined) t.order[c.name] = v; }
+    const details = Array.from(doc.getElementsByTagName('TransactionDetail'));
+    const pick = (kind, tag) => details.map(d => d.querySelector(`:scope > TransactionDetailGroup > ${tag}`)).filter(Boolean).map(el => {
+      const row = {};
+      for (const c of named(FT_OF[kind]).filter(c => !isShared(c.name) && c.msg5)) { const v = msg5Value(c.msg5, json, el); if (v !== undefined) row[c.name] = v; }
+      return row;
+    });
+    t.items = pick('items', 'Item'); t.payments = pick('payments', 'Tender'); t.promotions = pick('promotions', 'TransactionDetailLine');
+    if (!setMeta().bu && json.buCode) $('set-bu').value = String(json.buCode).toUpperCase();
+    return t;
+  }
+  const m5 = $('msg5-overlay');
+  $('add-msg5').onclick = () => {
+    const list = $('msg5-lib'); list.innerHTML = '';
+    if (!entries.length) list.innerHTML = '<div class="muted small-text msg-empty">The TLog library is empty — import the BU docs on the Msg5 request tab.</div>';
+    for (const e of entries) {
+      const it = document.createElement('div'); it.className = 'msg-item';
+      it.innerHTML = '<button type="button" class="msg-open"><strong></strong><span class="muted small-text"></span></button>';
+      it.querySelector('strong').textContent = `${e.kind === 'template' ? '📄' : '💾'} ${e.bu_code} · ${e.name}`;
+      it.querySelector('span').textContent = e.updated;
+      it.querySelector('button').onclick = async () => {
+        const d = await (await fetch(`${LIB_URL}/${e.id}`)).json();
+        if (d.ok) addFromMsg5(d.entry.json, e.name);
+      };
+      list.appendChild(it);
+    }
+    status($('msg5-status'), ''); m5.hidden = false;
+  };
+  function addFromMsg5(text, name) {
+    try { state.transactions.push(txnFromMsg5(text)); render(); m5.hidden = true; status($('preview-status'), `Transaction added from ${name || 'the pasted message'} — check the shared fields and lines.`); }
+    catch (e) { status($('msg5-status'), e.message, false); }
+  }
+  $('msg5-use').onclick = () => { const t = $('msg5-paste').value.trim(); if (!t) return status($('msg5-status'), 'Paste a message first.', false); addFromMsg5(t); };
+  $('msg5-close').onclick = () => m5.hidden = true;
+  m5.addEventListener('click', e => { if (e.target === m5) m5.hidden = true; });
+
+  // ---------- set meta / preview / export ----------
+  ['set-bu', 'set-date', 'set-seq', 'set-ref'].forEach(id => $(id).addEventListener('input', () => { renderNames(); renderPreview(); }));
+  $('date-today').onclick = () => { const d = new Date(); $('set-date').value = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`; renderNames(); renderPreview(); };
+  $('preview-tabs').addEventListener('click', e => { const b = e.target.closest('[data-ft]'); if (!b) return; previewFt = b.dataset.ft; $('preview-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderPreview(); });
+  $('copy-preview').onclick = async () => { try { await navigator.clipboard.writeText($('preview').value); status($('preview-status'), 'Copied.'); } catch (e) { status($('preview-status'), e.message, false); } };
+  $('zip-btn').onclick = async () => {
+    const m = setMeta();
+    if (!m.bu || !/^\d{8}$/.test(m.date) || !m.seq) { status($('preview-status'), 'Fill BU, an 8-digit file date and the sequence first.', false); return; }
+    if (!state.transactions.length && !confirm('No transactions — download 4 empty files?')) return;
+    const res = await fetch(EXPORT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...m, files: buildFiles() }) });
+    const blob = await res.blob();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `TLOG_${m.bu}_${m.date}_${m.seq}.zip`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    status($('preview-status'), `📦 ${a.download} — 4 CSV + 4 .ok files.`);
+  };
+
+  // ---------- saved sets ----------
+  function renderSets() {
+    const list = $('sets-list'); list.innerHTML = ''; $('sets-count').textContent = sets.length;
+    if (!sets.length) { list.innerHTML = '<div class="muted small-text msg-empty">No saved sets yet.</div>'; return; }
+    for (const s of sets) {
+      const it = document.createElement('div'); it.className = 'msg-item' + (state.id === s.id ? ' on' : '');
+      it.innerHTML = '<button type="button" class="msg-open"><strong></strong><span class="muted small-text"></span></button><button type="button" class="icon-btn danger" title="Delete">✕</button>';
+      it.querySelector('strong').textContent = s.name;
+      it.querySelector('span').textContent = `${s.bu} · ${s.date} · #${s.seq} · ${s.transactions} txn · ${s.updated}`;
+      it.querySelector('.msg-open').onclick = async () => {
+        const d = await (await fetch(`${SETS_URL}/${s.id}`)).json();
+        if (!d.ok) return;
+        state = { id: d.set.id, name: d.set.name, transactions: d.set.transactions || [] };
+        $('set-name').value = d.set.name; $('set-bu').value = d.set.bu || ''; $('set-date').value = d.set.date || ''; $('set-seq').value = d.set.seq || ''; $('set-ref').value = d.set.ref_base || layout.ref_base || '';
+        $('save-update').hidden = false; $('save-update').textContent = `✓ Update "${d.set.name}"`;
+        render(); renderSets(); $('save-status').textContent = 'Loaded.';
+      };
+      it.querySelector('.icon-btn').onclick = async () => {
+        if (!confirm(`Delete set "${s.name}"?`)) return;
+        const d = await (await fetch(`${SETS_URL}/${s.id}`, { method: 'DELETE' })).json();
+        if (d.ok) { sets = d.sets; if (state.id === s.id) { state.id = ''; $('save-update').hidden = true; } renderSets(); }
+      };
+      list.appendChild(it);
+    }
+  }
+  async function saveSet(asNew) {
+    const name = $('set-name').value.trim() || state.name;
+    if (!name) { $('save-status').textContent = '⚠ Give the set a name.'; $('set-name').focus(); return; }
+    const d = await (await fetch(SETS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: asNew ? '' : state.id, name, ...setMeta(), transactions: state.transactions }) })).json();
+    if (!d.ok) { $('save-status').textContent = '⚠ ' + (d.error || 'save failed'); return; }
+    sets = d.sets; state.id = d.set.id; state.name = d.set.name;
+    $('save-update').hidden = false; $('save-update').textContent = `✓ Update "${d.set.name}"`;
+    renderSets(); $('save-status').textContent = `✓ Saved "${d.set.name}" at ${d.set.updated}.`;
+  }
+  $('save-new').onclick = () => saveSet(true);
+  $('save-update').onclick = () => saveSet(false);
+
+  // import an existing set
+  const drop = $('set-drop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('hot'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('hot'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('hot'); importSet([...e.dataTransfer.files]); });
+  $('set-files').onchange = () => { importSet([...$('set-files').files]); $('set-files').value = ''; };
+  async function importSet(files) {
+    if (!files.length) return;
+    const fd = new FormData(); files.forEach(f => fd.append('files', f, f.name));
+    $('import-status').textContent = 'Reading…';
+    const d = await (await fetch(IMPORT_URL, { method: 'POST', body: fd })).json();
+    if (!d.ok) { $('import-status').textContent = '⚠ ' + (d.error || 'import failed'); return; }
+    if (state.transactions.length && !confirm(`Replace the current ${state.transactions.length} transactions with the ${d.transactions.length} imported ones?`)) return;
+    state = { id: '', name: '', transactions: d.transactions };
+    $('save-update').hidden = true;
+    if (d.bu) $('set-bu').value = d.bu; if (d.date) $('set-date').value = d.date; if (d.seq) $('set-seq').value = d.seq;
+    // reference base: the common prefix of the order references, if any
+    const refs = d.transactions.map(t => t.order.OrderRef || '').filter(Boolean);
+    if (refs.length && refs[0].length > 4) $('set-ref').value = refs[0].slice(0, -4);
+    render();
+    $('import-status').textContent = `✓ ${d.transactions.length} transaction${d.transactions.length === 1 ? '' : 's'} imported.` + (d.warnings.length ? ' ⚠ ' + d.warnings.join(' · ') : '');
+  }
+
+  // ---------- layout editor ----------
+  const lo = $('layout-overlay');
+  $('layout-btn').onclick = () => { $('lay-format').value = layout.name_format; renderLayTable(); lo.hidden = false; };
+  $('layout-close').onclick = () => lo.hidden = true;
+  lo.addEventListener('click', e => { if (e.target === lo) lo.hidden = true; });
+  $('lay-tabs').addEventListener('click', e => { const b = e.target.closest('[data-ft]'); if (!b) return; layFt = b.dataset.ft; $('lay-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderLayTable(); });
+  async function saveLayout(patch) {
+    const d = await (await fetch(LAYOUT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })).json();
+    if (d.ok) { layout = d.layout; shared = d.shared; render(); }
+    return d;
+  }
+  $('lay-format').addEventListener('change', () => saveLayout({ name_format: $('lay-format').value.trim() || '{TYPE}_{BU}_{YYYYMMDD}_{SEQ}' }));
+  function renderLayTable() {
+    const t = $('lay-table'); const list = cols(layFt);
+    $('lay-info').textContent = `${list.length} columns · ${list.filter(c => c.name).length} named · shared: ${list.filter(c => isShared(c.name)).length}`;
+    t.innerHTML = '<tr><th>#</th><th>Name</th><th>Label</th><th>Default</th><th>Format</th><th>Auto</th><th>Ref</th><th>Msg5</th><th></th></tr>';
+    list.forEach((c, i) => {
+      const tr = document.createElement('tr');
+      if (isShared(c.name)) tr.className = 'shared-row';
+      tr.innerHTML = `<td class="muted">${i + 1}</td><td><input data-k="name" class="mono-in" placeholder="(empty)"></td><td><input data-k="label"></td><td><input data-k="default"></td>
+        <td><select data-k="format">${FORMATS.map(f => `<option value="${f}">${f || '—'}</option>`).join('')}</select></td>
+        <td><select data-k="auto">${AUTOS.map(a => `<option value="${a}">${a || '—'}</option>`).join('')}</select></td>
+        <td><input data-k="ref" style="width:50px" placeholder="—" title="Type code inserted after the reference base (e.g. 05 for ORDER, 07 for lines)"></td><td><input data-k="msg5" class="mono-in" placeholder="tag or json:key"></td>
+        <td class="row-tools-h"><button type="button" class="icon-btn" data-act="up">↑</button><button type="button" class="icon-btn" data-act="down">↓</button><button type="button" class="icon-btn danger" data-act="del" title="Remove column">✕</button></td>`;
+      for (const k of ['name', 'label', 'default', 'format', 'auto', 'ref', 'msg5']) tr.querySelector(`[data-k=${k}]`).value = c[k] || '';
+      tr.querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('change', async () => {
+        const files = { [layFt]: structuredClone(list) }; files[layFt][i][inp.dataset.k] = inp.value.trim();
+        await saveLayout({ files }); renderLayTable();
+      }));
+      tr.querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
+        const arr = structuredClone(list);
+        if (b.dataset.act === 'del') { if (!confirm(`Remove column ${i + 1} (${c.name || 'empty'})? The file will have one column less.`)) return; arr.splice(i, 1); }
+        else { const j = b.dataset.act === 'up' ? i - 1 : i + 1; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; }
+        await saveLayout({ files: { [layFt]: arr } }); renderLayTable();
+      });
+      t.appendChild(tr);
+    });
+  }
+  $('lay-add').onclick = async () => { await saveLayout({ files: { [layFt]: cols(layFt).concat([{ name: '', label: '', default: '', format: '', auto: '', msg5: '' }]) } }); renderLayTable(); };
+  $('lay-reset').onclick = async () => { if (!confirm('Reset every file layout to the defaults?')) return; await saveLayout({ reset: true }); renderLayTable(); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { lo.hidden = true; m5.hidden = true; } });
+
+  // ---------- init ----------
+  $('set-ref').value = layout.ref_base || '';
+  $('date-today').click();
+  renderSets(); render();
+})();
+</script>
+{% endblock %}

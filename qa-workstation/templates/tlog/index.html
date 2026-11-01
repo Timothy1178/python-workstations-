@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}TLog Handler · QA Workstation{% endblock %}
 {% block content %}
+<div class="tabs">
+  <a class="tab on" href="{{ url_for('tlog.index') }}">📨 Msg5 request</a>
+  <a class="tab" href="{{ url_for('tlog.csv_page') }}">🗂 TLog CSV set</a>
+</div>
 <div class="page-head">
   <div>
     <h1>🧾 TLog Handler — create msg5</h1>

@@ -5,6 +5,32 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.17.0 — 2026-11-01
+
+- **TLog Handler — 🗂 TLog CSV set** (second tab): one editor for the
+  four TLog files ORDER / ORDER_PAYMENT / ORDERITEMS /
+  ORDERITEMS_PROMOTION. A **transaction** is entered once: the shared
+  fields (member card, date-time, store, till, transaction number,
+  receipt, BU) are copied into every row of every file; the ORDER-only
+  fields, item lines, payment lines and promotion lines sit under it.
+  Auto columns: line numbers, order / line references (reference base
+  + type code + transaction index), order total = Σ item net, item
+  count, net = price × qty when blank, payment amount = total when
+  blank; number formats per column (3 / 4 / 9 decimals). **📨 Add from
+  Msg5** builds a transaction from a library message or a pasted JSON
+  through the layout's Msg5 mapping (shared fields, items from Item,
+  payments from Tender, promotions from TransactionDetailLine).
+  **📦 Download zip** writes the 4 CSVs in the template format (every
+  field quoted, CRLF rows, empty file = one CRLF) plus the 4 same-named
+  empty `.ok` files, named `{TYPE}_{BU}_{YYYYMMDD}_{SEQ}`; the
+  reference set round-trips byte for byte. Live per-file preview with
+  copy, import an existing set (4 CSVs or a zip) into transactions,
+  save / update / delete named sets. **⚙️ Layout**: the template has no
+  header row, so the column names are best guesses — rename, set
+  defaults, formats, auto rules, reference codes and Msg5 tags per
+  column, add / remove / reorder columns, reset to defaults; saved in
+  `data/tlog/csv_layout.json`.
+
 ## 1.16.0 — 2026-11-01
 
 - **Msg5 Json — 📂 Load from file**: open the message straight from an
