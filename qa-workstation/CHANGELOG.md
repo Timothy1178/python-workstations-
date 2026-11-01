@@ -5,6 +5,29 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.15.0 — 2026-11-01
+
+- **New module — 📨 TLog Handler (create msg5)**: editor for the
+  `UPDATE_TRANSACTION_STOCK_FROM_MSG5` function-call messages sent
+  through Offset Explorer. **BU library**: drop the BU documents
+  (.docx / .json / .txt, several at once) and each message becomes a
+  template, grouped by BU code read from the message; saved requests
+  live beside them (save as new / update / delete / filter). **Fields**
+  grouped as Message (type, BU code, timestamp as a date-time picker),
+  Transaction (store, retailer incl. the element attribute, business /
+  period dates, transaction number, external reference, till, cashier,
+  start / end, LPE server), Customer (club card, club id) and Flags
+  (0/1 selects); ⚙️ Edit box fields adds any message key or payload tag
+  (picked from the loaded message) with label / type / group, saved in
+  `data/tlog/config.json`. **Items & tenders** tables: edit item ID,
+  unit price, quantity (extended amount follows), tender ID and amount,
+  add or remove lines (sequence numbers renumbered), Σ Recalculate sets
+  ExtendedAmount, TotalAmount, ItemsNumber and a single tender amount.
+  Toggles: New UUID → transaction number +1, Generate → timestamp now,
+  Generate → recalc totals; 📅 Dates → today. Output is the one-line
+  string for Offset Explorer with Copy / Download / Use as source and
+  the decoded XML preview. All data under `data/tlog/` (gitignored).
+
 ## 1.14.0 — 2026-10-21
 
 - **New module — 🧾 Msg5 Json**: the Transaction String Editor as a

@@ -1,0 +1,661 @@
+{% extends "base.html" %}
+{% block title %}TLog Handler · QA Workstation{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>🧾 TLog Handler — create msg5</h1>
+    <p class="muted">Import the BU documents as templates, pick one, edit the fields, items and tenders, then copy the one-line string and send it through Offset Explorer.</p>
+  </div>
+  <div class="row-actions">
+    <label class="check-label toggle-pill" title="New UUID also raises the transaction number by one"><input type="checkbox" id="t-auto-inc" {{ 'checked' if config.auto_increment }}> 🔢 New UUID → txn +1</label>
+    <label class="check-label toggle-pill" title="Generate stamps the message timestamp with the current time"><input type="checkbox" id="t-auto-ts" {{ 'checked' if config.auto_timestamp }}> ⏱ Generate → timestamp now</label>
+    <label class="check-label toggle-pill" title="Generate recomputes ExtendedAmount, TotalAmount, ItemsNumber and a single tender amount"><input type="checkbox" id="t-auto-recalc" {{ 'checked' if config.auto_recalc }}> Σ Generate → recalc totals</label>
+  </div>
+</div>
+
+<div class="msg5-layout">
+  <!-- ---------- library ---------- -->
+  <aside class="card msg-side">
+    <h2>📚 BU library <span class="pill" id="lib-count">{{ entries|length }}</span></h2>
+    <label class="dropzone small-dz" id="lib-drop">
+      <input type="file" id="lib-files" accept=".docx,.json,.txt" multiple hidden>
+      <div>📄 <strong>Import BU docs</strong></div>
+      <div class="muted small-text">.docx · .json · .txt — drop several at once; the BU code is read from the message</div>
+    </label>
+    <div class="muted small-text" id="lib-import-status"></div>
+    <label class="search-box"><span>🔍</span><input id="lib-filter" placeholder="Filter by BU or name…" autocomplete="off"></label>
+    <div class="msg-list lib-list" id="lib-list"></div>
+    <div class="msg-save">
+      <h3>Save current message</h3>
+      <input id="save-name" placeholder="Name (e.g. WTCMY sale 2 items + club card)">
+      <div class="save-row">
+        <input id="save-bu" placeholder="BU" title="BU code — filled from the message">
+        <select id="save-kind"><option value="request">💾 request</option><option value="template">📄 template</option></select>
+      </div>
+      <input id="save-notes" placeholder="Notes (optional)">
+      <div class="row-actions">
+        <button class="btn primary" id="save-new">💾 Save as new</button>
+        <button class="btn" id="save-update" hidden>✓ Update</button>
+      </div>
+      <div class="muted small-text" id="save-status">Saves the generated string if present, otherwise the source.</div>
+    </div>
+  </aside>
+
+  <div class="msg-main">
+    <!-- ---------- source ---------- -->
+    <section class="card">
+      <div class="page-head tight">
+        <h2>Source message <span class="muted small-text" id="loaded-label"></span></h2>
+        <div class="row-actions">
+          <button class="btn small" id="paste-btn">📋 Paste</button>
+          <button class="btn small" id="clear-btn">Clear</button>
+        </div>
+      </div>
+      <textarea id="source" class="mono src-small" spellcheck="false" placeholder='Pick a BU template on the left, or paste {"id":"…","type":"UPDATE_TRANSACTION_STOCK_FROM_MSG5","buCode":"…","timestamp":…,"playloadJson":"&amp;lt;Root&amp;gt;…"}'></textarea>
+      <div class="row-actions top-gap">
+        <button class="btn primary" id="load-btn">⬇ Load fields</button>
+        <span class="status" id="load-status"></span>
+      </div>
+    </section>
+
+    <!-- ---------- fields ---------- -->
+    <section class="card">
+      <div class="page-head tight">
+        <h2>Fields</h2>
+        <div class="row-actions">
+          <button class="btn small" id="today-btn" title="Business / period dates and start / end to today, timestamp to now">📅 Dates → today</button>
+          <button class="btn small" id="fields-config-btn" title="Choose which message keys and payload tags are editable here">⚙️ Edit box fields</button>
+        </div>
+      </div>
+      <label class="field id-field">ID
+        <div class="id-row"><input id="f-id" type="text"><button class="btn" id="uuid-btn" type="button">🆕 New UUID</button></div>
+        <small class="muted" id="id-hint"></small>
+      </label>
+      <div id="field-groups"></div>
+      <div class="row-actions top-gap">
+        <button class="btn primary" id="generate-btn">⚙️ Generate string</button>
+        <label class="check-label"><input id="pretty" type="checkbox" {{ 'checked' if config.pretty }}> Pretty-print (for reading — Offset Explorer wants one line)</label>
+        <span class="status" id="edit-status"></span>
+      </div>
+    </section>
+
+    <!-- ---------- items & tenders ---------- -->
+    <section class="card">
+      <div class="page-head tight">
+        <h2>Items &amp; tenders</h2>
+        <div class="row-actions">
+          <span class="muted small-text" id="sum-info"></span>
+          <button class="btn small" id="recalc-btn" title="ExtendedAmount = price × qty · TotalAmount = Σ · ItemsNumber = Σ qty · single tender = total">Σ Recalculate</button>
+        </div>
+      </div>
+      <div class="two-col lines-grid">
+        <div>
+          <h3>🛒 Items <span class="muted small-text">(TransactionDetail → Item)</span></h3>
+          <div class="table-wrap"><table class="grid-table lines-table" id="items-table"></table></div>
+          <button class="btn small top-gap" id="add-item">＋ Add item line</button>
+        </div>
+        <div>
+          <h3>💳 Tenders <span class="muted small-text">(TransactionDetail → Tender)</span></h3>
+          <div class="table-wrap"><table class="grid-table lines-table" id="tenders-table"></table></div>
+          <button class="btn small top-gap" id="add-tender">＋ Add tender line</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- output ---------- -->
+    <section class="card">
+      <div class="page-head tight">
+        <h2>String for Offset Explorer</h2>
+        <span class="muted small-text">Offset Explorer → topic → Data → ＋ → paste as the message <em>Value</em> (String) → Add.</span>
+      </div>
+      <textarea id="output" class="mono" spellcheck="false" readonly></textarea>
+      <div class="row-actions top-gap">
+        <button class="btn primary" id="copy-btn">📋 Copy string</button>
+        <button class="btn" id="download-btn">⬇ Download .json</button>
+        <button class="btn" id="use-output-btn" title="Put the generated message back into Source and keep editing">↩ Use as source</button>
+        <span class="status" id="copy-status"></span>
+      </div>
+      <details class="top-gap">
+        <summary>Decoded XML preview</summary>
+        <textarea id="xml-preview" class="mono" spellcheck="false" readonly></textarea>
+      </details>
+    </section>
+  </div>
+</div>
+
+<!-- ---------- edit box fields (config) ---------- -->
+<div class="preview-overlay" id="config-overlay" hidden>
+  <div class="preview-modal card config-modal">
+    <div class="page-head">
+      <div>
+        <h2>⚙️ Edit box fields</h2>
+        <p class="muted small-text">Which message keys and payload tags appear as inputs. Saved in <code>data/tlog/config.json</code>.</p>
+      </div>
+      <button class="btn small" id="config-close">✕ Close</button>
+    </div>
+    <div class="import-body">
+      <h3>Add a field</h3>
+      <div class="add-field">
+        <label>From the loaded message
+          <select id="af-pick"><option value="">— load a message to list its keys and tags —</option></select>
+        </label>
+        <label>or type key / tag
+          <input id="af-tag" placeholder="e.g. TillGroupId">
+        </label>
+        <label>Source
+          <select id="af-source"><option value="xml">payload tag</option><option value="json">message key</option></select>
+        </label>
+        <label>Label <input id="af-label" placeholder="Shown in the edit box"></label>
+        <label>Type
+          <select id="af-type">{% for t in field_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+        </label>
+        <label>Group <input id="af-group" placeholder="Transaction" list="group-list"><datalist id="group-list"></datalist></label>
+        <label class="check-label"><input type="checkbox" id="af-required"> Required</label>
+        <label class="check-label"><input type="checkbox" id="af-all" checked> Update every occurrence</label>
+        <label>If missing, insert after tag <input id="af-after" placeholder="optional"></label>
+        <button class="btn primary" id="af-add">＋ Add field</button>
+      </div>
+      <div class="muted small-text" id="af-status"></div>
+      <h3 class="top-gap">Current fields <span class="muted small-text">— edits save immediately</span></h3>
+      <div class="table-wrap"><table class="list-table fields-table" id="fields-table"></table></div>
+      <div class="row-actions top-gap">
+        <button class="btn" id="fields-reset">↺ Reset to defaults</button>
+        <span class="muted small-text">Defaults cover the message keys, store / retailer / dates / numbers, club card and the flags.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="cfg-data" type="application/json">{{ config|tojson }}</script>
+<script id="lib-data" type="application/json">{{ entries|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const CONFIG_URL = "{{ url_for('tlog.config') }}";
+  const LIB_URL = "{{ url_for('tlog.library') }}";
+  const IMPORT_URL = "{{ url_for('tlog.import_files') }}";
+  const TXN_TAG = 'TransactionNumber';
+  let config = JSON.parse($('cfg-data').textContent);
+  let entries = JSON.parse($('lib-data').textContent);
+  let currentJson = null, workDoc = null, payloadKey = 'playloadJson', loaded = null;
+  const millisFmt = {};   // tag -> source value had .000 millis
+
+  // ---------- helpers ----------
+  function status(el, text, ok = true) { el.textContent = text; el.className = 'status ' + (text ? (ok ? 'ok' : 'bad') : ''); }
+  function decodeEntities(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
+  function encodeXml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function parseXml(encoded) {
+    const doc = new DOMParser().parseFromString(decodeEntities(encoded), 'application/xml');
+    const err = doc.querySelector('parsererror');
+    if (err) throw new Error('Payload XML is invalid: ' + err.textContent.trim().replace(/\s+/g, ' '));
+    return doc;
+  }
+  const elements = (doc, name) => Array.from(doc.getElementsByTagName(name));
+  const firstText = (doc, name) => { const el = elements(doc, name)[0]; return el ? el.textContent : ''; };
+  const serialize = doc => new XMLSerializer().serializeToString(doc);
+  const pad = n => String(n).padStart(2, '0');
+  function localString(d, secs = true) {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` + (secs ? `:${pad(d.getSeconds())}` : '');
+  }
+  function xmlToLocal(v) { const m = (v || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::(\d{2}))?/); return m ? `${m[1]}T${m[2]}:${m[3] || '00'}` : ''; }
+  function localToXml(v, tag) { if (!v) return ''; const base = v.length === 16 ? v + ':00' : v; return millisFmt[tag] ? base + '.000' : base; }
+  function num(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; }
+  function money(n) { return String(Math.round(n * 100) / 100); }
+  const todayStr = () => localString(new Date()).slice(0, 10);
+
+  function toInput(f, v) {
+    if (f.type === 'datetime') return xmlToLocal(v);
+    if (f.type === 'epochms') { const n = parseInt(v, 10); return Number.isFinite(n) ? localString(new Date(n)) : ''; }
+    return v == null ? '' : String(v);
+  }
+  function fromInput(f, v) {
+    if (f.type === 'datetime') return localToXml(v, f.tag);
+    if (f.type === 'epochms') return v ? String(new Date(v).getTime()) : '';
+    return v;
+  }
+  function readValue(f) {
+    if (f.source === 'json') return currentJson ? currentJson[f.tag] : '';
+    return firstText(workDoc, f.tag);
+  }
+  function applyField(doc, json, f, value) {
+    if (f.source === 'json') {
+      if (f.type === 'epochms' || f.type === 'number') { const n = Number(value); json[f.tag] = Number.isFinite(n) && value !== '' ? n : value; }
+      else json[f.tag] = value;
+      return 'updated';
+    }
+    const list = elements(doc, f.tag);
+    if (f.attr_of) elements(doc, f.attr_of).forEach(el => { if (el.hasAttribute(f.tag)) el.setAttribute(f.tag, value); });
+    if (list.length) { (f.all ? list : [list[0]]).forEach(el => { el.textContent = value; }); return 'updated'; }
+    if (!value) { if (f.required) throw new Error('Missing <' + f.tag + '> in payload.'); return 'unchanged'; }
+    const el = doc.createElement(f.tag);
+    el.textContent = value;
+    if (f.insert_after) {
+      const anchor = elements(doc, f.insert_after)[0];
+      if (!anchor || !anchor.parentNode) throw new Error('Cannot insert <' + f.tag + '>: <' + f.insert_after + '> was not found.');
+      anchor.parentNode.insertBefore(el, anchor.nextSibling);
+    } else (txnEl() || doc.documentElement).appendChild(el);
+    return 'inserted';
+  }
+
+  // ---------- fields box ----------
+  function renderFields() {
+    const wrap = $('field-groups');
+    wrap.innerHTML = '';
+    const groups = [];
+    for (const f of config.fields) if (!groups.includes(f.group)) groups.push(f.group);
+    $('group-list').innerHTML = groups.map(g => `<option value="${g}">`).join('');
+    for (const g of groups) {
+      const h = document.createElement('h3'); h.textContent = g; wrap.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'field-grid';
+      for (const f of config.fields.filter(x => x.group === g)) {
+        const lab = document.createElement('label');
+        lab.className = 'field cfg';
+        let inp;
+        if (f.type === 'flag') {
+          inp = document.createElement('select');
+          inp.innerHTML = '<option value="0">0 — no</option><option value="1">1 — yes</option>';
+        } else {
+          inp = document.createElement('input');
+          inp.type = f.type === 'datetime' || f.type === 'epochms' ? 'datetime-local' : f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text';
+          if (inp.type === 'datetime-local') inp.step = '1';
+          if (f.type === 'number') inp.step = 'any';
+          inp.placeholder = f.required ? '' : 'Optional';
+        }
+        inp.id = 'f-' + f.key;
+        lab.append(document.createTextNode(f.label), inp);
+        const small = document.createElement('small'); small.className = 'muted';
+        small.textContent = (f.hint || (f.source === 'json' ? `message key "${f.tag}"` : `<${f.tag}>` + (f.all ? ', every occurrence' : ', first only'))) + (f.required ? ' · required' : '');
+        lab.appendChild(small);
+        grid.appendChild(lab);
+      }
+      wrap.appendChild(grid);
+    }
+    if (workDoc) fillFields();
+  }
+  function fillFields() {
+    for (const f of config.fields) { const i = $('f-' + f.key); if (i) i.value = toInput(f, readValue(f)); }
+  }
+  function txnField() { return config.fields.find(f => f.tag === TXN_TAG && f.source === 'xml'); }
+  function updateIdHint() { const f = txnField(); $('id-hint').textContent = config.auto_increment && f ? `New UUID also adds 1 to ${f.label}.` : ''; }
+
+  // ---------- load / generate ----------
+  function loadSource() {
+    try {
+      const raw = $('source').value.trim();
+      if (!raw) throw new Error('Pick a template or paste the message first.');
+      currentJson = JSON.parse(raw);
+      if (!currentJson || Array.isArray(currentJson) || typeof currentJson !== 'object') throw new Error('The source must be one JSON object.');
+      payloadKey = 'playloadJson' in currentJson ? 'playloadJson' : 'payloadJson' in currentJson ? 'payloadJson' : '';
+      if (!payloadKey || typeof currentJson[payloadKey] !== 'string') throw new Error('Missing string property "playloadJson" (or "payloadJson").');
+      workDoc = parseXml(currentJson[payloadKey]);
+      for (const f of config.fields) if (f.type === 'datetime') millisFmt[f.tag] = /\.\d{3}$/.test(firstText(workDoc, f.tag));
+      $('f-id').value = currentJson.id ?? '';
+      fillFields();
+      renderLines();
+      fillPicker();
+      $('xml-preview').value = serialize(workDoc);
+      $('output').value = '';
+      $('save-bu').value = (currentJson.buCode || '').toUpperCase();
+      status($('load-status'), `Loaded ${(currentJson.buCode || '?')} message · ${countItems()} item lines · ${tenderDetails().length} tenders.`);
+      status($('edit-status'), '');
+      return true;
+    } catch (e) {
+      currentJson = null; workDoc = null;
+      status($('load-status'), e.message, false);
+      return false;
+    }
+  }
+  $('load-btn').onclick = loadSource;
+
+  function generate() {
+    try {
+      if (!currentJson || !workDoc) throw new Error('Load a message first.');
+      const id = $('f-id').value.trim();
+      if (!id) throw new Error('ID is required.');
+      const json = structuredClone(currentJson);
+      json.id = id;
+      const notes = [];
+      if (config.auto_timestamp) {
+        const tf = config.fields.find(f => f.source === 'json' && f.type === 'epochms');
+        if (tf) { const i = $('f-' + tf.key); if (i) i.value = localString(new Date()); }
+      }
+      for (const f of config.fields) {
+        const inp = $('f-' + f.key);
+        const v = (inp ? inp.value : '').trim();
+        if (f.required && !v) throw new Error(f.label + ' is required.');
+        if (applyField(workDoc, json, f, fromInput(f, v)) === 'inserted') notes.push(f.label + ' inserted.');
+      }
+      if (config.auto_recalc) notes.push(recalc());
+      const xml = serialize(workDoc);
+      json[payloadKey] = encodeXml(xml);
+      $('output').value = JSON.stringify(json, null, $('pretty').checked ? 2 : 0);
+      $('xml-preview').value = xml;
+      renderLines();
+      status($('edit-status'), 'Generated. ' + notes.join(' '));
+      status($('copy-status'), '');
+      $('save-status').textContent = 'Save stores the generated string.';
+      return true;
+    } catch (e) { status($('edit-status'), e.message, false); return false; }
+  }
+  $('generate-btn').onclick = generate;
+
+  $('uuid-btn').onclick = () => {
+    $('f-id').value = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+    let note = 'New UUID set.';
+    const f = txnField(), inp = f && $('f-' + f.key);
+    if (config.auto_increment && inp) {
+      const cur = parseInt(inp.value, 10), next = Number.isFinite(cur) ? cur + 1 : 1;
+      inp.value = String(next);
+      note += ` ${f.label}: ${Number.isFinite(cur) ? cur : '(empty)'} → ${next}.`;
+    }
+    status($('edit-status'), note);
+  };
+  $('today-btn').onclick = () => {
+    const t = todayStr();
+    let n = 0;
+    for (const f of config.fields) {
+      const i = $('f-' + f.key); if (!i) continue;
+      if (f.type === 'date') { i.value = t; n++; }
+      else if (f.type === 'datetime' && i.value) { i.value = t + i.value.slice(10); n++; }
+      else if (f.type === 'epochms') { i.value = localString(new Date()); n++; }
+    }
+    status($('edit-status'), `${n} date fields moved to today — press Generate.`);
+  };
+  for (const [id, key] of [['t-auto-inc', 'auto_increment'], ['t-auto-ts', 'auto_timestamp'], ['t-auto-recalc', 'auto_recalc'], ['pretty', 'pretty']]) {
+    $(id).addEventListener('change', () => { config[key] = $(id).checked; updateIdHint(); saveConfig({ [key]: $(id).checked }); });
+  }
+
+  // ---------- items & tenders ----------
+  function txnEl() { return workDoc && (elements(workDoc, 'ActiveStore_SalesTransaction_1.70')[0] || Array.from(workDoc.getElementsByTagName('*')).find(e => /SalesTransaction/i.test(e.tagName)) || workDoc.documentElement); }
+  function details(kind) {
+    return workDoc ? elements(workDoc, 'TransactionDetail').filter(d => d.querySelector(`:scope > TransactionDetailGroup > ${kind}`)) : [];
+  }
+  const itemDetails = () => details('Item'), tenderDetails = () => details('Tender');
+  const countItems = () => itemDetails().length;
+  function childText(el, tag) { const c = Array.from(el.children).find(x => x.tagName === tag); return c ? c.textContent : ''; }
+  function setChild(el, tag, value) {
+    let c = Array.from(el.children).find(x => x.tagName === tag);
+    if (!c) { c = workDoc.createElement(tag); el.appendChild(c); }
+    c.textContent = value;
+  }
+  function renumber() {
+    if (!workDoc) return;
+    elements(workDoc, 'TransactionDetail').forEach((d, i) => { const s = Array.from(d.children).find(x => x.tagName === 'SequenceNumber'); if (s) s.textContent = String(i); });
+  }
+  function cell(value, type, onInput) {
+    const td = document.createElement('td'); const i = document.createElement('input');
+    i.type = type; if (type === 'number') i.step = 'any'; i.value = value; i.addEventListener('input', () => onInput(i.value)); td.appendChild(i); return td;
+  }
+  function renderLines() {
+    const it = $('items-table'), tt = $('tenders-table');
+    it.innerHTML = '<tr><th>#</th><th>Item ID</th><th>Unit price</th><th>Qty</th><th>Extended</th><th></th></tr>';
+    tt.innerHTML = '<tr><th>#</th><th>Tender ID</th><th>Amount</th><th></th></tr>';
+    if (!workDoc) { it.innerHTML += '<tr><td colspan="6" class="muted">Load a message.</td></tr>'; tt.innerHTML += '<tr><td colspan="4" class="muted">Load a message.</td></tr>'; $('sum-info').textContent = ''; return; }
+    itemDetails().forEach(d => {
+      const item = d.querySelector(':scope > TransactionDetailGroup > Item');
+      const tr = document.createElement('tr');
+      const seq = document.createElement('td'); seq.className = 'muted'; seq.textContent = childText(d, 'SequenceNumber'); tr.appendChild(seq);
+      const ext = cell(childText(item, 'ExtendedAmount'), 'number', v => { setChild(item, 'ExtendedAmount', v); summary(); });
+      const upd = () => { ext.firstChild.value = money(num(childText(item, 'UnitSalesPrice')) * num(childText(item, 'Quantity'))); setChild(item, 'ExtendedAmount', ext.firstChild.value); summary(); };
+      tr.appendChild(cell(childText(item, 'ItemID'), 'text', v => setChild(item, 'ItemID', v)));
+      tr.appendChild(cell(childText(item, 'UnitSalesPrice'), 'number', v => { setChild(item, 'UnitSalesPrice', v); upd(); }));
+      tr.appendChild(cell(childText(item, 'Quantity'), 'number', v => { setChild(item, 'Quantity', v); upd(); }));
+      tr.appendChild(ext);
+      const del = document.createElement('td'); del.innerHTML = '<button type="button" class="icon-btn danger" title="Remove line">✕</button>';
+      del.firstChild.onclick = () => { d.remove(); renumber(); renderLines(); };
+      tr.appendChild(del); it.appendChild(tr);
+    });
+    if (!countItems()) it.innerHTML += '<tr><td colspan="6" class="muted">No item lines.</td></tr>';
+    tenderDetails().forEach(d => {
+      const t = d.querySelector(':scope > TransactionDetailGroup > Tender');
+      const tr = document.createElement('tr');
+      const seq = document.createElement('td'); seq.className = 'muted'; seq.textContent = childText(d, 'SequenceNumber'); tr.appendChild(seq);
+      tr.appendChild(cell(childText(t, 'TenderID'), 'text', v => setChild(t, 'TenderID', v)));
+      tr.appendChild(cell(childText(t, 'Amount'), 'number', v => { setChild(t, 'Amount', v); summary(); }));
+      const del = document.createElement('td'); del.innerHTML = '<button type="button" class="icon-btn danger" title="Remove line">✕</button>';
+      del.firstChild.onclick = () => { d.remove(); renumber(); renderLines(); };
+      tr.appendChild(del); tt.appendChild(tr);
+    });
+    if (!tenderDetails().length) tt.innerHTML += '<tr><td colspan="4" class="muted">No tender lines.</td></tr>';
+    summary();
+  }
+  function summary() {
+    if (!workDoc) return;
+    const items = itemDetails().map(d => d.querySelector(':scope > TransactionDetailGroup > Item'));
+    const sum = items.reduce((s, i) => s + num(childText(i, 'ExtendedAmount')), 0);
+    const qty = items.reduce((s, i) => s + num(childText(i, 'Quantity')), 0);
+    const tend = tenderDetails().reduce((s, d) => s + num(childText(d.querySelector(':scope > TransactionDetailGroup > Tender'), 'Amount')), 0);
+    const total = firstText(workDoc, 'TotalAmount');
+    const ok = Math.abs(sum - num(total)) < 0.005 && Math.abs(tend - num(total)) < 0.005;
+    $('sum-info').textContent = `items ${money(sum)} (qty ${qty}) · tenders ${money(tend)} · TotalAmount ${total || '—'} ${ok ? '✓' : '≠ — press Σ Recalculate'}`;
+  }
+  function recalc() {
+    const items = itemDetails().map(d => d.querySelector(':scope > TransactionDetailGroup > Item'));
+    let sum = 0, qty = 0;
+    for (const i of items) {
+      const ext = money(num(childText(i, 'UnitSalesPrice')) * num(childText(i, 'Quantity')));
+      setChild(i, 'ExtendedAmount', ext); sum += num(ext); qty += num(childText(i, 'Quantity'));
+    }
+    const totalEl = elements(workDoc, 'TotalAmount')[0]; if (totalEl) totalEl.textContent = money(sum);
+    const itemsNo = elements(workDoc, 'ItemsNumber')[0]; if (itemsNo) itemsNo.textContent = String(qty);
+    const tenders = tenderDetails();
+    let tnote = '';
+    if (tenders.length === 1) setChild(tenders[0].querySelector(':scope > TransactionDetailGroup > Tender'), 'Amount', money(sum));
+    else if (tenders.length > 1) tnote = ` ${tenders.length} tenders left as entered.`;
+    renderLines();
+    return `Totals: ${money(sum)} over ${qty} units.` + tnote;
+  }
+  $('recalc-btn').onclick = () => { if (!workDoc) return; status($('edit-status'), recalc() + ' Press Generate to build the string.'); };
+  function makeDetail(kind) {
+    const src = details(kind).slice(-1)[0];
+    let d;
+    if (src) {
+      d = src.cloneNode(true);
+      src.parentNode.insertBefore(d, src.nextSibling);
+    } else {
+      d = workDoc.createElement('TransactionDetail');
+      for (const [t, v] of [['SequenceNumber', '0'], ['DetailCancelFlag', '0'], ['DetailReturnFlag', '0'], ['DetailSubtractFlag', '0'], ['DetailVoidFlag', '0']]) setChild(d, t, v);
+      if (kind === 'Item') setChild(d, 'EntryMethod', 'EntryKeyed');
+      const g = workDoc.createElement('TransactionDetailGroup'); const k = workDoc.createElement(kind); g.appendChild(k); d.appendChild(g);
+      const parent = txnEl(); const total = Array.from(parent.children).find(x => x.tagName === 'Total');
+      if (total) parent.insertBefore(d, total); else parent.appendChild(d);
+    }
+    const node = d.querySelector(`:scope > TransactionDetailGroup > ${kind}`);
+    if (kind === 'Item') { setChild(node, 'ItemID', ''); setChild(node, 'UnitSalesPrice', '0'); setChild(node, 'Quantity', '1'); setChild(node, 'ExtendedAmount', '0'); if (!childText(node, 'Weighted')) setChild(node, 'Weighted', '0'); }
+    else { if (!childText(node, 'TenderID')) setChild(node, 'TenderID', ''); setChild(node, 'Amount', '0'); if (!childText(node, 'ChangeFlag')) setChild(node, 'ChangeFlag', '0'); }
+    renumber(); renderLines();
+    const tbl = kind === 'Item' ? $('items-table') : $('tenders-table');
+    const last = tbl.querySelector('tr:last-child input'); if (last) last.focus();
+  }
+  $('add-item').onclick = () => { if (!workDoc) return status($('edit-status'), 'Load a message first.', false); makeDetail('Item'); };
+  $('add-tender').onclick = () => { if (!workDoc) return status($('edit-status'), 'Load a message first.', false); makeDetail('Tender'); };
+
+  // ---------- output ----------
+  $('copy-btn').onclick = async () => {
+    try {
+      if (!$('output').value && !generate()) return;
+      await navigator.clipboard.writeText($('output').value);
+      status($('copy-status'), 'Copied — paste it into Offset Explorer.');
+    } catch (e) { $('output').select(); const ok = document.execCommand('copy'); status($('copy-status'), ok ? 'Copied — paste it into Offset Explorer.' : e.message, ok); }
+  };
+  $('download-btn').onclick = () => {
+    if (!$('output').value) return status($('copy-status'), 'Generate the string first.', false);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([$('output').value], { type: 'application/json' }));
+    a.download = ((loaded && loaded.name) || ($('save-bu').value + '-msg5') || 'msg5').replace(/[^\w\- ]+/g, '').trim() + '.json';
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $('use-output-btn').onclick = () => { if (!$('output').value) return status($('copy-status'), 'Generate the string first.', false); $('source').value = $('output').value; loadSource(); };
+  $('paste-btn').onclick = async () => { try { $('source').value = await navigator.clipboard.readText(); loadSource(); } catch (e) { status($('load-status'), 'Clipboard not available — paste with Ctrl/Cmd+V.', false); } };
+  $('clear-btn').onclick = () => {
+    currentJson = null; workDoc = null; setLoaded(null);
+    ['source', 'f-id', 'output', 'xml-preview', 'save-name', 'save-notes', 'save-bu'].forEach(id => $(id).value = '');
+    config.fields.forEach(f => { const i = $('f-' + f.key); if (i) i.value = i.tagName === 'SELECT' ? '0' : ''; });
+    [$('load-status'), $('edit-status'), $('copy-status')].forEach(el => status(el, ''));
+    renderLines(); fillPicker();
+  };
+
+  // ---------- library ----------
+  function setLoaded(e) {
+    loaded = e;
+    $('loaded-label').textContent = e ? `· ${e.kind === 'template' ? '📄' : '💾'} ${e.name}` : '';
+    $('save-update').hidden = !e;
+    $('save-update').textContent = e ? `✓ Update "${e.name}"` : '✓ Update';
+    renderLibrary();
+  }
+  function renderLibrary() {
+    const q = $('lib-filter').value.trim().toLowerCase();
+    const list = $('lib-list'); list.innerHTML = '';
+    $('lib-count').textContent = entries.length;
+    const shown = entries.filter(e => !q || `${e.bu_code} ${e.name} ${e.notes || ''}`.toLowerCase().includes(q));
+    if (!shown.length) { list.innerHTML = `<div class="muted small-text msg-empty">${entries.length ? 'No match.' : 'Empty — drop the BU .docx files above to create the templates.'}</div>`; return; }
+    let lastBu = null;
+    for (const e of shown) {
+      const bu = e.bu_code || '—';
+      if (bu !== lastBu) { const h = document.createElement('div'); h.className = 'lib-bu'; h.textContent = bu; list.appendChild(h); lastBu = bu; }
+      const item = document.createElement('div');
+      item.className = 'msg-item' + (loaded && loaded.id === e.id ? ' on' : '');
+      item.innerHTML = `<button type="button" class="msg-open"><strong></strong><span class="muted small-text"></span></button><button type="button" class="icon-btn danger" title="Delete">✕</button>`;
+      item.querySelector('strong').textContent = (e.kind === 'template' ? '📄 ' : '💾 ') + e.name;
+      item.querySelector('span').textContent = (e.notes ? e.notes + ' · ' : '') + e.updated;
+      item.querySelector('.msg-open').onclick = () => openEntry(e.id);
+      item.querySelector('.icon-btn').onclick = async () => {
+        if (!confirm(`Delete "${e.name}"?`)) return;
+        const d = await (await fetch(`${LIB_URL}/${e.id}`, { method: 'DELETE' })).json();
+        if (d.ok) { entries = d.entries; if (loaded && loaded.id === e.id) loaded = null; setLoaded(loaded); }
+      };
+      list.appendChild(item);
+    }
+  }
+  async function openEntry(id) {
+    const d = await (await fetch(`${LIB_URL}/${id}`)).json();
+    if (!d.ok) return;
+    $('source').value = d.entry.json;
+    $('save-name').value = d.entry.kind === 'template' ? '' : d.entry.name;
+    $('save-notes').value = d.entry.kind === 'template' ? '' : (d.entry.notes || '');
+    $('save-kind').value = 'request';
+    setLoaded({ id: d.entry.id, name: d.entry.name, kind: d.entry.kind });
+    loadSource();
+    $('save-status').textContent = d.entry.kind === 'template' ? 'Template loaded — edit, Generate, then Save as new to keep this request.' : 'Loaded — Update overwrites it, Save as new makes a copy.';
+  }
+  async function saveEntry(asNew) {
+    const text = $('output').value || $('source').value;
+    if (!text.trim()) { $('save-status').textContent = '⚠ Nothing to save.'; return; }
+    const name = $('save-name').value.trim() || (!asNew && loaded ? loaded.name : '');
+    if (!name) { $('save-status').textContent = '⚠ Give it a name first.'; $('save-name').focus(); return; }
+    const d = await (await fetch(LIB_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: asNew ? '' : (loaded ? loaded.id : ''), name, bu_code: $('save-bu').value, kind: $('save-kind').value, notes: $('save-notes').value, json: text }) })).json();
+    if (!d.ok) { $('save-status').textContent = '⚠ ' + d.error; return; }
+    entries = d.entries;
+    setLoaded({ id: d.entry.id, name: d.entry.name, kind: d.entry.kind });
+    $('save-status').textContent = `✓ Saved "${d.entry.name}" (${d.entry.bu_code}, ${d.entry.kind}) at ${d.entry.updated}.`;
+  }
+  $('save-new').onclick = () => saveEntry(true);
+  $('save-update').onclick = () => saveEntry(false);
+  $('lib-filter').addEventListener('input', renderLibrary);
+
+  const drop = $('lib-drop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('hot'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('hot'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('hot'); importFiles([...e.dataTransfer.files]); });
+  $('lib-files').onchange = () => { importFiles([...$('lib-files').files]); $('lib-files').value = ''; };
+  async function importFiles(files) {
+    if (!files.length) return;
+    const fd = new FormData(); files.forEach(f => fd.append('files', f, f.name));
+    $('lib-import-status').textContent = `Reading ${files.length} file${files.length > 1 ? 's' : ''}…`;
+    const d = await (await fetch(IMPORT_URL, { method: 'POST', body: fd })).json();
+    entries = d.entries || entries; renderLibrary();
+    const parts = [];
+    if (d.added && d.added.length) parts.push(`✓ ${d.added.length} template${d.added.length > 1 ? 's' : ''}: ${d.added.map(a => a.bu_code || a.name).join(', ')}`);
+    if (d.errors && d.errors.length) parts.push('⚠ ' + d.errors.join(' · '));
+    $('lib-import-status').textContent = parts.join(' ');
+    if (d.added && d.added.length === 1 && !workDoc) openEntry(d.added[0].id);
+  }
+
+  // ---------- config dialog ----------
+  async function saveConfig(patch) {
+    const d = await (await fetch(CONFIG_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })).json();
+    if (d.ok) { config = d.config; updateIdHint(); }
+    return d;
+  }
+  const overlay = $('config-overlay');
+  $('fields-config-btn').onclick = () => { renderFieldsTable(); overlay.hidden = false; };
+  $('config-close').onclick = () => overlay.hidden = true;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.hidden = true; });
+
+  function fillPicker() {
+    const sel = $('af-pick');
+    sel.innerHTML = '<option value="">— pick from the loaded message —</option>';
+    if (!currentJson) { sel.options[0].textContent = '— load a message to list its keys and tags —'; return; }
+    const used = new Set(config.fields.map(f => f.source + ':' + f.tag));
+    const addOpt = (source, tag, value, count) => {
+      const o = document.createElement('option'); o.value = source + ':' + tag;
+      o.textContent = `${source === 'json' ? 'key' : 'tag'} ${tag} = ${String(value).slice(0, 36)}${count > 1 ? ` (×${count})` : ''}${used.has(source + ':' + tag) ? ' ✓ in box' : ''}`;
+      sel.appendChild(o);
+    };
+    for (const [k, v] of Object.entries(currentJson)) if (k !== payloadKey && k !== 'id') addOpt('json', k, v, 1);
+    const seen = new Map();
+    workDoc.querySelectorAll('*').forEach(el => { if (el.children.length) return; if (!seen.has(el.tagName)) seen.set(el.tagName, { v: el.textContent.trim(), n: 0 }); seen.get(el.tagName).n++; });
+    for (const [tag, i] of seen) addOpt('xml', tag, i.v, i.n);
+  }
+  $('af-pick').onchange = () => {
+    const v = $('af-pick').value; if (!v) return;
+    const [source, tag] = v.split(/:(.*)/);
+    $('af-source').value = source; $('af-tag').value = tag;
+    if (!$('af-label').value) $('af-label').value = tag.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
+    const val = source === 'json' ? String(currentJson[tag] ?? '') : firstText(workDoc, tag);
+    $('af-type').value = /^\d{13}$/.test(val) && source === 'json' ? 'epochms' : /^\d{4}-\d{2}-\d{2}T/.test(val) ? 'datetime' : /^\d{4}-\d{2}-\d{2}$/.test(val) ? 'date' : /^[01]$/.test(val) && /Flag|Void|Rejected/i.test(tag) ? 'flag' : /^-?\d+(\.\d+)?$/.test(val) ? 'number' : 'text';
+    if (!$('af-group').value) $('af-group').value = source === 'json' ? 'Message' : 'Extra';
+  };
+  $('af-add').onclick = async () => {
+    const tag = $('af-tag').value.trim(), source = $('af-source').value;
+    if (!tag) { $('af-status').textContent = '⚠ Pick or type a key / tag.'; return; }
+    if (config.fields.some(f => f.tag === tag && f.source === source)) { $('af-status').textContent = `⚠ ${tag} is already in the edit box.`; return; }
+    const field = { tag, source, label: $('af-label').value.trim() || tag, type: $('af-type').value, group: $('af-group').value.trim() || (source === 'json' ? 'Message' : 'Extra'),
+      required: $('af-required').checked, all: $('af-all').checked, insert_after: $('af-after').value.trim() };
+    await saveConfig({ fields: config.fields.concat([field]) });
+    renderFields(); renderFieldsTable(); fillPicker();
+    ['af-tag', 'af-label', 'af-after', 'af-group'].forEach(id => $(id).value = ''); $('af-pick').value = ''; $('af-required').checked = false; $('af-all').checked = true;
+    $('af-status').textContent = `✓ Added "${field.label}" to the ${field.group} group — saved for next time.`;
+  };
+  function renderFieldsTable() {
+    const t = $('fields-table');
+    t.innerHTML = '<tr><th>Group</th><th>Label</th><th>Source</th><th>Key / tag</th><th>Type</th><th>Req.</th><th>All</th><th>Insert after</th><th></th></tr>';
+    config.fields.forEach((f, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><input data-k="group" list="group-list"></td><td><input data-k="label"></td>
+        <td><select data-k="source"><option value="xml">tag</option><option value="json">key</option></select></td>
+        <td><input data-k="tag" class="mono-in"></td>
+        <td><select data-k="type">{% for t in field_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></td>
+        <td class="center"><input type="checkbox" data-k="required"></td><td class="center"><input type="checkbox" data-k="all"></td>
+        <td><input data-k="insert_after" placeholder="—"></td>
+        <td class="row-tools-h"><button type="button" class="icon-btn" data-act="up" title="Move up">↑</button><button type="button" class="icon-btn" data-act="down" title="Move down">↓</button><button type="button" class="icon-btn danger" data-act="del" title="Remove">✕</button></td>`;
+      for (const k of ['group', 'label', 'source', 'tag', 'type', 'insert_after']) tr.querySelector(`[data-k=${k}]`).value = f[k] || '';
+      tr.querySelector('[data-k=required]').checked = !!f.required; tr.querySelector('[data-k=all]').checked = !!f.all;
+      tr.querySelectorAll('[data-k]').forEach(inp => inp.addEventListener('change', async () => {
+        const fields = structuredClone(config.fields); const k = inp.dataset.k;
+        fields[i][k] = inp.type === 'checkbox' ? inp.checked : inp.value.trim();
+        if (k === 'tag') fields[i].key = '';
+        await saveConfig({ fields }); renderFields(); renderFieldsTable();
+      }));
+      tr.querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
+        const fields = structuredClone(config.fields);
+        if (b.dataset.act === 'del') { if (!confirm(`Remove "${f.label}" from the edit box?`)) return; fields.splice(i, 1); }
+        else { const j = b.dataset.act === 'up' ? i - 1 : i + 1; if (j < 0 || j >= fields.length) return; [fields[i], fields[j]] = [fields[j], fields[i]]; }
+        await saveConfig({ fields }); renderFields(); renderFieldsTable(); fillPicker();
+      });
+      t.appendChild(tr);
+    });
+  }
+  $('fields-reset').onclick = async () => { if (!confirm('Replace the field list with the defaults?')) return; await saveConfig({ reset_fields: true }); renderFields(); renderFieldsTable(); fillPicker(); };
+
+  // ---------- init ----------
+  renderFields(); updateIdHint(); renderLibrary(); renderLines();
+})();
+</script>
+{% endblock %}

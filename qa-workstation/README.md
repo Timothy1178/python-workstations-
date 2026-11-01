@@ -53,6 +53,10 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   add any payload tag to the edit box, saved in `data/msg5/config.json`),
   New UUID with optional transaction number +1, generate / copy /
   download, and a library of named saved messages.
+- **TLog Handler** (`modules/tlog/`) — "create msg5" request editor for
+  Offset Explorer: import the BU documents as templates, edit grouped
+  fields (configurable), items and tenders with recalculated totals,
+  copy the one-line string; library and config under `data/tlog/`.
 - **Copilot Agents** (`modules/agents/`) — roster of Copilot Studio agents
   with live chat through the Microsoft 365 Agents SDK
   (`microsoft-agents-copilotstudio-client`). Each registered agent gets a
