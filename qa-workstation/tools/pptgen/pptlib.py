@@ -289,14 +289,16 @@ class Slide:
         self.shapes.append(xml)
         return sid
 
-    def gradient_rect(self, x, y, w, h, c1, c2, angle=90, name="Gradient", geom="rect", radius=None, transparency=0):
-        """Two-stop linear gradient fill (not possible in pptxgenjs)."""
+    def gradient_rect(self, x, y, w, h, c1, c2, angle=90, name="Gradient", geom="rect", radius=None, transparency=0, alphas=None):
+        """Two-stop linear gradient fill; alphas=(t1, t2) sets a transparency per stop."""
         sid = self._id()
         adj = f'<a:avLst><a:gd name="adj" fmla="val {int(radius)}"/></a:avLst>' if radius is not None else "<a:avLst/>"
-        a = f'<a:alpha val="{int((100 - transparency) * 1000)}"/>' if transparency else ""
+        t1, t2 = alphas if alphas else (transparency, transparency)
+        a1 = f'<a:alpha val="{int((100 - t1) * 1000)}"/>' if t1 else ""
+        a2 = f'<a:alpha val="{int((100 - t2) * 1000)}"/>' if t2 else ""
         xml = (f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="{_nm(name, sid)}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>'
                f'<p:spPr><a:xfrm><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/></a:xfrm><a:prstGeom prst="{geom}">{adj}</a:prstGeom>'
-               f'<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:srgbClr val="{c1}">{a}</a:srgbClr></a:gs><a:gs pos="100000"><a:srgbClr val="{c2}">{a}</a:srgbClr></a:gs></a:gsLst>'
+               f'<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:srgbClr val="{c1}">{a1}</a:srgbClr></a:gs><a:gs pos="100000"><a:srgbClr val="{c2}">{a2}</a:srgbClr></a:gs></a:gsLst>'
                f'<a:lin ang="{int(angle * 60000)}" scaled="0"/></a:gradFill><a:ln><a:noFill/></a:ln></p:spPr>'
                f'<p:txBody><a:bodyPr rtlCol="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:endParaRPr lang="en-US"/></a:p></p:txBody></p:sp>')
         self.shapes.append(xml)

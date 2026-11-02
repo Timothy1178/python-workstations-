@@ -40,7 +40,7 @@ def skill_note(s, text):
     """Small grey note at the bottom explaining the technique shown."""
     s.text(L, 6.08, W, 0.3, [("Skill: ", {"bold": True, "color": RED}), (text, {})], size=10.5, color=GREY, italic=True, margin=(0, 0, 0, 0))
 
-SECTIONS = [("A", "Openers & dividers", 4, 3), ("B", "Text & layout", 7, 5), ("C", "Numbers & data", 13, 5), ("D", "Process & structure", 19, 8), ("E", "Visual effects", 28, 6), ("F", "Slide transitions", 35, 23), ("G", "Rotate & transform", 58, 10)]
+SECTIONS = [("A", "Openers & dividers", 4, 3), ("B", "Text & layout", 7, 5), ("C", "Numbers & data", 13, 5), ("D", "Process & structure", 19, 8), ("E", "Visual effects", 28, 6), ("F", "Slide transitions", 35, 23), ("G", "Rotate & transform", 58, 14)]
 
 # ================= 1 COVER =================
 s = deck.slide(1, "fade")
@@ -88,7 +88,7 @@ for i, (letter, name, first, count) in enumerate(SECTIONS):
         g.text(x + 0.15, 4.4, cw - 0.3, 0.4, [("Open →", {"link": first})], size=12, color=RED, bold=True, margin=(0, 0, 0, 0))
     ids.append(s.group(x, 1.6, cw, 3.4, b, name=f"Section {letter}"))
 s.stagger(ids, "float", 120)
-tag(s, L, 5.3, "A · 3 openers", w=1.5); tag(s, L + 1.6, 5.3, "B · 5 text layouts", w=1.8); tag(s, L + 3.5, 5.3, "C · 5 data slides", w=1.7); tag(s, L + 5.3, 5.3, "D · 8 structure", w=1.6); tag(s, L + 7.0, 5.3, "E · 6 visual", w=1.4); tag(s, L + 8.5, 5.3, "F · 23 transitions", w=1.9); tag(s, L + 10.5, 5.3, "G · 10 rotate & transform", w=2.4)
+tag(s, L, 5.3, "A · 3 openers", w=1.5); tag(s, L + 1.6, 5.3, "B · 5 text layouts", w=1.8); tag(s, L + 3.5, 5.3, "C · 5 data slides", w=1.7); tag(s, L + 5.3, 5.3, "D · 8 structure", w=1.6); tag(s, L + 7.0, 5.3, "E · 6 visual", w=1.4); tag(s, L + 8.5, 5.3, "F · 23 transitions", w=1.9); tag(s, L + 10.5, 5.3, "G · 14 rotate & transform", w=2.4)
 skill_note(s, "internal hyperlinks (ppaction://hlinksldjump) on shapes and text runs · staggered Float In builds")
 
 # ================= helpers for dividers =================
@@ -756,6 +756,51 @@ def photo_slide(after):
     skill_note(s, "same frames and pictures on both slides (names !!Frame n / !!Photo n); rotation and size are the only differences — Morph does the choreography")
     return s
 photo_slide(False); photo_slide(True)
+
+# ---- G4: rotating part wheel on a photo stage (reference-style Morph: grouped wheel + sliding text) — 4 slides
+TPLMEDIA = HERE / "tpl/unpacked/ppt/media"
+PARTS = [("Part 1", "Introduction", ["Why we are here", "What the audience will take away", "How the session runs"], "lightbulb", str(TPLMEDIA / "image2.png"), RED, "8E0E22"),
+         ("Part 2", "Subject 1", ["First key point", "Evidence or example", "What it means for us"], "rocket", str(TPLMEDIA / "image12.png"), "B3122A", "4A0912"),
+         ("Part 3", "Subject 2", ["Second key point", "Evidence or example", "What it means for us"], "shield", str(TPLMEDIA / "image17.png"), "7A1E8C", "2B0B33"),
+         ("Part 4", "Subject 3", ["Third key point", "Decision or next step", "Owner and timing"], "heart", str(TPLMEDIA / "image20.png"), "A8761B", "3D2A08")]
+WX, WY, WD = -3.46, 0.0, 7.5          # wheel: half off the left edge, as in the reference
+WCXc, WCYc = WX + WD / 2, WY + WD / 2
+def part_wheel(g):
+    g.shape(WX, WY, WD, WD, geom="ellipse", fill="FFFFFF", transparency=88, line="FFFFFF", line_w=2.25, name="!!Wheel disc")
+    g.shape(WCXc - WD / 2, WCYc - 0.012, WD, 0.024, fill="FFFFFF", rot=45, name="!!Wheel spoke A", transparency=20)
+    g.shape(WCXc - WD / 2, WCYc - 0.012, WD, 0.024, fill="FFFFFF", rot=-45, name="!!Wheel spoke B", transparency=20)
+    g.shape(WCXc - 0.55, WCYc - 0.55, 1.1, 1.1, geom="ellipse", fill="FFFFFF", name="!!Wheel hub")
+    for k, (part, title, pts, ic, art, c1, c2) in enumerate(PARTS):
+        a = math.radians(k * 90)                       # Part 1 right, Part 2 bottom, Part 3 left, Part 4 top
+        lx, ly = WCXc + 3.05 * math.cos(a), WCYc + 3.05 * math.sin(a)
+        g.text(lx - 0.75, ly - 0.32, 1.5, 0.64, part, size=16, color="FFFFFF", bold=True, align="ctr", valign="m", margin=(0, 0, 0, 0), rot=k * 90 + 90, name=f"!!Wheel label {k + 1}", font="Ubuntu")
+        ix, iy = WCXc + 1.85 * math.cos(a), WCYc + 1.85 * math.sin(a)   # icon inside the same quadrant as its label
+        g.shape(ix - 0.42, iy - 0.42, 0.84, 0.84, geom="ellipse", fill="FFFFFF", transparency=15, name=f"!!Wheel icon disc {k + 1}")
+        g.image(ICON(ic, "red"), ix - 0.25, iy - 0.25, 0.5, 0.5, name=f"!!Wheel icon {k + 1}", rot=-(k * 90))  # pre-rotated so it reads upright on its own slide
+def part_slide(i):
+    part, title, pts, ic, art, c1, c2 = PARTS[i]
+    s = deck.slide(7, ("morph", 2000) if i else ("fade", 700))
+    # photo stage: replace the grey picture per slide (Change Picture); the brand gradient tints it
+    s.image(PH("stage"), 0, 0, 13.333, 7.5, name="!!Stage photo")
+    s.gradient_rect(0, 0, 13.333, 7.5, c1, c2, angle=90, alphas=(35, 8), name="!!Stage tint")
+    s.image(art, 8.6, -0.3, 4.9, 4.9, name="!!Stage art", transparency=78)
+    s.shape(WCXc - WD / 2, WCYc - WD / 2, WD, WD, geom="pie", fill="FFFFFF", transparency=78, adj={"adj1": int(315 * 60000), "adj2": int(45 * 60000)}, name="!!Active wedge")
+    s.group(WX, WY, WD, WD, part_wheel, name="!!Part wheel", rot=-90 * i)
+    # content panels: current in the middle, previous parked above, next parked below — Morph slides them
+    def panel(k, y):
+        _, t, p_, *_r = PARTS[k]
+        s.text(6.0, y, 6.6, 0.95, t, size=40, color="FFFFFF", bold=True, margin=(0, 0, 0, 0), font="Ubuntu", name=f"!!Content title {k + 1}")
+        s.text(6.0, y + 1.05, 6.6, 2.4, p_, size=22, color="FFFFFF", bullets=True, space_after=6, margin=(0, 0, 0, 0), name=f"!!Content body {k + 1}")
+    panel(i, 1.9)
+    if i > 0: panel(i - 1, -4.3)
+    if i < len(PARTS) - 1: panel(i + 1, 7.9)
+    s.text(6.0, 5.75, 6.6, 0.4, f"{part} of {len(PARTS)}  ·  press Next — the wheel turns a quarter and the text slides up", size=12, color="FFFFFF", margin=(0, 0, 0, 0), name="!!Stage counter")
+    for k in range(len(PARTS)):
+        s.shape(6.0 + k * 0.3, 6.3, 0.55 if k == i else 0.18, 0.18, geom="roundRect", fill="FFFFFF", radius=50000, transparency=0 if k == i else 50, name=f"!!Stage dot {k + 1}")
+    s.text(6.0, 6.9, 7.0, 0.3, "Skill: Morph · grouped wheel rotated −90° per slide · spoke-aligned labels · content text boxes parked off-slide above / below · photo stage with brand tint", size=10.5, color="FFD6DC", italic=True, margin=(0, 0, 0, 0))
+    return s
+for i in range(len(PARTS)):
+    part_slide(i)
 
 # ================= THANK YOU =================
 s = deck.slide(1, "fade")

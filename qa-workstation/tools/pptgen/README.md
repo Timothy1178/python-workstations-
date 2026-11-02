@@ -10,7 +10,7 @@ tools/pptgen/
   pptlib.py              # tiny OOXML slide builder: text, shapes, pictures, groups,
                          # entrance animations (fade / float / wipe / zoom / fly) and transitions
   build_whatsapp_deck.py # the WhatsApp chatbot registration deck
-  build_showcase_deck.py # the 68-slide design catalog / skills showcase (spin, pulse,
+  build_showcase_deck.py # the 72-slide design catalog / skills showcase (spin, pulse,
                          # motion paths, hyperlinked catalog, rings, funnel, mock-ups…)
   post_charts.py         # python-pptx step that adds native charts + a styled table
   icons.js               # renders react-icons to PNG in brand colours + grey image placeholders (node)
