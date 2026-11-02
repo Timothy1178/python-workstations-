@@ -40,7 +40,7 @@ def skill_note(s, text):
     """Small grey note at the bottom explaining the technique shown."""
     s.text(L, 6.08, W, 0.3, [("Skill: ", {"bold": True, "color": RED}), (text, {})], size=10.5, color=GREY, italic=True, margin=(0, 0, 0, 0))
 
-SECTIONS = [("A", "Openers & dividers", 4, 3), ("B", "Text & layout", 7, 5), ("C", "Numbers & data", 13, 5), ("D", "Process & structure", 19, 8), ("E", "Visual effects", 28, 6), ("F", "Slide transitions", 35, 23)]
+SECTIONS = [("A", "Openers & dividers", 4, 3), ("B", "Text & layout", 7, 5), ("C", "Numbers & data", 13, 5), ("D", "Process & structure", 19, 8), ("E", "Visual effects", 28, 6), ("F", "Slide transitions", 35, 23), ("G", "Rotate & transform", 58, 10)]
 
 # ================= 1 COVER =================
 s = deck.slide(1, "fade")
@@ -76,19 +76,19 @@ s.stagger(ids, "float", 120)
 # ================= 3 CATALOG =================
 s = content("Catalog — click a section to jump")
 ids = []
-cw = (W - 5 * 0.22) / 6
+cw = (W - 6 * 0.2) / 7
 for i, (letter, name, first, count) in enumerate(SECTIONS):
     x = L + i * (cw + 0.22)
     def b(g, x=x, letter=letter, name=name, first=first, count=count, i=i):
         card(g, x, 1.6, cw, 3.4, fill="FFFFFF", line=LINE, shadow=True)
-        g.shape(x, 1.6, cw, 1.25, geom="round2SameRect", fill=[RED, PURPLE, BLUE, GOLD, DARK, MAGENTA][i], radius=8000, name="Card head", link=first)
-        g.text(x, 1.6, cw, 1.25, letter, size=48, color="FFFFFF", bold=True, align="ctr", valign="m", margin=(0, 0, 0, 0))
-        g.text(x + 0.15, 3.0, cw - 0.3, 0.7, name, size=14, color=DARK, bold=True, margin=(0, 0, 0, 0))
+        g.shape(x, 1.6, cw, 1.25, geom="round2SameRect", fill=[RED, PURPLE, BLUE, GOLD, DARK, MAGENTA, "8E0E22"][i], radius=8000, name="Card head", link=first)
+        g.text(x, 1.6, cw, 1.25, letter, size=40, color="FFFFFF", bold=True, align="ctr", valign="m", margin=(0, 0, 0, 0))
+        g.text(x + 0.12, 3.0, cw - 0.24, 0.7, name, size=12.5, color=DARK, bold=True, margin=(0, 0, 0, 0))
         g.text(x + 0.15, 3.7, cw - 0.3, 0.4, f"{count} slides", size=11.5, color=GREY, margin=(0, 0, 0, 0))
         g.text(x + 0.15, 4.4, cw - 0.3, 0.4, [("Open →", {"link": first})], size=12, color=RED, bold=True, margin=(0, 0, 0, 0))
     ids.append(s.group(x, 1.6, cw, 3.4, b, name=f"Section {letter}"))
 s.stagger(ids, "float", 120)
-tag(s, L, 5.3, "A · 3 openers", w=1.5); tag(s, L + 1.6, 5.3, "B · 5 text layouts", w=1.8); tag(s, L + 3.5, 5.3, "C · 5 data slides", w=1.7); tag(s, L + 5.3, 5.3, "D · 8 structure", w=1.6); tag(s, L + 7.0, 5.3, "E · 6 visual", w=1.4); tag(s, L + 8.5, 5.3, "F · 23 transitions + Morph", w=2.6)
+tag(s, L, 5.3, "A · 3 openers", w=1.5); tag(s, L + 1.6, 5.3, "B · 5 text layouts", w=1.8); tag(s, L + 3.5, 5.3, "C · 5 data slides", w=1.7); tag(s, L + 5.3, 5.3, "D · 8 structure", w=1.6); tag(s, L + 7.0, 5.3, "E · 6 visual", w=1.4); tag(s, L + 8.5, 5.3, "F · 23 transitions", w=1.9); tag(s, L + 10.5, 5.3, "G · 10 rotate & transform", w=2.4)
 skill_note(s, "internal hyperlinks (ppaction://hlinksldjump) on shapes and text runs · staggered Float In builds")
 
 # ================= helpers for dividers =================
@@ -674,6 +674,88 @@ tipb = s.group(L, 5.1, W, 0.85, lambda g: (card(g, L, 5.1, W, 0.85, fill=PINK, s
 s.animate([(tipb, "float", 0)])
 progress(s, N - 1, STYLE["light"])
 skill_note(s, "this slide arrives with Glitter · every stage in this section is a copy-ready example of one transition")
+
+# ================= G · ROTATE & TRANSFORM (Morph) =================
+divider_a(5, "G", "Rotate & transform", "Morph sequences: duplicate a slide, rotate or resize the twins, press Next")
+
+# ---- G1: rotating wheel menu — 4 slides, the wheel turns 90° each time (true rotation via a rotated group)
+WHEEL = [("rocket", "Launch", "The first stage of the story — what we set out to do"),
+         ("shield", "Protect", "Second stage — the safeguards and the rules of the game"),
+         ("heart", "Delight", "Third stage — what the customer feels at the end"),
+         ("star", "Celebrate", "Fourth stage — results, thanks and what comes next")]
+WCX, WCY, WR = -0.5, 3.95, 2.55   # wheel centre sits off the left edge
+def wheel_slide(i):
+    s = deck.slide(7, ("morph", 1300) if i else ("fade", 700))
+    s.title("Rotating wheel — press Next", x=2.7, y=0.42, w=8.1, h=0.9)
+    # rotating part: a group with the disc, dashed ring and 12 tick marks; rotated -90° per step
+    def ring(g):
+        g.shape(WCX - WR, WCY - WR, 2 * WR, 2 * WR, geom="ellipse", fill=PINK, name="!!Wheel disc")
+        g.shape(WCX - WR + 0.35, WCY - WR + 0.35, 2 * WR - 0.7, 2 * WR - 0.7, geom="ellipse", fill=None, line=RED, line_w=3, dash="dash", name="!!Wheel ring")
+        for k in range(12):
+            a = math.radians(k * 30)
+            r1 = WR - 0.75
+            g.shape(WCX + r1 * math.cos(a) - 0.06, WCY + r1 * math.sin(a) - 0.06, 0.12, 0.12, geom="ellipse", fill=RED if k % 3 == 0 else "E8C9CF", name=f"!!Tick {k}")
+    s.group(WCX - WR, WCY - WR, 2 * WR, 2 * WR, ring, name="!!Wheel", rot=-90 * i)
+    # nodes stay upright: positioned on the wheel, active one at the right (angle 0)
+    for k, (ic, h, d) in enumerate(WHEEL):
+        a = math.radians((k - i) * 90)
+        active = k == i
+        dsz = 1.3 if active else 0.85
+        nx, ny = WCX + (WR - 0.15) * math.cos(a), WCY + (WR - 0.15) * math.sin(a)
+        s.shape(nx - dsz / 2, ny - dsz / 2, dsz, dsz, geom="ellipse", fill=RED if active else "FFFFFF", line=None if active else RED, line_w=2, shadow=active, name=f"!!Node {k}")
+        isz = dsz * 0.5
+        s.image(ICON(ic, "white" if active else "red"), nx - isz / 2, ny - isz / 2, isz, isz, name=f"!!Node icon {k}")
+    # content panel transforms: number grows, title and text change, accent bar slides
+    ic, h, d = WHEEL[i]
+    s.text(4.3, 1.7, 2.5, 1.6, f"{i + 1:02d}", size=84, color=PINK, bold=True, margin=(0, 0, 0, 0), font="Ubuntu", name="!!Step number")
+    s.shape(4.4, 3.35, 0.9 + 0.6 * i, 0.12, geom="roundRect", fill=RED, radius=50000, name="!!Accent bar")
+    s.text(4.4, 3.6, 4.2, 0.8, h, size=36, color=DARK, bold=True, margin=(0, 0, 0, 0), font="Ubuntu", name="!!Stage title")
+    s.text(4.4, 4.45, 4.1, 1.1, d, size=15, color=GREY, margin=(0, 0, 0, 0), name="!!Stage text")
+    pic = s.image(PH("wide"), 9.1 - 0.15 * i, 1.75 + 0.1 * i, 3.5 + 0.2 * i, 2.0 + 0.12 * i, name="!!Stage image", rot=6 - 4 * i)
+    for k in range(4):
+        s.shape(4.4 + k * 0.32, 5.75, 0.2 if k != i else 0.6, 0.2, geom="roundRect", fill=RED if k == i else LINE, radius=50000, name=f"!!Pager {k}")
+    s.text(2.7, 6.08, 10.0, 0.3, [("Skill: ", {"bold": True, "color": RED}), ("Morph + a rotated group: the wheel group turns −90° per slide, nodes stay upright, the panel resizes and the picture straightens" if i == 0 else f"wheel group rotation = {-90 * i}° · active node grows · picture rotation {6 - 4 * i}°", {})], size=10.5, color=GREY, italic=True, margin=(0, 0, 0, 0))
+    return s
+for i in range(4):
+    wheel_slide(i)
+
+# ---- G2: rotate & transform hero card — 3 slides
+def hero_slide(i):
+    s = deck.slide(7, ("morph", 1400) if i else ("fade", 700))
+    s.title("Rotate & transform a hero card", **TITLE)
+    cards = [dict(x=1.2, y=2.0, w=5.2, h=3.2, rot=-8, fill=RED, txt="A tilted card…"),
+             dict(x=3.6, y=1.75, w=6.2, h=3.9, rot=0, fill=DARK, txt="…straightens and grows…"),
+             dict(x=7.0, y=2.2, w=5.4, h=3.1, rot=6, fill=GOLD, txt="…then turns the other way.")][i]
+    s.shape(cards["x"], cards["y"], cards["w"], cards["h"], geom="roundRect", fill=cards["fill"], radius=10000, shadow=True, rot=cards["rot"], name="!!Hero card")
+    s.text(cards["x"] + 0.4, cards["y"] + 0.4, cards["w"] - 0.8, cards["h"] - 0.8, [(cards["txt"], {"bold": True, "size": 26}), ("\n", {}), ("Same shape, same name on every slide — only position, size, rotation and colour change.", {"size": 13, "color": "FFE3E7" if i != 1 else "C9CCD2"})], size=13, color="FFFFFF", valign="m", margin=(0, 0, 0, 0), rot=cards["rot"], name="!!Hero text")
+    orb = [dict(x=8.9, y=1.5, d=1.6, rot=0), dict(x=10.6, y=4.9, d=1.0, rot=120), dict(x=1.4, y=3.6, d=1.7, rot=-150)][i]
+    s.shape(orb["x"], orb["y"], orb["d"], orb["d"], geom="star8", fill=GOLD if i != 2 else RED, rot=orb["rot"], name="!!Orb")
+    badge = [dict(x=1.0, y=1.5), dict(x=10.5, y=1.5), dict(x=1.0, y=1.5)][i]
+    s.group(badge["x"], badge["y"], 1.5, 1.5, lambda g, b=badge: (g.shape(b["x"], b["y"], 1.5, 1.5, geom="ellipse", fill="FFFFFF", shadow=True, name="!!Badge disc"), g.image(ICON("sync", "red"), b["x"] + 0.4, b["y"] + 0.4, 0.7, 0.7, name="!!Badge icon")), name="!!Badge", rot=[0, 180, 360 - 20][i])
+    skill_note(s, ["three slides, one card: rotation −8° → 0° → 6°, size and colour change with it · the badge group spins 180° per step", "Morph takes the shortest rotation path — keep each step under 180°", "to add a stage: duplicate the last slide, move / rotate the twins, Morph is already applied"][i])
+    return s
+for i in range(3):
+    hero_slide(i)
+
+# ---- G3: photos spin from a scatter into a grid — 2 slides
+def photo_slide(after):
+    s = deck.slide(7, ("morph", 1500) if after else ("fade", 700))
+    s.title("Scatter → grid: frames rotate into place", **TITLE)
+    scatter = [(1.2, 1.9, 3.2, 2.0, -12), (4.9, 1.5, 2.6, 2.6, 9), (2.2, 4.0, 2.8, 1.75, 7), (8.6, 2.3, 3.6, 2.25, -6)]
+    grid = [(L, 1.6, 6.0, 3.75, 0), (6.84, 1.6, 2.85, 1.78, 0), (9.95, 1.6, 2.85, 1.78, 0), (6.84, 3.57, 5.96, 1.78, 0)]
+    kinds = ["wide", "square", "wide", "wide"]
+    for k, ((x, y, w, h, r), kind) in enumerate(zip(grid if after else scatter, kinds)):
+        s.shape(x - 0.06, y - 0.06, w + 0.12, h + 0.12, geom="roundRect", fill="FFFFFF", radius=4000, shadow=True, rot=r, name=f"!!Frame {k}")
+        s.image(PH(kind), x, y, w, h, rot=r, name=f"!!Photo {k}")
+    if after:
+        for k, (x, y, w, h, r) in enumerate(grid):
+            s.shape(x + 0.2, y + h - 0.55, 1.6, 0.36, geom="roundRect", fill=DARK, radius=50000, transparency=25, name=f"Caption pill {k}")
+            s.text(x + 0.2, y + h - 0.55, 1.6, 0.36, f"Caption {k + 1}", size=10.5, color="FFFFFF", bold=True, align="ctr", valign="m", margin=(0, 0, 0, 0))
+    else:
+        s.text(8.2, 5.0, 4.6, 0.8, "Four frames thrown on the table — press Next and they rotate into a tidy grid.", size=13, color=GREY, margin=(0, 0, 0, 0))
+    skill_note(s, "same frames and pictures on both slides (names !!Frame n / !!Photo n); rotation and size are the only differences — Morph does the choreography")
+    return s
+photo_slide(False); photo_slide(True)
 
 # ================= THANK YOU =================
 s = deck.slide(1, "fade")

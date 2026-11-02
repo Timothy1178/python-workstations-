@@ -338,7 +338,7 @@ class Slide:
         self.shapes.append(xml)
         return sid
 
-    def group(self, x, y, w, h, build, name="Group"):
+    def group(self, x, y, w, h, build, name="Group", rot=0):
         """build(slide) adds child shapes (absolute coordinates); they are
         wrapped into one group so they animate as a unit."""
         start = len(self.shapes)
@@ -346,8 +346,9 @@ class Slide:
         build(self)
         children = self.shapes[start:]
         del self.shapes[start:]
+        rotation = f' rot="{int(rot * 60000)}"' if rot else ""
         xml = (f'<p:grpSp><p:nvGrpSpPr><p:cNvPr id="{gid}" name="{_nm(name, gid)}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
-               f'<p:grpSpPr><a:xfrm><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/><a:chOff x="{E(x)}" y="{E(y)}"/><a:chExt cx="{E(w)}" cy="{E(h)}"/></a:xfrm></p:grpSpPr>'
+               f'<p:grpSpPr><a:xfrm{rotation}><a:off x="{E(x)}" y="{E(y)}"/><a:ext cx="{E(w)}" cy="{E(h)}"/><a:chOff x="{E(x)}" y="{E(y)}"/><a:chExt cx="{E(w)}" cy="{E(h)}"/></a:xfrm></p:grpSpPr>'
                + "".join(children) + '</p:grpSp>')
         self.shapes.append(xml)
         return gid
