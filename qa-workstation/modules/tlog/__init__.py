@@ -209,8 +209,8 @@ def csv_export():
     lay = csvset.load_layout()
     bu = str(data.get("bu", "")).strip().upper() or "BU"
     date = (str(data.get("date", "")).strip() or time.strftime("%Y%m%d"))[:8]
-    seq = str(data.get("seq", "")).strip() or "1"
+    seq = str(data.get("seq", "")).strip()
     files = data.get("files") if isinstance(data.get("files"), dict) else {}
     buf = csvset.build_zip(lay, bu, date, seq, files)
     return send_file(buf, as_attachment=True, mimetype="application/zip",
-                     download_name=f"TLOG_{bu}_{date}_{seq}.zip")
+                     download_name=f"TLOG_{bu}_{date}{'_' + seq if seq else ''}.zip")

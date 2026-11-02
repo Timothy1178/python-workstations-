@@ -5,6 +5,29 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.19.0 — 2026-11-02
+
+- **TLog CSV set rebuilt on the real spec.** Columns now follow
+  *RetailHK – Sales_Transactions v1.3* (field names, types, max lengths,
+  required flags, LOVs) in the column order of the sample files
+  (`modules/tlog/tlog_spec.json`, editable in ⚙️ Layout): ORDER 55
+  columns incl. the SubClub block, ORDERITEMS 29, ORDER_PAYMENT 12,
+  ORDERITEMS_PROMOTION 14. Shared per transaction: Card Number,
+  Customer Order Date, Store ID, POS Number, Customer / ERP Order
+  Number, Organization (BU) Name. **Derived values fill blank cells**
+  and typed values always win: BU → Organization (BU) Name / for
+  Member, Program Name = BU + " Membership", Member Number = card
+  without the 991 prefix, Store Name = "05" + Store ID, Tax Exempt /
+  X_STF flags = N, totals, line numbers, references. Every input shows
+  the spec hint and type / length / LOV on hover. **Validation card**:
+  required fields, number and `YYYY/MM/DD HH:MM:SS` (UTC) formats, max
+  lengths, Payment Method / Payment Type LOVs (spelling warnings), empty
+  item / payment lines and payments ≠ items net, with click-to-jump and
+  red / amber field marks; the zip warns before exporting with errors.
+  BU picker with the known BU codes, sequence optional in file names,
+  Msg5 fill converts HK times to UTC (−8 h) and maps Business Date.
+  The sample set still round-trips byte for byte.
+
 ## 1.18.0 — 2026-11-01
 
 - **Msg5 Json merged into TLog Handler.** The two pages overlapped; the

@@ -55,9 +55,11 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   tenders with recalculated totals, New UUID with transaction number
   +1, copy the one-line string; library and config under `data/tlog/`.
   Second tab **TLog CSV set**: transaction-based editor for the ORDER /
-  ORDER_PAYMENT / ORDERITEMS / ORDERITEMS_PROMOTION files with shared
-  fields, Msg5 fill, editable column layout and a zip of the 4 CSVs +
-  4 `.ok` files named `{TYPE}_{BU}_{YYYYMMDD}_{SEQ}`.
+  ORDER_PAYMENT / ORDERITEMS / ORDERITEMS_PROMOTION files on the
+  Sales_Transactions v1.3 spec (`modules/tlog/tlog_spec.json`): shared
+  fields, derived defaults, spec validation (required / formats /
+  lengths / LOVs), Msg5 fill, editable column layout and a zip of the
+  4 CSVs + 4 `.ok` files named `{TYPE}_{BU}_{YYYYMMDD}[_{SEQ}]`.
 - **Doc & PPT Templates** (`modules/doctemplates/`) — file holder for
   Word / PowerPoint / Excel / PDF templates with tags, notes, search and
   download; files live in `data/templates/` and generated templates are

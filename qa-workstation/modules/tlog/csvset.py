@@ -28,121 +28,23 @@ FILE_TYPES = ["ORDER", "ORDER_PAYMENT", "ORDERITEMS", "ORDERITEMS_PROMOTION"]
 CHILD_OF = {"ORDER_PAYMENT": "payments", "ORDERITEMS": "items", "ORDERITEMS_PROMOTION": "promotions"}
 NAME_FORMAT = "{TYPE}_{BU}_{YYYYMMDD}_{SEQ}"
 FORMATS = ("", "dec3", "dec4", "dec9")
+# auto rules — every auto is a *suggestion*: it fills the cell when it is left blank; typed values win
 AUTOS = ("", "lineno", "txnref", "sum_items_net", "sum_items_qty", "count_items", "sum_payments",
-         "line_net", "total_if_blank")
+         "line_net", "total_if_blank", "bu", "bu_member", "program", "member_no", "store_name", "erp_if_blank")
+TYPES = ("text", "number", "datetime", "flag")
+SPEC_FILE = Path(__file__).resolve().parent / "tlog_spec.json"
+BUS = ["WTCTW", "MBHK", "WTCSG", "WTCTH", "WWHK", "WTCPH", "WTCVN", "WTCMY", "WTCID", "LOOKPH", "FTRHK"]
 
 
-def col(name="", label="", default="", fmt="", auto="", msg5="", ref=""):
-    c = {"name": name, "label": label or name, "default": default, "format": fmt, "auto": auto, "msg5": msg5}
-    if ref:
-        c["ref"] = ref
-    return c
+def _spec_layout():
+    """Default layout = the RetailHK Sales_Transactions v1.3 field spec
+    (names, types, lengths, required, LOVs) in the column order of the
+    WWHK sample set, with defaults, auto rules and Msg5 mapping."""
+    return json.loads(SPEC_FILE.read_text(encoding="utf-8"))
 
 
-E = col()  # always-empty column
+DEFAULT_LAYOUT = _spec_layout()
 
-# Best-guess names for the header-less template (editable in the page).
-DEFAULT_LAYOUT = {
-    "name_format": NAME_FORMAT,
-    "ref_base": "0006957324",
-    "files": {
-        "ORDER": [
-            col("BUCode", "BU code", "WWHK", msg5="json:buCode"),
-            col("ProgramName", "Program name", "WWHK Membership"),
-            col("OrderBU", "Order BU", "WWHK", msg5="json:buCode"),
-            col("MemberCard", "Member card", msg5="ClubCard"),
-            col("ProgramDesc", "Program description", "WWHK Membership"),
-            E, E,
-            col("VoidFlag", "Void flag", "N"),
-            col("TotalAmount", "Total amount", fmt="dec4", auto="sum_items_net"),
-            E,
-            col("TransactionDateTime", "Transaction date-time", msg5="StartDateTime"),
-            col("SettleDateTime", "Settlement date-time", msg5="EndDateTime"),
-            col("StoreID", "Store ID", msg5="StoreID"),
-            col("CashierCode", "Cashier code", "05530", msg5="CashierID"),
-            col("TransactionNumber", "Transaction number", msg5="TransactionNumber"),
-            col("ReceiptNo", "Receipt no", msg5="TransactionNumber"),
-            col("TillID", "Till ID", msg5="TillID"),
-            col("ItemCount", "Item line count", auto="count_items"),
-            E,
-            col("MemberCard", "Member card", msg5="ClubCard"),
-            col("Points", "Points"),
-            col("DiscountAmount", "Discount amount", "0.0000", fmt="dec4"),
-            col("TaxAmount", "Tax amount", "0.0000", fmt="dec4"),
-            col("OrderRef", "Order reference", auto="txnref", ref="05"),
-            E, E, E, E, E, E,
-            col("RefundFlag", "Refund flag", "N"),
-            E, E, E,
-            col("ExtraAmount1", "Extra amount 1", "0.0000", fmt="dec4"),
-            E, E, E,
-            col("ExtraAmount2", "Extra amount 2", "0.0000", fmt="dec4"),
-            E, E, E,
-            col("ExtraAmount3", "Extra amount 3", "0.0000", fmt="dec4"),
-            E, E, E,
-            col("ExtraAmount4", "Extra amount 4", "0.0000", fmt="dec4"),
-            E, E, E,
-            col("ExtraAmount5", "Extra amount 5", "0.0000", fmt="dec4"),
-            E, E, E,
-            col("ExtraAmount6", "Extra amount 6", "0.0000", fmt="dec4"),
-        ],
-        "ORDER_PAYMENT": [
-            col("MemberCard", "Member card", msg5="ClubCard"),
-            col("TransactionDateTime", "Transaction date-time", msg5="StartDateTime"),
-            col("StoreID", "Store ID", msg5="StoreID"),
-            col("TillID", "Till ID", msg5="TillID"),
-            col("TransactionNumber", "Transaction number", msg5="TransactionNumber"),
-            col("ReceiptNo", "Receipt no", msg5="TransactionNumber"),
-            col("BUCode", "BU code", "WWHK", msg5="json:buCode"),
-            col("TenderType", "Tender type", "Credit Card"),
-            col("LineNo", "Line no", auto="lineno"),
-            col("TenderName", "Tender name", "VISA", msg5="TenderID"),
-            col("Amount", "Amount", fmt="dec3", auto="total_if_blank", msg5="Amount"),
-            col("PaymentRef", "Payment reference", auto="txnref", ref="07"),
-        ],
-        "ORDERITEMS": [
-            col("MemberCard", "Member card", msg5="ClubCard"),
-            col("TransactionDateTime", "Transaction date-time", msg5="StartDateTime"),
-            col("StoreID", "Store ID", msg5="StoreID"),
-            col("TillID", "Till ID", msg5="TillID"),
-            col("TransactionNumber", "Transaction number", msg5="TransactionNumber"),
-            col("ReceiptNo", "Receipt no", msg5="TransactionNumber"),
-            col("BUCode", "BU code", "WWHK", msg5="json:buCode"),
-            col("ItemID", "Item ID", msg5="ItemID"),
-            col("LineNo", "Line no", auto="lineno"),
-            col("Quantity", "Quantity", "1", fmt="dec9", msg5="Quantity"),
-            E, E,
-            col("LineDiscount", "Line discount", "0.0000", fmt="dec4"),
-            E, E,
-            col("EntryMethod", "Entry method", "Manual"),
-            col("UnitPrice", "Unit price", fmt="dec4", msg5="UnitSalesPrice"),
-            E,
-            col("Weight", "Weight", "0E-9"),
-            col("LineTax", "Line tax", "0.0000", fmt="dec4"),
-            col("NetAmount", "Net amount", fmt="dec4", auto="line_net", msg5="ExtendedAmount"),
-            E, E, E,
-            col("LineRef", "Line reference", auto="txnref", ref="07"),
-            E, E, E, E,
-        ],
-        "ORDERITEMS_PROMOTION": [
-            col("MemberCard", "Member card", msg5="ClubCard"),
-            col("TransactionDateTime", "Transaction date-time", msg5="StartDateTime"),
-            col("StoreID", "Store ID", msg5="StoreID"),
-            col("TillID", "Till ID", msg5="TillID"),
-            col("TransactionNumber", "Transaction number", msg5="TransactionNumber"),
-            col("ReceiptNo", "Receipt no", msg5="TransactionNumber"),
-            col("BUCode", "BU code", "WWHK", msg5="json:buCode"),
-            col("ItemID", "Item ID", msg5="MarkdownItemID"),
-            col("LineNo", "Line no", auto="lineno"),
-            col("PromotionID", "Promotion ID", msg5="PromotionID"),
-            col("PromotionName", "Promotion name"),
-            col("PromoDiscount", "Promotion discount", fmt="dec4", msg5="Amount"),
-            col("PromoRef", "Promotion reference", auto="txnref", ref="07"),
-        ],
-    },
-}
-
-
-# ---------- layout ----------
 
 def clean_col(c):
     if not isinstance(c, dict):
@@ -155,6 +57,11 @@ def clean_col(c):
         "format": c.get("format") if c.get("format") in FORMATS else "",
         "auto": c.get("auto") if c.get("auto") in AUTOS else "",
         "msg5": re.sub(r"[^A-Za-z0-9_.:\-]", "", str(c.get("msg5", "")).strip()),
+        "type": c.get("type") if c.get("type") in TYPES else "text",
+        "max": re.sub(r"\D", "", str(c.get("max", "")))[:4],
+        "required": bool(c.get("required", False)),
+        "lov": re.sub(r"[^A-Z0-9_]", "", str(c.get("lov", "")).upper()),
+        "hint": str(c.get("hint", ""))[:400],
     }
     ref = re.sub(r"[^0-9A-Za-z]", "", str(c.get("ref", "")).strip())
     if ref:
@@ -173,6 +80,10 @@ def load_layout():
             lay["name_format"] = str(saved["name_format"])
         if "ref_base" in saved:
             lay["ref_base"] = str(saved["ref_base"])
+        if isinstance(saved.get("bus"), list):
+            lay["bus"] = [str(b).strip().upper() for b in saved["bus"] if str(b).strip()]
+        if isinstance(saved.get("lovs"), dict):
+            lay["lovs"] = {k: [str(v) for v in vals] for k, vals in saved["lovs"].items() if isinstance(vals, list)}
         files = saved.get("files")
         if isinstance(files, dict):
             for ft in FILE_TYPES:
@@ -186,6 +97,8 @@ def save_layout(lay):
     out = {
         "name_format": str(lay.get("name_format") or NAME_FORMAT),
         "ref_base": str(lay.get("ref_base", "")),
+        "bus": [str(b).strip().upper() for b in (lay.get("bus") or BUS) if str(b).strip()],
+        "lovs": {k: [str(v) for v in vals] for k, vals in (lay.get("lovs") or DEFAULT_LAYOUT["lovs"]).items() if isinstance(vals, list)},
         "files": {ft: [clean_col(c) for c in (lay.get("files", {}).get(ft) or [])] for ft in FILE_TYPES},
     }
     LAYOUT_FILE.write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -264,7 +177,10 @@ def delete_set(sid):
 # ---------- files ----------
 
 def file_name(lay, ftype, bu, date, seq, ext="csv"):
-    base = (lay.get("name_format") or NAME_FORMAT).format(TYPE=ftype, BU=bu, YYYYMMDD=date, SEQ=seq)
+    fmt = lay.get("name_format") or NAME_FORMAT
+    if not str(seq).strip():
+        fmt = fmt.replace("_{SEQ}", "").replace("{SEQ}", "")
+    base = fmt.format(TYPE=ftype, BU=bu, YYYYMMDD=date, SEQ=seq)
     base = re.sub(r"[^\w\-.]", "", base)
     return f"{base}.{ext}"
 
@@ -354,7 +270,7 @@ def import_set(lay, uploads):
     shared = shared_names(lay)
     orders = rows_to_dicts(lay, "ORDER", files["ORDER"])
     children = {CHILD_OF[ft]: rows_to_dicts(lay, ft, files.get(ft, [])) for ft in CHILD_OF}
-    key_names = [n for n in ("TransactionNumber", "ReceiptNo", "StoreID", "TillID", "MemberCard") if n in shared] or shared
+    key_names = [n for n in ("CustomerOrderNumber", "ERPOrderNumber", "StoreID", "POSNumber", "CardNumber") if n in shared] or shared
     def key(d):
         return tuple(d.get(n, "") for n in key_names)
     txns = []

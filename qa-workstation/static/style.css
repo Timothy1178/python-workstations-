@@ -907,3 +907,22 @@ label.inline input { width: auto; }
 .tpl-title a:hover { color: var(--accent); }
 .tpl-tags { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; }
 .tpl-notes { font-size: 12px; resize: vertical; min-height: 36px; }
+
+/* ---------- TLog CSV set: validation ---------- */
+.issue-list { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow: auto; font-size: 12.5px; }
+.issue-list li { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.issue-list li.error .sev { color: var(--danger); }
+.issue-list li.warn .sev { color: var(--blocked); }
+.issue-list .sev { display: inline-block; width: 16px; }
+.pill-err { background: var(--err-bg); color: var(--danger); }
+.pill-warn { background: var(--warn-bg); color: var(--warn-ink); }
+.pill-ok { background: var(--note-bg); color: var(--note-ink); }
+#txns input.bad { border-color: var(--danger); background: var(--err-bg); }
+#txns input.warnv { border-color: var(--warn-border); }
+input.auto::placeholder { color: var(--accent); opacity: .7; font-style: italic; }
+.txn-badge { font-size: 11px; font-weight: 600; margin-left: auto; margin-right: 10px; padding: 2px 8px; border-radius: 999px; }
+.txn-badge.ok { background: var(--note-bg); color: var(--note-ink); }
+.txn-badge.bad { background: var(--err-bg); color: var(--danger); }
+details.sub-fields { margin-top: 10px; }
+details.sub-fields > summary { cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 600; }
+.lay-table { min-width: 1500px; }
