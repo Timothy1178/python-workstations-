@@ -926,3 +926,46 @@ input.auto::placeholder { color: var(--accent); opacity: .7; font-style: italic;
 details.sub-fields { margin-top: 10px; }
 details.sub-fields > summary { cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 600; }
 .lay-table { min-width: 1500px; }
+
+/* ---- Timestamp Converter (/timestamp) ---- */
+.mono-pill { font-family: ui-monospace, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.ts-settings { display: flex; flex-wrap: wrap; gap: 6px; }
+.ts-page .toggle-pill { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.ts-field { display: block; font-size: 12px; font-weight: 600; }
+.ts-field select { display: block; width: 100%; margin-top: 4px; font-weight: 400; }
+.ts-field.inline { display: inline-flex; align-items: center; gap: 6px; }
+.ts-field.inline select { display: inline-block; width: auto; margin: 0; }
+.ts-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.ts-history { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow: auto; }
+.ts-hist { font: inherit; text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 5px 8px; cursor: pointer; color: var(--ink); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.ts-hist code { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-hist:hover { background: var(--hover); border-color: var(--line); }
+.ts-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 8px; align-items: center; }
+@media (max-width: 760px) { .ts-input-row { grid-template-columns: 1fr 1fr; } .ts-input-row .ts-input { grid-column: 1 / -1; } }
+.ts-input { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 18px; padding: 10px 14px; width: 100%; }
+.ts-detect { min-height: 18px; margin: 6px 2px 10px; color: var(--muted); }
+.ts-detect.bad { color: var(--danger); }
+.ts-quick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.ts-quick .ts-ql { min-width: 52px; }
+.ts-quick .toggle-pill { padding: 4px 10px; }
+.chip-strong { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.chip-strong:hover { background: #1d4ed8; }
+.ts-results { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+.ts-results th { text-align: left; font-weight: 600; padding: 7px 10px 7px 4px; width: 220px; vertical-align: top; white-space: nowrap; }
+.ts-results th small { display: block; font-weight: 400; font-size: 11px; white-space: normal; }
+.ts-results td { padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.ts-results td:last-child { width: 36px; text-align: right; }
+.ts-results tr.strong .ts-val { font-size: 17px; font-weight: 600; }
+.ts-results tr.ts-group td { border: none; padding: 12px 4px 2px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ts-val { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; padding: 3px 8px; border-radius: 6px; background: var(--code-bg); cursor: copy; word-break: break-all; }
+.ts-val.plain { background: none; font-family: inherit; cursor: default; }
+.ts-val:hover { outline: 1px solid var(--accent); }
+.ts-results .icon-btn.ok, .btn.ok { color: var(--pass); border-color: var(--pass); }
+.ts-batch { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 760px) { .ts-batch { grid-template-columns: 1fr; } }
+.ts-batch textarea { min-height: 260px; width: 100%; resize: vertical; font-size: 13px; }
+.ts-batch-bar { margin-bottom: 10px; }
+.ts-fmt-table input, .ts-fmt-table select { width: 100%; min-width: 120px; padding: 5px 8px; font-size: 13px; }
+.ts-fmt-table td { white-space: normal; }
+.ts-fmt-add { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(220px, 2fr) auto auto auto; gap: 8px; align-items: center; }
+@media (max-width: 900px) { .ts-fmt-add { grid-template-columns: 1fr 1fr; } }

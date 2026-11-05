@@ -1,0 +1,648 @@
+{% extends "base.html" %}
+{% block title %}Timestamp Converter · QA Workstation{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>⏱ Timestamp Converter</h1>
+    <p class="muted">UTC+8 ⇄ UTC ⇄ epoch. Paste an epoch in seconds / milliseconds / microseconds, an ISO date or a <code>YYYY-MM-DD HH:mm[:ss]</code> string and every other form appears below with a copy button. Settings and your own formats stay in this browser.</p>
+  </div>
+  <div class="row-actions">
+    <span class="pill mono-pill" id="clock-local" title="Current time in the local zone">…</span>
+    <span class="pill mono-pill" id="clock-utc" title="Current time in UTC">…</span>
+  </div>
+</div>
+
+<div class="msg5-layout ts-page">
+  <aside class="card msg-side">
+    <h2>⚙️ Display settings</h2>
+    <div class="ts-settings">
+      <label class="toggle-pill"><input type="checkbox" id="s-seconds"> Seconds</label>
+      <label class="toggle-pill"><input type="checkbox" id="s-millis"> Milliseconds</label>
+      <label class="toggle-pill"><input type="checkbox" id="s-h12"> 12-hour</label>
+      <label class="toggle-pill"><input type="checkbox" id="s-tsep"> “T” separator</label>
+      <label class="toggle-pill"><input type="checkbox" id="s-suffix"> Zone suffix</label>
+      <label class="toggle-pill"><input type="checkbox" id="s-weekday"> Weekday</label>
+    </div>
+    <div class="stack-form top-gap">
+      <label class="ts-field">Date separator
+        <select id="s-dsep">
+          <option value="-">2025-11-04 · dash</option>
+          <option value="/">2025/11/04 · slash</option>
+          <option value=".">2025.11.04 · dot</option>
+          <option value="">20251104 · compact</option>
+        </select>
+      </label>
+      <label class="ts-field">Local zone
+        <select id="s-offset">
+          <option value="480">UTC+8 · Hong Kong / Taiwan / Malaysia</option>
+          <option value="420">UTC+7 · Thailand / Indonesia (WIB)</option>
+          <option value="540">UTC+9 · Japan / Korea</option>
+          <option value="330">UTC+5:30 · India</option>
+          <option value="0">UTC+0</option>
+        </select>
+      </label>
+      <label class="ts-field">Typed dates without a zone are
+        <select id="s-inzone">
+          <option value="local">in the local zone</option>
+          <option value="utc">in UTC</option>
+        </select>
+      </label>
+    </div>
+
+    <h3 class="top-gap">Setting presets</h3>
+    <div class="ts-presets">
+      <button type="button" class="chip" data-preset="default" title="YYYY-MM-DD HH:mm:ss UTC+8">Default · with seconds</button>
+      <button type="button" class="chip" data-preset="nosec" title="YYYY-MM-DD HH:mm">Without seconds</button>
+      <button type="button" class="chip" data-preset="millis" title="YYYY-MM-DD HH:mm:ss.SSS">With milliseconds</button>
+      <button type="button" class="chip" data-preset="tlog" title="YYYY/MM/DD HH:mm:ss — the TLog CSV style">TLog style</button>
+      <button type="button" class="chip" data-preset="iso" title="YYYY-MM-DDTHH:mm:ss+08:00">ISO 8601 style</button>
+      <button type="button" class="chip" data-preset="h12" title="YYYY-MM-DD hh:mm:ss AM">12-hour</button>
+    </div>
+
+    <h3 class="top-gap">🕘 Recent <button type="button" class="icon-btn" id="hist-clear" title="Clear history">✕</button></h3>
+    <div class="ts-history" id="history"><span class="muted small-text">Converted values show up here.</span></div>
+  </aside>
+
+  <div class="msg-main">
+    <section class="card">
+      <div class="tabs">
+        <button type="button" class="tab on" data-tab="single">🔁 Convert</button>
+        <button type="button" class="tab" data-tab="batch">📚 Batch</button>
+        <button type="button" class="tab" data-tab="formats">🧩 Custom formats</button>
+      </div>
+
+      <div id="tab-single">
+        <div class="ts-input-row">
+          <input id="inp" class="ts-input" placeholder="1762221600  ·  1762221600123  ·  2025-11-04 10:00:00  ·  2025-11-04T02:00:00Z  ·  20251104" autocomplete="off" spellcheck="false" autofocus>
+          <select id="unit" title="How to read a plain number">
+            <option value="auto">auto-detect</option>
+            <option value="s">epoch seconds</option>
+            <option value="ms">epoch milliseconds</option>
+            <option value="us">epoch microseconds</option>
+            <option value="ns">epoch nanoseconds</option>
+            <option value="compact">YYYYMMDD[HHmmss]</option>
+          </select>
+          <input type="datetime-local" id="picker" step="1" title="Pick a date &amp; time in the local zone">
+          <button type="button" class="btn" id="paste-btn" title="Paste from clipboard">📋</button>
+        </div>
+        <div class="small-text ts-detect" id="detect">Type or paste a value, or press a quick button.</div>
+
+        <div class="ts-quick">
+          <span class="muted small-text ts-ql">Quick</span>
+          <button type="button" class="chip chip-strong" data-q="now">⏰ Now</button>
+          <label class="toggle-pill" title="Follow the clock second by second"><input type="checkbox" id="live"> live</label>
+          <button type="button" class="chip" data-q="today">Today 00:00</button>
+          <button type="button" class="chip" data-q="eod">Today 23:59:59</button>
+          <button type="button" class="chip" data-q="tomorrow">Tomorrow 00:00</button>
+          <button type="button" class="chip" data-q="yesterday">Yesterday 00:00</button>
+          <button type="button" class="chip" data-q="monday">This Monday</button>
+          <button type="button" class="chip" data-q="month">Month start</button>
+          <button type="button" class="chip" data-q="monthend">Month end</button>
+        </div>
+        <div class="ts-quick">
+          <span class="muted small-text ts-ql">Adjust</span>
+          <button type="button" class="chip" data-adj="-86400000">−1 d</button>
+          <button type="button" class="chip" data-adj="86400000">+1 d</button>
+          <button type="button" class="chip" data-adj="-3600000">−1 h</button>
+          <button type="button" class="chip" data-adj="3600000">+1 h</button>
+          <button type="button" class="chip" data-adj="-900000">−15 m</button>
+          <button type="button" class="chip" data-adj="900000">+15 m</button>
+          <button type="button" class="chip" data-adj="-60000">−1 m</button>
+          <button type="button" class="chip" data-adj="60000">+1 m</button>
+          <span class="muted small-text ts-ql">Round to</span>
+          <button type="button" class="chip" data-round="1000">second</button>
+          <button type="button" class="chip" data-round="60000">minute</button>
+          <button type="button" class="chip" data-round="3600000">hour</button>
+          <button type="button" class="chip" data-round="day">day</button>
+        </div>
+
+        <table class="ts-results" id="results"></table>
+        <div class="empty-state small-es" id="empty">
+          <div class="es-icon">⏱</div>
+          <h2>Nothing to convert yet</h2>
+          <p class="muted">Paste a timestamp above or press <strong>Now</strong>. Numbers are read as epoch seconds (10 digits), milliseconds (13), microseconds (16) or nanoseconds (19); 8 or 14 digits starting with 19/20 are read as <code>YYYYMMDD[HHmmss]</code>.</p>
+        </div>
+      </div>
+
+      <div id="tab-batch" hidden>
+        <p class="muted small-text">One value per line — any format the converter accepts (log lines are fine: the first timestamp-looking token is used). Choose the output form and copy the result column back into your sheet or log.</p>
+        <div class="row-actions ts-batch-bar">
+          <label class="ts-field inline">Output <select id="batch-fmt"></select></label>
+          <label class="toggle-pill"><input type="checkbox" id="batch-keep" checked> keep input (tab-separated)</label>
+          <button type="button" class="btn primary" id="batch-run">🔁 Convert</button>
+          <button type="button" class="btn" id="batch-copy">📋 Copy output</button>
+          <span class="muted small-text" id="batch-info"></span>
+        </div>
+        <div class="ts-batch">
+          <textarea id="batch-in" class="mono" placeholder="1762221600&#10;1762225200123&#10;2025-11-04 18:30:00&#10;2025-11-04T02:00:00Z"></textarea>
+          <textarea id="batch-out" class="mono" readonly placeholder="Results appear here"></textarea>
+        </div>
+      </div>
+
+      <div id="tab-formats" hidden>
+        <p class="muted small-text">Your own output rows. Tokens: <code>YYYY</code> <code>YY</code> <code>MM</code> <code>M</code> <code>DD</code> <code>D</code> <code>HH</code> <code>H</code> <code>hh</code> <code>h</code> <code>mm</code> <code>ss</code> <code>SSS</code> <code>A</code> <code>a</code> <code>ddd</code> <code>dddd</code> <code>MMM</code> <code>MMMM</code> <code>Z</code> (+08:00) <code>ZZ</code> (+0800) <code>X</code> (epoch s) <code>x</code> (epoch ms) — put literal text in <code>[brackets]</code>.</p>
+        <table class="grid-table ts-fmt-table" id="fmt-table">
+          <thead><tr><th>Name</th><th>Pattern</th><th>Zone</th><th>Preview (now)</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="ts-fmt-add top-gap">
+          <input id="fmt-name" placeholder="Name (e.g. Log line)">
+          <input id="fmt-pattern" class="mono-in" placeholder="Pattern (e.g. YYYY-MM-DD HH:mm:ss.SSS)" size="34">
+          <select id="fmt-zone"><option value="local">local zone</option><option value="utc">UTC</option></select>
+          <button type="button" class="btn primary" id="fmt-add">＋ Add format</button>
+          <button type="button" class="btn" id="fmt-reset" title="Restore the sample formats">Reset samples</button>
+        </div>
+        <div class="muted small-text top-gap" id="fmt-preview"></div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const pad = (n, w = 2) => String(n).padStart(w, '0');
+  const DAY = 86400000;
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  // ---------- settings (localStorage) ----------
+  const DEFAULTS = { seconds: true, millis: false, h12: false, tsep: false, suffix: true, weekday: false, dsep: '-', offset: 480, inzone: 'local' };
+  const PRESETS = {
+    default: { seconds: true, millis: false, h12: false, tsep: false, suffix: true, dsep: '-' },
+    nosec: { seconds: false, millis: false, h12: false, tsep: false, dsep: '-' },
+    millis: { seconds: true, millis: true, h12: false, tsep: false, dsep: '-' },
+    tlog: { seconds: true, millis: false, h12: false, tsep: false, suffix: false, weekday: false, dsep: '/' },
+    iso: { seconds: true, millis: false, h12: false, tsep: true, suffix: true, weekday: false, dsep: '-' },
+    h12: { seconds: true, millis: false, h12: true, tsep: false, dsep: '-' },
+  };
+  const SAMPLE_FORMATS = [
+    { name: 'Log line', pattern: 'YYYY-MM-DD HH:mm:ss.SSS', zone: 'local' },
+    { name: 'File stamp', pattern: 'YYYYMMDD_HHmmss', zone: 'local' },
+    { name: 'TLog file date', pattern: 'YYYYMMDD', zone: 'local' },
+    { name: 'Readable', pattern: 'ddd, D MMM YYYY h:mm A', zone: 'local' },
+    { name: 'SQL (UTC)', pattern: 'YYYY-MM-DD HH:mm:ss', zone: 'utc' },
+  ];
+  const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } };
+  let S = Object.assign({}, DEFAULTS, load('ts.settings', {}));
+  let formats = load('ts.formats', null) || SAMPLE_FORMATS.slice();
+  let history = load('ts.history', []);
+  const state = { ms: null, text: '', note: '' };
+
+  const CONTROLS = { seconds: 's-seconds', millis: 's-millis', h12: 's-h12', tsep: 's-tsep', suffix: 's-suffix', weekday: 's-weekday' };
+  function settingsToUI() {
+    for (const [k, id] of Object.entries(CONTROLS)) $(id).checked = !!S[k];
+    $('s-dsep').value = S.dsep;
+    $('s-offset').value = String(S.offset);
+    $('s-inzone').value = S.inzone;
+    $('s-inzone').options[0].textContent = `in the local zone (${zoneName(S.offset)})`;
+  }
+  function settingsFromUI() {
+    for (const [k, id] of Object.entries(CONTROLS)) S[k] = $(id).checked;
+    S.dsep = $('s-dsep').value;
+    S.offset = parseInt($('s-offset').value, 10);
+    S.inzone = $('s-inzone').value;
+    save('ts.settings', S);
+    settingsToUI();
+    rerender();
+  }
+
+  // ---------- date maths (fixed offsets, no DST in this part of the world) ----------
+  function parts(ms, off) {
+    const d = new Date(ms + off * 60000);
+    return { Y: d.getUTCFullYear(), M: d.getUTCMonth() + 1, D: d.getUTCDate(), h: d.getUTCHours(), m: d.getUTCMinutes(), s: d.getUTCSeconds(), S: d.getUTCMilliseconds(), wd: d.getUTCDay() };
+  }
+  function zoneName(off) {
+    if (off === 0) return 'UTC';
+    const sign = off < 0 ? '−' : '+', a = Math.abs(off);
+    return `UTC${sign}${Math.floor(a / 60)}${a % 60 ? ':' + pad(a % 60) : ''}`;
+  }
+  function zoneIso(off, colon = true) {
+    const sign = off < 0 ? '-' : '+', a = Math.abs(off);
+    return `${sign}${pad(Math.floor(a / 60))}${colon ? ':' : ''}${pad(a % 60)}`;
+  }
+  const TOKEN = /\[([^\]]*)\]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|HH|H|hh|h|mm|m|ss|s|SSS|A|a|ZZ|Z|X|x/g;
+  function fmt(pattern, ms, off) {
+    const p = parts(ms, off);
+    const h12 = p.h % 12 || 12;
+    return pattern.replace(TOKEN, (t, lit) => {
+      if (lit !== undefined) return lit;
+      switch (t) {
+        case 'YYYY': return String(p.Y);
+        case 'YY': return pad(p.Y % 100);
+        case 'MMMM': return MONTHS[p.M - 1];
+        case 'MMM': return MONTHS[p.M - 1].slice(0, 3);
+        case 'MM': return pad(p.M);
+        case 'M': return String(p.M);
+        case 'DD': return pad(p.D);
+        case 'D': return String(p.D);
+        case 'dddd': return DAYS[p.wd];
+        case 'ddd': return DAYS[p.wd].slice(0, 3);
+        case 'HH': return pad(p.h);
+        case 'H': return String(p.h);
+        case 'hh': return pad(h12);
+        case 'h': return String(h12);
+        case 'mm': return pad(p.m);
+        case 'm': return String(p.m);
+        case 'ss': return pad(p.s);
+        case 's': return String(p.s);
+        case 'SSS': return pad(p.S, 3);
+        case 'A': return p.h < 12 ? 'AM' : 'PM';
+        case 'a': return p.h < 12 ? 'am' : 'pm';
+        case 'ZZ': return zoneIso(off, false);
+        case 'Z': return zoneIso(off, true);
+        case 'X': return String(Math.floor(ms / 1000));
+        case 'x': return String(Math.round(ms));
+      }
+      return t;
+    });
+  }
+  // Pattern built from the display settings.
+  function settingsPattern(withSuffix = S.suffix) {
+    const date = ['YYYY', 'MM', 'DD'].join(S.dsep);
+    let time = S.h12 ? 'hh:mm' : 'HH:mm';
+    if (S.seconds || S.millis) time += ':ss';
+    if (S.millis) time += '.SSS';
+    if (S.h12) time += ' A';
+    let out = (S.weekday ? 'ddd, ' : '') + date + (S.tsep ? 'T' : ' ') + time;
+    return { pattern: out, suffix: withSuffix };
+  }
+  function display(ms, off) {
+    const { pattern, suffix } = settingsPattern();
+    return fmt(pattern, ms, off) + (suffix ? (S.tsep ? fmt('Z', ms, off) : ' ' + zoneName(off)) : '');
+  }
+  function isoWeek(ms, off) {
+    const p = parts(ms, off);
+    const d = new Date(Date.UTC(p.Y, p.M - 1, p.D));
+    const day = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - day);
+    const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const week = Math.ceil(((d - y0) / DAY + 1) / 7);
+    const doy = Math.floor((Date.UTC(p.Y, p.M - 1, p.D) - Date.UTC(p.Y, 0, 1)) / DAY) + 1;
+    return { year: d.getUTCFullYear(), week, doy };
+  }
+  function relative(ms) {
+    const diff = ms - Date.now();
+    const a = Math.abs(diff);
+    if (a < 1500) return 'just now';
+    const units = [['d', DAY], ['h', 3600000], ['min', 60000], ['s', 1000]];
+    const bits = [];
+    let rest = a;
+    for (const [u, n] of units) {
+      if (rest >= n && bits.length < 2) { bits.push(`${Math.floor(rest / n)} ${u}`); rest %= n; }
+    }
+    return diff < 0 ? `${bits.join(' ')} ago` : `in ${bits.join(' ')}`;
+  }
+  const localMidnight = ms => { const off = S.offset * 60000; return Math.floor((ms + off) / DAY) * DAY - off; };
+
+  // ---------- parsing ----------
+  const DATE_RE = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:[.,](\d{1,9}))?)?)?\s*(Z|UTC|GMT|HKT|[+-]\d{2}:?\d{2})?$/i;
+  const COMPACT_RE = /^(\d{4})(\d{2})(\d{2})(?:(\d{2})(\d{2})(\d{2})?)?$/;
+  function zoneOffset(z) {
+    if (!z) return null;
+    const u = z.toUpperCase();
+    if (u === 'Z' || u === 'UTC' || u === 'GMT') return 0;
+    if (u === 'HKT') return 480;
+    const m = /^([+-])(\d{2}):?(\d{2})$/.exec(u);
+    return m ? (m[1] === '-' ? -1 : 1) * (parseInt(m[2], 10) * 60 + parseInt(m[3], 10)) : null;
+  }
+  const inOffset = () => S.inzone === 'utc' ? 0 : S.offset;
+  function fromParts(Y, M, D, h, m, s, frac, off) {
+    if (M < 1 || M > 12 || D < 1 || D > 31 || h > 23 || m > 59 || s > 60) return null;
+    const msFrac = frac ? Math.round(parseInt(frac.padEnd(3, '0').slice(0, 3), 10)) : 0;
+    const ms = Date.UTC(Y, M - 1, D, h, m, s, msFrac) - off * 60000;
+    const chk = parts(ms, off);
+    if (chk.M !== M || chk.D !== D) return null; // e.g. 2025-02-30
+    return ms;
+  }
+  function parse(raw, unit = 'auto') {
+    const text = String(raw || '').trim();
+    if (!text) return null;
+    if (/^[+-]?\d+(\.\d+)?$/.test(text)) {
+      const digits = text.replace(/^[+-]|\..*$/g, '').length;
+      let kind = unit;
+      if (unit === 'auto') {
+        const cm = COMPACT_RE.exec(text);
+        const looksDate = cm && /^(19|20)/.test(text) && +cm[2] >= 1 && +cm[2] <= 12 && +cm[3] >= 1 && +cm[3] <= 31 && (digits === 8 || digits === 14);
+        kind = looksDate ? 'compact' : digits <= 11 ? 's' : digits <= 14 ? 'ms' : digits <= 17 ? 'us' : 'ns';
+      }
+      if (kind === 'compact') {
+        const cm = COMPACT_RE.exec(text);
+        if (!cm) return { error: 'Compact dates are YYYYMMDD or YYYYMMDDHHmmss.' };
+        const ms = fromParts(+cm[1], +cm[2], +cm[3], +(cm[4] || 0), +(cm[5] || 0), +(cm[6] || 0), '', inOffset());
+        if (ms == null) return { error: 'Not a valid calendar date.' };
+        return { ms, note: `Read as YYYYMMDD${cm[4] ? 'HHmmss' : ''} in ${zoneName(inOffset())} — pick "epoch seconds" in the unit box to read it as an epoch instead.` };
+      }
+      const n = Number(text);
+      const div = { s: 1e-3, ms: 1, us: 1e3, ns: 1e6 }[kind];
+      const ms = kind === 's' ? n * 1000 : n / div;
+      if (!isFinite(ms) || Math.abs(ms) > 8.64e15) return { error: 'Number is out of the range a date can hold.' };
+      const label = { s: 'epoch seconds', ms: 'epoch milliseconds', us: 'epoch microseconds', ns: 'epoch nanoseconds' }[kind];
+      return { ms, note: `${unit === 'auto' ? 'Detected' : 'Read as'} ${label} (${digits} digits).` };
+    }
+    let m = DATE_RE.exec(text);
+    if (m) {
+      const zo = zoneOffset(m[8]);
+      const off = zo == null ? inOffset() : zo;
+      const ms = fromParts(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0), m[7] || '', off);
+      if (ms == null) return { error: 'Not a valid calendar date / time.' };
+      return { ms, note: zo == null ? `No zone given — read in ${zoneName(off)} (change under "Typed dates without a zone").` : `Zone ${m[8].toUpperCase()} taken from the text.` };
+    }
+    // Compact with a T or a zone, or anything else the browser understands.
+    const t = Date.parse(text);
+    if (isFinite(t)) {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return { ms: t, note: `Parsed by the browser${/Z|[+-]\d{2}:?\d{2}$/i.test(text) ? '' : ` in its own zone (${tz})`} — add a zone such as +08:00 to be exact.` };
+    }
+    return { error: 'Could not read this as a timestamp. Try an epoch (10 / 13 digits) or YYYY-MM-DD HH:mm:ss.' };
+  }
+
+  // ---------- rendering ----------
+  function rows(ms) {
+    const off = S.offset;
+    const wk = isoWeek(ms, off);
+    const p = parts(ms, off);
+    const r = [
+      { g: 'Main', label: `Local · ${zoneName(off)}`, v: display(ms, off), strong: true },
+      { g: 'Main', label: 'UTC', v: display(ms, 0), strong: true },
+      { g: 'Epoch', label: 'Epoch seconds', v: String(Math.floor(ms / 1000)) },
+      { g: 'Epoch', label: 'Epoch milliseconds', v: String(Math.round(ms)) },
+      { g: 'Epoch', label: 'Epoch microseconds', v: (BigInt(Math.round(ms)) * 1000n).toString() },
+      { g: 'ISO', label: `ISO 8601 · ${zoneName(off)}`, v: fmt('YYYY-MM-DDTHH:mm:ss' + (S.millis ? '.SSS' : '') + 'Z', ms, off) },
+      { g: 'ISO', label: 'ISO 8601 · UTC', v: fmt('YYYY-MM-DDTHH:mm:ss' + (S.millis ? '.SSS' : ''), ms, 0) + 'Z' },
+      { g: 'QA', label: 'TLog CSV (UTC)', v: fmt('YYYY/MM/DD HH:mm:ss', ms, 0), hint: 'CustomerOrderDate style — TLog times are UTC' },
+      { g: 'QA', label: `Date only · ${zoneName(off)}`, v: fmt(['YYYY', 'MM', 'DD'].join(S.dsep || '-'), ms, off) },
+      { g: 'QA', label: `Time only · ${zoneName(off)}`, v: fmt(S.h12 ? 'hh:mm:ss A' : 'HH:mm:ss', ms, off) },
+      { g: 'QA', label: `Compact · ${zoneName(off)}`, v: fmt('YYYYMMDDHHmmss', ms, off) },
+      { g: 'Info', label: 'Weekday / week', v: `${DAYS[p.wd]} · ISO week ${wk.week} of ${wk.year} · day ${wk.doy} of the year` , plain: true },
+      { g: 'Info', label: 'Relative to now', v: relative(ms), plain: true },
+    ];
+    for (const f of formats) r.push({ g: 'Custom', label: f.name, v: safeFmt(f.pattern, ms, f.zone === 'utc' ? 0 : off), custom: true });
+    return r;
+  }
+  const safeFmt = (pattern, ms, off) => { try { return fmt(pattern, ms, off); } catch (e) { return '⚠ bad pattern'; } };
+
+  function rerender() {
+    const has = state.ms != null && isFinite(state.ms);
+    $('empty').hidden = has;
+    $('results').hidden = !has;
+    if (!has) { $('results').innerHTML = ''; return; }
+    let lastG = '';
+    $('results').innerHTML = rows(state.ms).map(r => {
+      const head = r.g !== lastG ? `<tr class="ts-group"><td colspan="3">${esc(r.g)}</td></tr>` : '';
+      lastG = r.g;
+      return head + `<tr class="${r.strong ? 'strong' : ''}">
+        <th>${esc(r.label)}${r.hint ? `<small class="muted">${esc(r.hint)}</small>` : ''}</th>
+        <td><code class="ts-val ${r.plain ? 'plain' : ''}" data-copy="${esc(r.v)}" title="Click to copy">${esc(r.v)}</code></td>
+        <td><button type="button" class="icon-btn" data-copy="${esc(r.v)}" title="Copy">📋</button></td></tr>`;
+    }).join('');
+    // Keep the picker in step (local zone, seconds precision).
+    $('picker').value = fmt('YYYY-MM-DDTHH:mm:ss', state.ms, S.offset);
+  }
+  function setMs(ms, text, note) {
+    state.ms = ms; state.note = note || '';
+    if (text !== undefined) { state.text = text; $('inp').value = text; }
+    $('detect').textContent = state.note;
+    $('detect').classList.remove('bad');
+    rerender();
+  }
+  function fail(msg) {
+    state.ms = null;
+    $('detect').textContent = msg;
+    $('detect').classList.add('bad');
+    rerender();
+  }
+  function convertInput(commit) {
+    const text = $('inp').value;
+    if (!text.trim()) { state.ms = null; $('detect').textContent = 'Type or paste a value, or press a quick button.'; $('detect').classList.remove('bad'); rerender(); return; }
+    const r = parse(text, $('unit').value);
+    if (!r) return;
+    if (r.error) return fail(r.error);
+    setMs(r.ms, undefined, r.note);
+    if (commit) remember(text, r.ms);
+  }
+
+  // ---------- history ----------
+  function remember(text, ms) {
+    text = text.trim();
+    history = [{ text, ms }].concat(history.filter(h => h.text !== text)).slice(0, 12);
+    save('ts.history', history);
+    renderHistory();
+  }
+  function renderHistory() {
+    const h = $('history');
+    if (!history.length) { h.innerHTML = '<span class="muted small-text">Converted values show up here.</span>'; return; }
+    h.innerHTML = history.map((e, i) => `<button type="button" class="ts-hist" data-i="${i}" title="${esc(fmt('YYYY-MM-DD HH:mm:ss', e.ms, S.offset))} ${esc(zoneName(S.offset))}"><code>${esc(e.text)}</code><span class="muted small-text">${esc(fmt('MM-DD HH:mm', e.ms, S.offset))}</span></button>`).join('');
+  }
+  $('history').addEventListener('click', e => {
+    const b = e.target.closest('.ts-hist'); if (!b) return;
+    const h = history[+b.dataset.i]; if (!h) return;
+    stopLive(); $('inp').value = h.text; convertInput(false);
+  });
+  $('hist-clear').onclick = () => { history = []; save('ts.history', history); renderHistory(); };
+
+  // ---------- clipboard ----------
+  async function copyText(t, btn) {
+    try { await navigator.clipboard.writeText(t); }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e2) { /* ignore */ } ta.remove();
+    }
+    if (btn) { const old = btn.textContent; btn.textContent = '✓'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = old; btn.classList.remove('ok'); }, 900); }
+  }
+  $('results').addEventListener('click', e => {
+    const el = e.target.closest('[data-copy]'); if (!el) return;
+    copyText(el.dataset.copy, el.tagName === 'BUTTON' ? el : el.closest('tr').querySelector('button'));
+  });
+  $('paste-btn').onclick = async () => {
+    try { $('inp').value = (await navigator.clipboard.readText()).trim(); stopLive(); convertInput(true); }
+    catch (e) { fail('Clipboard not available — paste with Ctrl/Cmd+V.'); }
+  };
+
+  // ---------- input events ----------
+  let typingTimer = null;
+  $('inp').addEventListener('input', () => { stopLive(); clearTimeout(typingTimer); typingTimer = setTimeout(() => convertInput(false), 120); });
+  $('inp').addEventListener('change', () => convertInput(true));
+  $('inp').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); convertInput(true); } });
+  $('unit').addEventListener('change', () => convertInput(true));
+  $('picker').addEventListener('change', () => {
+    const v = $('picker').value; if (!v) return;
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(v); if (!m) return;
+    const ms = fromParts(+m[1], +m[2], +m[3], +m[4], +m[5], +(m[6] || 0), '', S.offset);
+    if (ms == null) return;
+    stopLive();
+    const text = fmt('YYYY-MM-DD HH:mm:ss', ms, S.offset);
+    setMs(ms, text, `Picked in ${zoneName(S.offset)}.`);
+    remember(text, ms);
+  });
+
+  // ---------- quick buttons ----------
+  function quick(q) {
+    const now = Date.now();
+    const off = S.offset;
+    let ms, label;
+    switch (q) {
+      case 'now': ms = now; label = 'Now'; break;
+      case 'today': ms = localMidnight(now); label = 'Today 00:00'; break;
+      case 'eod': ms = localMidnight(now) + DAY - 1000; label = 'Today 23:59:59'; break;
+      case 'tomorrow': ms = localMidnight(now) + DAY; label = 'Tomorrow 00:00'; break;
+      case 'yesterday': ms = localMidnight(now) - DAY; label = 'Yesterday 00:00'; break;
+      case 'monday': { const p = parts(now, off); ms = localMidnight(now) - ((p.wd + 6) % 7) * DAY; label = 'Monday of this week'; break; }
+      case 'month': { const p = parts(now, off); ms = Date.UTC(p.Y, p.M - 1, 1) - off * 60000; label = 'First day of the month'; break; }
+      case 'monthend': { const p = parts(now, off); ms = Date.UTC(p.Y, p.M, 1) - off * 60000 - 1000; label = 'Last second of the month'; break; }
+      default: return;
+    }
+    const text = q === 'now' ? String(Math.floor(ms / 1000)) : fmt('YYYY-MM-DD HH:mm:ss', ms, off);
+    setMs(ms, text, `${label} in ${zoneName(off)}${q === 'now' ? ' — epoch seconds shown in the box' : ''}.`);
+    remember(text, ms);
+  }
+  document.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { if (b.dataset.q !== 'now') stopLive(); quick(b.dataset.q); });
+  document.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => {
+    if (state.ms == null) quick('now');
+    stopLive();
+    const ms = state.ms + parseInt(b.dataset.adj, 10);
+    const text = fmt('YYYY-MM-DD HH:mm:ss', ms, S.offset);
+    setMs(ms, text, `${b.textContent.trim()} applied.`); remember(text, ms);
+  });
+  document.querySelectorAll('[data-round]').forEach(b => b.onclick = () => {
+    if (state.ms == null) quick('now');
+    stopLive();
+    const step = b.dataset.round === 'day' ? DAY : parseInt(b.dataset.round, 10);
+    const off = S.offset * 60000;
+    const ms = Math.round((state.ms + off) / step) * step - off;
+    const text = fmt('YYYY-MM-DD HH:mm:ss', ms, S.offset);
+    setMs(ms, text, `Rounded to the nearest ${b.textContent.trim()}.`); remember(text, ms);
+  });
+
+  // live clock
+  let liveTimer = null;
+  function stopLive() { if (liveTimer) { clearInterval(liveTimer); liveTimer = null; } $('live').checked = false; }
+  $('live').addEventListener('change', () => {
+    if ($('live').checked) { quick('now'); liveTimer = setInterval(() => { const ms = Date.now(); setMs(ms, String(Math.floor(ms / 1000)), 'Live — following the clock.'); }, 1000); }
+    else stopLive();
+  });
+  setInterval(() => {
+    const now = Date.now();
+    $('clock-local').textContent = `${zoneName(S.offset)} ${fmt('HH:mm:ss', now, S.offset)}`;
+    $('clock-utc').textContent = `UTC ${fmt('HH:mm:ss', now, 0)}`;
+  }, 1000);
+
+  // ---------- settings events ----------
+  Object.values(CONTROLS).concat(['s-dsep', 's-offset', 's-inzone']).forEach(id => $(id).addEventListener('change', () => {
+    settingsFromUI();
+    if (id === 's-inzone' || id === 's-offset') convertInput(false);
+    renderHistory(); renderFormats(); fillBatchFormats();
+  }));
+  document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
+    Object.assign(S, PRESETS[b.dataset.preset]); save('ts.settings', S); settingsToUI(); rerender();
+    document.querySelectorAll('[data-preset]').forEach(x => x.classList.toggle('chip-on', x === b));
+    setTimeout(() => b.classList.remove('chip-on'), 1200);
+  });
+
+  // ---------- tabs ----------
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+    for (const id of ['single', 'batch', 'formats']) $('tab-' + id).hidden = id !== t.dataset.tab;
+    if (t.dataset.tab === 'formats') renderFormats();
+  });
+
+  // ---------- custom formats ----------
+  function renderFormats() {
+    const now = Date.now();
+    $('fmt-table').querySelector('tbody').innerHTML = formats.map((f, i) => `<tr>
+      <td><input value="${esc(f.name)}" data-i="${i}" data-k="name"></td>
+      <td><input class="mono-in" value="${esc(f.pattern)}" data-i="${i}" data-k="pattern" size="30"></td>
+      <td><select data-i="${i}" data-k="zone"><option value="local" ${f.zone !== 'utc' ? 'selected' : ''}>local</option><option value="utc" ${f.zone === 'utc' ? 'selected' : ''}>UTC</option></select></td>
+      <td><code>${esc(safeFmt(f.pattern, now, f.zone === 'utc' ? 0 : S.offset))}</code></td>
+      <td class="row-tools-h"><button type="button" class="icon-btn" data-up="${i}" title="Move up">↑</button><button type="button" class="icon-btn danger" data-del="${i}" title="Remove">✕</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">No custom formats — add one below.</td></tr>';
+  }
+  $('fmt-table').addEventListener('change', e => {
+    const el = e.target.closest('[data-k]'); if (!el) return;
+    formats[+el.dataset.i][el.dataset.k] = el.value;
+    save('ts.formats', formats); renderFormats(); rerender(); fillBatchFormats();
+  });
+  $('fmt-table').addEventListener('click', e => {
+    const d = e.target.closest('[data-del]'), u = e.target.closest('[data-up]');
+    if (d) formats.splice(+d.dataset.del, 1);
+    else if (u && +u.dataset.up > 0) { const i = +u.dataset.up; [formats[i - 1], formats[i]] = [formats[i], formats[i - 1]]; }
+    else return;
+    save('ts.formats', formats); renderFormats(); rerender(); fillBatchFormats();
+  });
+  $('fmt-pattern').addEventListener('input', () => {
+    const p = $('fmt-pattern').value;
+    $('fmt-preview').textContent = p ? `Preview: ${safeFmt(p, Date.now(), $('fmt-zone').value === 'utc' ? 0 : S.offset)}` : '';
+  });
+  $('fmt-add').onclick = () => {
+    const name = $('fmt-name').value.trim(), pattern = $('fmt-pattern').value.trim();
+    if (!pattern) { $('fmt-pattern').focus(); return; }
+    formats.push({ name: name || pattern, pattern, zone: $('fmt-zone').value });
+    save('ts.formats', formats); $('fmt-name').value = ''; $('fmt-pattern').value = ''; $('fmt-preview').textContent = '';
+    renderFormats(); rerender(); fillBatchFormats();
+  };
+  $('fmt-reset').onclick = () => { formats = SAMPLE_FORMATS.slice(); save('ts.formats', formats); renderFormats(); rerender(); fillBatchFormats(); };
+
+  // ---------- batch ----------
+  function batchOutputs() {
+    const off = S.offset;
+    const list = [
+      { id: 'local', label: `Local · ${zoneName(off)} (display settings)`, f: ms => display(ms, off) },
+      { id: 'utc', label: 'UTC (display settings)', f: ms => display(ms, 0) },
+      { id: 's', label: 'Epoch seconds', f: ms => String(Math.floor(ms / 1000)) },
+      { id: 'ms', label: 'Epoch milliseconds', f: ms => String(Math.round(ms)) },
+      { id: 'isol', label: `ISO 8601 · ${zoneName(off)}`, f: ms => fmt('YYYY-MM-DDTHH:mm:ssZ', ms, off) },
+      { id: 'isou', label: 'ISO 8601 · UTC', f: ms => fmt('YYYY-MM-DDTHH:mm:ss', ms, 0) + 'Z' },
+      { id: 'tlog', label: 'TLog CSV · YYYY/MM/DD HH:mm:ss (UTC)', f: ms => fmt('YYYY/MM/DD HH:mm:ss', ms, 0) },
+    ];
+    formats.forEach((x, i) => list.push({ id: 'c' + i, label: `Custom · ${x.name}`, f: ms => safeFmt(x.pattern, ms, x.zone === 'utc' ? 0 : off) }));
+    return list;
+  }
+  function fillBatchFormats() {
+    const sel = $('batch-fmt'), cur = sel.value;
+    sel.innerHTML = batchOutputs().map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join('');
+    if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  }
+  const TOKEN_IN_LINE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2}(?:[.,]\d{1,9})?)?)?\s*(?:Z|UTC|GMT|HKT|[+-]\d{2}:?\d{2})?|\b\d{8,19}\b/i;
+  function runBatch() {
+    const out = batchOutputs().find(o => o.id === $('batch-fmt').value) || batchOutputs()[0];
+    const keep = $('batch-keep').checked, unit = $('unit').value;
+    const lines = $('batch-in').value.split(/\r?\n/);
+    let ok = 0, bad = 0;
+    const res = lines.map(line => {
+      const raw = line.trim();
+      if (!raw) return '';
+      let r = parse(raw, unit);
+      if (!r || r.error) { const m = TOKEN_IN_LINE.exec(raw); if (m) r = parse(m[0].trim(), unit); }
+      let v;
+      if (!r || r.error) { bad++; v = '? ' + ((r && r.error) || 'no timestamp found'); }
+      else { ok++; v = out.f(r.ms); }
+      return keep ? `${raw}\t${v}` : v;
+    });
+    $('batch-out').value = res.join('\n');
+    $('batch-info').textContent = `${ok} converted${bad ? `, ${bad} not understood` : ''}`;
+  }
+  $('batch-run').onclick = runBatch;
+  $('batch-in').addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runBatch(); });
+  $('batch-fmt').addEventListener('change', () => { if ($('batch-in').value.trim()) runBatch(); });
+  $('batch-keep').addEventListener('change', () => { if ($('batch-in').value.trim()) runBatch(); });
+  $('batch-copy').onclick = () => copyText($('batch-out').value, $('batch-copy'));
+
+  // ---------- init ----------
+  settingsToUI();
+  renderHistory();
+  renderFormats();
+  fillBatchFormats();
+  rerender();
+  const now = Date.now();
+  $('clock-local').textContent = `${zoneName(S.offset)} ${fmt('HH:mm:ss', now, S.offset)}`;
+  $('clock-utc').textContent = `UTC ${fmt('HH:mm:ss', now, 0)}`;
+  // ?v=… lets other pages (and bookmarks) open a value directly.
+  const q = new URLSearchParams(location.search).get('v');
+  if (q) { $('inp').value = q; convertInput(true); }
+})();
+</script>
+{% endblock %}

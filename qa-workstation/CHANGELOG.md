@@ -5,6 +5,28 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.20.0 — 2026-11-04
+
+- **Timestamp Converter** (`/timestamp`, ⏱ in the sidebar). UTC+8 ⇄ UTC ⇄
+  epoch in one page: paste an epoch in seconds / milliseconds /
+  microseconds / nanoseconds (auto-detected by digit count, overridable),
+  an ISO 8601 string, `YYYY-MM-DD HH:mm[:ss]`, `YYYY/MM/DD …`, or a compact
+  `YYYYMMDD[HHmmss]`, and every form is listed with a copy button: local
+  zone, UTC, epoch s / ms / µs, ISO (+08:00 and Z), the TLog CSV
+  `YYYY/MM/DD HH:MM:SS` UTC form, date / time only, compact, weekday / ISO
+  week / day of year and "relative to now". **Quick buttons**: Now (with a
+  live, ticking mode), Today 00:00, Today 23:59:59, Tomorrow, Yesterday,
+  this Monday, month start / end, ±1 d / ±1 h / ±15 m / ±1 m nudges and
+  round to second / minute / hour / day; a date-time picker in the local
+  zone. **Display settings** with presets — with / without seconds, with
+  milliseconds, TLog style (slashes), ISO 8601 style, 12-hour — plus
+  separator, "T", zone suffix, weekday, local zone (UTC+8 / +7 / +9 /
+  +5:30 / UTC) and how zone-less typed dates are read. **Custom formats**
+  (token patterns, local or UTC) and a **Batch** tab that converts one
+  value per line, log lines included, into any output form. Settings,
+  formats and the recent list live in the browser's localStorage; nothing
+  is written on the server.
+
 ## 1.19.0 — 2026-11-02
 
 - **TLog CSV set rebuilt on the real spec.** Columns now follow
