@@ -7,10 +7,11 @@
 </div>
 <div class="page-head">
   <div>
-    <h1>🗂 TLog CSV set — ORDER · PAYMENT · ITEMS · PROMOTION</h1>
-    <p class="muted">One editor for the four files, built on the Sales_Transactions spec. Each transaction is entered once: the shared fields (card number, customer order date, store, POS, customer / ERP order numbers, BU) flow into every file; derived values (member number, store name, program name, totals, line numbers) fill in when left blank; the Validation card checks required fields, formats, lengths and LOVs. Download the zip with the 4 CSVs and their <code>.ok</code> files, named <code>{{ layout.name_format }}</code>.</p>
+    <h1>🗂 TLog CSV set — ORDER · PAYMENT · ITEMS · PROMOTION <span class="muted">(+ ORDER_XM)</span></h1>
+    <p class="muted">One editor for the four files, built on the Sales_Transactions spec. Each transaction is entered once: the shared fields (card number, customer order date, store, POS, customer / ERP order numbers, BU) flow into every file; derived values (member number, store name, program name, totals, line numbers) fill in when left blank; the Validation card checks required fields, formats, lengths, LOVs and the spec's business rules. Download the zip with the 4 CSVs (plus <code>ORDER_XM</code> when a transaction carries TSR / Lucky Draw account values) and their <code>.ok</code> files, named <code>{{ layout.name_format }}</code>. 📖 Spec shows every field of <em>RetailHK – Sales_Transactions v1.3</em> with its comments and mapping notes.</p>
   </div>
   <div class="row-actions">
+    <button class="btn" id="spec-btn" title="Field reference from RetailHK – Sales_Transactions v1.3">📖 Spec</button>
     <button class="btn" id="layout-btn" title="Column names, defaults, number formats and Msg5 mapping per file">⚙️ Layout</button>
     <button class="btn primary" id="zip-btn">📦 Download zip</button>
   </div>
@@ -47,6 +48,7 @@
         <label>Reference base <input id="set-ref" placeholder="0006957324" title="Prefix of the order / line references: base + type code + 2-digit transaction index"></label>
       </div>
       <div class="file-names" id="file-names"></div>
+      {% for ft in optional_files %}<label class="check-label top-gap small-text"><input type="checkbox" id="inc-{{ ft }}"> Include <code>{{ ft }}</code> files even when empty <span class="muted">(added automatically when a transaction has account value lines)</span></label>{% endfor %}
     </section>
 
     <section class="card">
@@ -66,7 +68,7 @@
     <section class="card" id="issues-card">
       <div class="page-head tight">
         <h2>Validation <span class="pill" id="issue-count">0</span></h2>
-        <span class="muted small-text">required fields, number / date formats (YYYY/MM/DD HH:MM:SS, UTC), max lengths and LOV values from the spec</span>
+        <span class="muted small-text">required fields, number / date formats (YYYY/MM/DD HH:MM:SS, UTC), max lengths, LOV values and the spec's rules: member fields only with a 991 card, unique line / sequence numbers, positive quantities, totals vs items vs payments, dates not in the future</span>
       </div>
       <ul class="issue-list" id="issue-list"></ul>
     </section>
@@ -110,6 +112,24 @@
   </div>
 </div>
 
+<!-- ---------- spec reference ---------- -->
+<div class="preview-overlay" id="spec-overlay" hidden>
+  <div class="preview-modal card config-modal spec-modal">
+    <div class="page-head">
+      <div><h2>📖 Field reference — RetailHK · Sales_Transactions v1.3</h2>
+        <p class="muted small-text">Every column of each file with the spec's requirement, type, comments and the WTCCN / Retail HK mapping notes, next to the column name and default the editor uses. Read-only — change names, defaults and auto rules in ⚙️ Layout.</p></div>
+      <button class="btn small" id="spec-close">✕ Close</button>
+    </div>
+    <div class="import-body">
+      <div class="row-actions">
+        <div class="seg" id="spec-tabs">{% for ft in file_types %}<button type="button" data-tab="{{ ft }}" class="{{ 'on' if loop.first }}">{{ ft }}</button>{% endfor %}<button type="button" data-tab="rules">Rules &amp; formats</button><button type="button" data-tab="payments">Payment mapping</button><button type="button" data-tab="cancel">Cancel Order</button></div>
+        <label class="search-box"><span>🔍</span><input id="spec-filter" placeholder="Filter fields…" autocomplete="off"></label>
+      </div>
+      <div class="table-wrap top-gap" id="spec-body"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ---------- layout editor ---------- -->
 <div class="preview-overlay" id="layout-overlay" hidden>
   <div class="preview-modal card config-modal">
@@ -148,8 +168,14 @@
   const $ = id => document.getElementById(id);
   const FILE_TYPES = {{ file_types|tojson }};
   const CHILD_OF = {{ child_of|tojson }};
-  const KIND_OF = { ORDERITEMS: 'items', ORDER_PAYMENT: 'payments', ORDERITEMS_PROMOTION: 'promotions' };
-  const FT_OF = { items: 'ORDERITEMS', payments: 'ORDER_PAYMENT', promotions: 'ORDERITEMS_PROMOTION' };
+  const OPTIONAL = {{ optional_files|tojson }};
+  const KIND_OF = CHILD_OF;                                    // file type -> line kind
+  const FT_OF = Object.fromEntries(Object.entries(CHILD_OF).map(([f, k]) => [k, f]));
+  const KINDS = ['items', 'payments', 'promotions', 'accounts'].filter(k => FT_OF[k]);
+  const KIND_LABEL = { items: '🛒 Items', payments: '💳 Payments', promotions: '🏷 Promotions', accounts: '🎯 Account values (TSR / Lucky Draw)' };
+  const normTxn = t => { for (const k of KINDS) if (!Array.isArray(t[k])) t[k] = []; return t; };
+  const hasRows = ft => state.transactions.some(t => (t[KIND_OF[ft]] || []).length > 0);
+  const includeFt = ft => !OPTIONAL.includes(ft) || hasRows(ft) || ($('inc-' + ft) && $('inc-' + ft).checked);
   const FORMATS = {{ formats|tojson }}, AUTOS = {{ autos|tojson }}, TYPES = ['text', 'number', 'datetime', 'flag'];
   const LAYOUT_URL = "{{ url_for('tlog.csv_layout') }}", SETS_URL = "{{ url_for('tlog.csv_sets') }}";
   const IMPORT_URL = "{{ url_for('tlog.csv_import') }}", EXPORT_URL = "{{ url_for('tlog.csv_export') }}", LIB_URL = "{{ url_for('tlog.library') }}";
@@ -200,7 +226,7 @@
       case 'total_if_blank': return r4(itemsNet(t));
       case 'bu': return bu;
       case 'bu_member': return ov(t, 'CardNumber') ? bu : '';
-      case 'program': return bu ? bu + ' Membership' : '';
+      case 'program': return bu && ov(t, 'CardNumber') ? bu + ' Membership' : '';   // spec: non-members put ""
       case 'member_no': { const card = ov(t, 'CardNumber'); return card.startsWith('991') ? card.slice(3) : card; }
       case 'store_name': { const st = ov(t, 'StoreID'); return st ? '05' + st : ''; }
       case 'erp_if_blank': return ov(t, 'ERPOrderNumber');
@@ -226,6 +252,7 @@
     if (c.type === 'datetime' && !DT_RE.test(v)) return ['error', 'expected YYYY/MM/DD HH:MM:SS (UTC)'];
     if (c.type === 'flag' && !/^[YN]$/.test(v)) return ['error', 'expected Y or N'];
     if (c.max && v.length > Number(c.max)) return ['error', `longer than ${c.max} characters`];
+    if (c.lov && c.lov[0] === '=') { const ok = c.lov.slice(1).split('|'); if (!ok.includes(v)) return ['error', `must be ${ok.map(x => '"' + x + '"').join(' or ')}`]; }
     if (c.lov && layout.lovs && layout.lovs[c.lov]) {
       const lov = layout.lovs[c.lov];
       if (!lov.includes(v)) return lov.some(x => x.toLowerCase() === v.toLowerCase()) ? ['warn', `LOV spelling: use "${lov.find(x => x.toLowerCase() === v.toLowerCase())}"`] : ['warn', `not in LOV ${c.lov}`];
@@ -242,6 +269,32 @@
       for (const [ft, kind] of Object.entries(KIND_OF)) t[kind].forEach((row, ri) => {
         for (const c of cols(ft)) { const r = checkCell(c, cellValue(c, t, ti, row, ri, kind)); if (r) issues.push({ sev: r[0], ti, ft, ri, key: c.name, where: `Txn ${ti + 1} · ${ft} line ${ri + 1}`, field: c.label, msg: r[1] }); }
       });
+      // --- business rules from the spec ---
+      const push = (sev, field, msg, extra = {}) => issues.push({ sev, ti, where: `Txn ${ti + 1} · ORDER`, field, msg, ...extra });
+      const card = ov(t, 'CardNumber');
+      if (card && !/^991/.test(card)) push('warn', 'Card Number', 'member cards carry the 991 prefix (Member Number = card without 991)', { ft: 'ORDER', key: 'CardNumber' });
+      if (!card) for (const n of ['MemberNumber', 'LoyaltyProgramName', 'MemberProgramName', 'OrganizationBUNameForMember']) if ((t.order[n] ?? '') !== '') push('warn', colOf(n).label || n, 'no card number — the spec says non-member orders put "" here', { ft: 'ORDER', key: n });
+      const pe = t.order.PointsEarned ?? '', be = t.order.BonusPointsEarned ?? '';
+      if (pe !== '' && be !== '' && num(pe) < num(be)) push('warn', 'Points Earned', 'is the total (base + bonus) and should be ≥ Bonus Points Earned', { ft: 'ORDER', key: 'PointsEarned' });
+      for (const n of ['CustomerOrderDate', 'BusinessOrderDate']) { const v = cellValue(colOf(n), t, ti, null, 0, 'order'); const dm = DT_RE.exec(v); if (dm && Date.UTC(+dm[1], +dm[2] - 1, +dm[3], +dm[4], +dm[5], +dm[6]) > Date.now() + 60000) push('warn', colOf(n).label || n, 'is in the future — TLog times are UTC (HK time − 8 h)', { ft: 'ORDER', key: n }); }
+      const ta = t.order.TotalAmount ?? '';
+      if (ta !== '' && t.items.length && Math.abs(num(ta) - itemsNet(t)) > 0.005) push('warn', 'Total Amount', `${ta} ≠ sum of item net prices ${r4(itemsNet(t))}`, { ft: 'ORDER', key: 'TotalAmount' });
+      const lineCol = (ft, n) => cols(ft).find(c => c.name === n) || {};
+      const seen = {};
+      t.items.forEach((row, ri) => {
+        const ln = cellValue(lineCol('ORDERITEMS', 'OrderLineNumber'), t, ti, row, ri, 'items');
+        if (ln !== '') { if (seen[ln] !== undefined) issues.push({ sev: 'error', ti, ft: 'ORDERITEMS', ri, key: 'OrderLineNumber', where: `Txn ${ti + 1} · ORDERITEMS line ${ri + 1}`, field: 'Order Line Number', msg: `duplicate of line ${seen[ln] + 1} — must be unique within the order` }); seen[ln] = ri; }
+        const qty = cellValue(lineCol('ORDERITEMS', 'QuantityReceived'), t, ti, row, ri, 'items');
+        if (qty !== '' && num(qty) <= 0) issues.push({ sev: 'warn', ti, ft: 'ORDERITEMS', ri, key: 'QuantityReceived', where: `Txn ${ti + 1} · ORDERITEMS line ${ri + 1}`, field: 'Quantity Received', msg: 'should be positive (returns go to Quantity Cancelled / a negative Net Price)' });
+        for (const [n, lab] of [['QuantityCancelled', 'Quantity Cancelled'], ['DiscountAmount', 'Discount Amount'], ['SpreadDiscountAmount', 'Spread Discount Amount']]) { const v = cellValue(lineCol('ORDERITEMS', n), t, ti, row, ri, 'items'); if (v !== '' && num(v) < 0) issues.push({ sev: 'error', ti, ft: 'ORDERITEMS', ri, key: n, where: `Txn ${ti + 1} · ORDERITEMS line ${ri + 1}`, field: lab, msg: 'must not be negative' }); }
+      });
+      const seq = {};
+      t.payments.forEach((row, ri) => {
+        const sn = cellValue(lineCol('ORDER_PAYMENT', 'SequenceNumber'), t, ti, row, ri, 'payments');
+        if (sn !== '') { if (seq[sn] !== undefined) issues.push({ sev: 'error', ti, ft: 'ORDER_PAYMENT', ri, key: 'SequenceNumber', where: `Txn ${ti + 1} · ORDER_PAYMENT line ${ri + 1}`, field: 'Sequence Number', msg: `duplicate of payment ${seq[sn] + 1} — unique per order, starting from 1` }); seq[sn] = ri; }
+      });
+      if (t.payments.length) { const nums = t.payments.map((row, ri) => num(cellValue(lineCol('ORDER_PAYMENT', 'SequenceNumber'), t, ti, row, ri, 'payments'))).sort((a, b) => a - b); if (nums.some((n, i) => n !== i + 1)) issues.push({ sev: 'warn', ti, where: `Txn ${ti + 1}`, field: 'Payments', msg: 'sequence numbers should run 1, 2, 3 … per order' }); }
+      if (t.items.length) { const lines = new Set(t.items.map((row, ri) => cellValue(lineCol('ORDERITEMS', 'OrderLineNumber'), t, ti, row, ri, 'items'))); const orphans = t.promotions.filter((row, ri) => { const ln = cellValue(lineCol('ORDERITEMS_PROMOTION', 'OrderLineNumber'), t, ti, row, ri, 'promotions'); return ln !== '' && !lines.has(ln); }).length; if (orphans) issues.push({ sev: 'info', ti, where: `Txn ${ti + 1}`, field: 'Promotions', msg: `${orphans} promotion line${orphans === 1 ? '' : 's'} with an Order Line Number that is not an item line (the spec joins promotions to items on it; the WTCID feed numbers promotions on their own)` }); }
       if (!t.items.length) issues.push({ sev: 'warn', ti, where: `Txn ${ti + 1}`, field: 'Items', msg: 'no item lines' });
       if (!t.payments.length) issues.push({ sev: 'warn', ti, where: `Txn ${ti + 1}`, field: 'Payments', msg: 'no payment lines' });
       const pay = t.payments.reduce((s2, r, ri) => s2 + num(cellValue(cols('ORDER_PAYMENT').find(c => c.name === 'TransactionAmount') || {}, t, ti, r, ri, 'payments')), 0);
@@ -252,14 +305,14 @@
   let lastIssues = [];
   function renderIssues() {
     lastIssues = validateAll();
-    const errs = lastIssues.filter(i => i.sev === 'error').length, warns = lastIssues.length - errs;
-    const pill = $('issue-count'); pill.textContent = lastIssues.length ? `${errs} error${errs === 1 ? '' : 's'} · ${warns} warning${warns === 1 ? '' : 's'}` : 'clean';
+    const errs = lastIssues.filter(i => i.sev === 'error').length, warns = lastIssues.filter(i => i.sev === 'warn').length, infos = lastIssues.length - errs - warns;
+    const pill = $('issue-count'); pill.textContent = lastIssues.length ? `${errs} error${errs === 1 ? '' : 's'} · ${warns} warning${warns === 1 ? '' : 's'}${infos ? ` · ${infos} note${infos === 1 ? '' : 's'}` : ''}` : 'clean';
     pill.className = 'pill ' + (errs ? 'pill-err' : warns ? 'pill-warn' : 'pill-ok');
     const ul = $('issue-list'); ul.innerHTML = '';
     if (!lastIssues.length) { ul.innerHTML = '<li class="muted">No issues — every required field is filled and all formats match the spec.</li>'; }
     for (const i of lastIssues.slice(0, 60)) {
       const li = document.createElement('li'); li.className = i.sev;
-      li.innerHTML = `<span class="sev">${i.sev === 'error' ? '●' : '▲'}</span><strong></strong> <span class="muted"></span> — <em></em>`;
+      li.innerHTML = `<span class="sev">${i.sev === 'error' ? '●' : i.sev === 'warn' ? '▲' : 'ℹ'}</span><strong></strong> <span class="muted"></span> — <em></em>`;
       li.querySelector('strong').textContent = i.where; li.querySelector('span.muted').textContent = i.field; li.querySelector('em').textContent = i.msg;
       if (i.ti !== undefined) { li.style.cursor = 'pointer'; li.title = 'Open this transaction'; li.onclick = () => { const d = document.querySelector(`details[data-i="${i.ti}"]`); if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); const inp = i.key ? d.querySelector(`input[data-name="${i.key}"]${i.ri !== undefined ? `[data-ri="${i.ri}"][data-ft="${i.ft}"]` : ''}`) : null; if (inp) inp.focus(); } }; }
       ul.appendChild(li);
@@ -268,7 +321,7 @@
     // mark inputs
     document.querySelectorAll('#txns input.bad, #txns input.warnv').forEach(i => i.classList.remove('bad', 'warnv'));
     for (const i of lastIssues) {
-      if (i.ti === undefined || !i.key) continue;
+      if (i.ti === undefined || !i.key || i.sev === 'info') continue;
       const sel = `details[data-i="${i.ti}"] input[data-name="${i.key}"]` + (i.ri !== undefined ? `[data-ri="${i.ri}"][data-ft="${i.ft}"]` : ':not([data-ri])');
       document.querySelectorAll(sel).forEach(inp => inp.classList.add(i.sev === 'error' ? 'bad' : 'warnv'));
     }
@@ -287,12 +340,14 @@
 
   // ---------- render ----------
   function render() {
+    state.transactions.forEach(normTxn);
     renderTxns(); renderPreview(); renderNames(); renderIssues();
     $('txn-count').textContent = state.transactions.length;
     $('txn-empty').hidden = state.transactions.length > 0;
   }
   function renderNames() {
-    $('file-names').innerHTML = FILE_TYPES.map(ft => `<span class="pill mono-in">${esc(fileName(ft, 'csv'))}</span>`).join(' ') + ` <span class="muted small-text">+ the same 4 names as empty .ok files</span>`;
+    const list = FILE_TYPES.filter(includeFt);
+    $('file-names').innerHTML = list.map(ft => `<span class="pill mono-in">${esc(fileName(ft, 'csv'))}</span>`).join(' ') + ` <span class="muted small-text">+ the same ${list.length} names as empty .ok files</span>`;
   }
   function ensureLovLists() {
     const box = $('lov-lists'); box.innerHTML = '';
@@ -308,9 +363,18 @@
     if (c.msg5) bits.push('msg5 ' + c.msg5);
     return bits.join(' · ');
   }
+  function helpText(c) {
+    const bits = [];
+    if (c.desc) bits.push(c.desc); else if (c.hint) bits.push(c.hint);
+    if (c.guide) bits.push('Mapping: ' + c.guide);
+    if (c.pos) bits.push('POS field: ' + c.pos);
+    if (c.sample) bits.push('Retail HK: ' + c.sample);
+    return bits.join('\n').replace(/ ⏎ /g, '\n');
+  }
   function wireInput(inp, c) {
-    inp.title = (c.hint ? c.hint + '\n' : '') + specText(c);
-    if (c.lov) inp.setAttribute('list', 'lov-' + c.lov);
+    inp.title = (helpText(c) ? helpText(c) + '\n— ' : '') + specText(c);
+    if (c.lov && c.lov[0] === '=') { const dl = document.createElement('datalist'); dl.id = 'lov-fixed-' + c.name; dl.innerHTML = c.lov.slice(1).split('|').map(v => `<option value="${esc(v)}">`).join(''); if (!$(dl.id)) $('lov-lists').appendChild(dl); inp.setAttribute('list', dl.id); }
+    else if (c.lov) inp.setAttribute('list', 'lov-' + c.lov);
     else if (c.type === 'flag') inp.setAttribute('list', 'lov-YN');
     if (c.max) inp.maxLength = Number(c.max);
   }
@@ -351,7 +415,7 @@
       body.appendChild(fieldBlock('Order header', orderCols.filter(c => !/^SubClub/.test(c.name)), t, ti));
       const sub = orderCols.filter(c => /^SubClub/.test(c.name));
       if (sub.length) { const det = document.createElement('details'); det.className = 'sub-fields'; det.innerHTML = '<summary>SubClub redeem columns (' + sub.length + ') — usually left as the defaults</summary>'; det.appendChild(fieldBlock('', sub, t, ti)); body.appendChild(det); }
-      for (const kind of ['items', 'payments', 'promotions']) body.appendChild(linesBlock(kind, t, ti));
+      for (const kind of KINDS) body.appendChild(linesBlock(kind, t, ti));
       d.appendChild(body); wrap.appendChild(d);
     });
   }
@@ -387,14 +451,23 @@
     const ft = FT_OF[kind];
     const columns = named(ft).filter(c => !isShared(c.name));
     const sec = document.createElement('div'); sec.className = 'txn-sec';
-    const label = { items: '🛒 Items', payments: '💳 Payments', promotions: '🏷 Promotions' }[kind];
-    sec.innerHTML = `<h3>${label} <span class="muted small-text">(${ft})</span></h3>`;
+    const label = KIND_LABEL[kind] || kind;
+    const optional = OPTIONAL.includes(ft);
+    sec.innerHTML = `<h3>${label} <span class="muted small-text">(${ft}${optional ? ' · optional file — only written when a transaction has lines' : ''})</span></h3>`;
+    if (optional && !t[kind].length) sec.classList.add('txn-sec-optional');
+    const maps = kind === 'payments' ? (layout.payment_maps || []) : [];
     const wrap = document.createElement('div'); wrap.className = 'table-wrap';
     const tbl = document.createElement('table'); tbl.className = 'grid-table lines-table';
-    tbl.innerHTML = '<tr><th>#</th>' + columns.map(c => `<th title="${esc(specText(c))}">${esc(c.label || c.name)}${c.required ? ' *' : ''}${c.auto ? ' <span class="muted">⚙</span>' : ''}</th>`).join('') + '<th></th></tr>';
+    tbl.innerHTML = '<tr><th>#</th>' + (maps.length ? '<th title="Pick a POS tender from the spec\'s mapping tables — fills Payment Method and Payment Type">Tender ↦</th>' : '') + columns.map(c => `<th title="${esc(helpText(c) ? helpText(c) + '\n— ' + specText(c) : specText(c))}">${esc(c.label || c.name)}${c.required ? ' *' : ''}${c.auto ? ' <span class="muted">⚙</span>' : ''}</th>`).join('') + '<th></th></tr>';
     t[kind].forEach((row, ri) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td class="muted">${ri + 1}</td>`;
+      if (maps.length) {
+        const td = document.createElement('td'); const sel = document.createElement('select'); sel.className = 'pay-pick'; sel.title = 'Payment mapping from the spec (Order Payment sheet)';
+        sel.innerHTML = '<option value="">pick…</option>' + maps.map((m, mi) => `<optgroup label="${esc(m.title)}">` + m.rows.map((r, rj) => `<option value="${mi}:${rj}">${esc(r.label)} → ${esc(r.method)} / ${esc(r.type)}</option>`).join('') + '</optgroup>').join('');
+        sel.onchange = () => { const [mi, rj] = sel.value.split(':').map(Number); const r = maps[mi] && maps[mi].rows[rj]; if (!r) return; row.PaymentMethod = r.method; row.PaymentType = r.type; render(); };
+        td.appendChild(sel); tr.appendChild(td);
+      }
       for (const c of columns) {
         const td = document.createElement('td'); const inp = document.createElement('input');
         inp.dataset.name = c.name; inp.dataset.ri = ri; inp.dataset.ft = ft;
@@ -423,7 +496,7 @@
 
   // ---------- transactions ----------
   function newTxn(from) {
-    const t = { order: {}, items: [], payments: [], promotions: [] };
+    const t = normTxn({ order: {} });
     if (from) { t.order = structuredClone(from.order); bumpNumbers(t.order); for (const c of named('ORDER')) if (c.auto) delete t.order[c.name]; }  // derived values follow the new card / store
     return t;  // defaults and auto rules fill the blanks at export time
   }
@@ -486,6 +559,7 @@
   m5.addEventListener('click', e => { if (e.target === m5) m5.hidden = true; });
 
   // ---------- set meta / preview / export ----------
+  OPTIONAL.forEach(ft => { const cb = $('inc-' + ft); if (cb) cb.addEventListener('change', () => { renderNames(); renderPreview(); }); });
   ['set-bu', 'set-date', 'set-seq', 'set-ref'].forEach(id => { $(id).addEventListener('input', () => { renderNames(); renderPreview(); }); $(id).addEventListener('change', () => render()); });
   $('date-today').onclick = () => { const d = new Date(); $('set-date').value = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`; renderNames(); renderPreview(); };
   $('preview-tabs').addEventListener('click', e => { const b = e.target.closest('[data-ft]'); if (!b) return; previewFt = b.dataset.ft; $('preview-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderPreview(); });
@@ -497,11 +571,12 @@
     renderIssues();
     const errs = lastIssues.filter(i => i.sev === 'error').length;
     if (errs && !confirm(`${errs} validation error${errs === 1 ? '' : 's'} (see the Validation card). Download anyway?`)) return;
-    const res = await fetch(EXPORT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...m, files: buildFiles() }) });
+    const include = FILE_TYPES.filter(includeFt);
+    const res = await fetch(EXPORT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...m, files: buildFiles(), include }) });
     const blob = await res.blob();
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `TLOG_${m.bu}_${m.date}${m.seq ? '_' + m.seq : ''}.zip`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    status($('preview-status'), `📦 ${a.download} — 4 CSV + 4 .ok files.`);
+    status($('preview-status'), `📦 ${a.download} — ${include.length} CSV + ${include.length} .ok files (${include.join(', ')}).`);
   };
 
   // ---------- saved sets ----------
@@ -512,7 +587,7 @@
       const it = document.createElement('div'); it.className = 'msg-item' + (state.id === s.id ? ' on' : '');
       it.innerHTML = '<button type="button" class="msg-open"><strong></strong><span class="muted small-text"></span></button><button type="button" class="icon-btn danger" title="Delete">✕</button>';
       it.querySelector('strong').textContent = s.name;
-      it.querySelector('span').textContent = `${s.bu} · ${s.date} · #${s.seq} · ${s.transactions} txn · ${s.updated}`;
+      it.querySelector('span').textContent = `${s.bu} · ${s.date}${s.seq ? ' · #' + s.seq : ''} · ${s.transactions} txn · ${s.updated}`;
       it.querySelector('.msg-open').onclick = async () => {
         const d = await (await fetch(`${SETS_URL}/${s.id}`)).json();
         if (!d.ok) return;
@@ -565,6 +640,54 @@
     $('import-status').textContent = `✓ ${d.transactions.length} transaction${d.transactions.length === 1 ? '' : 's'} imported.` + (d.warnings.length ? ' ⚠ ' + d.warnings.join(' · ') : '');
   }
 
+  // ---------- spec reference ----------
+  const so = $('spec-overlay'); let specTab = FILE_TYPES[0];
+  const nl = s => esc(s).replace(/ ⏎ /g, '<br>');
+  function renderSpec() {
+    const q = $('spec-filter').value.trim().toLowerCase();
+    const box = $('spec-body'); let html = '';
+    if (FILE_TYPES.includes(specTab)) {
+      const list = cols(specTab);
+      html = `<p class="muted small-text">${esc(fileName(specTab, 'csv'))} · ${list.length} columns · shared fields highlighted · ${OPTIONAL.includes(specTab) ? 'optional file (TSR / Lucky Draw account values)' : 'mandatory file'}</p>
+        <table class="grid-table spec-table"><tr><th>#</th><th>Spec column</th><th>Req</th><th>Type</th><th>Editor column</th><th>Fill</th><th>Comments</th><th>Mapping notes</th><th>POS / Retail HK</th></tr>`;
+      list.forEach((c, i) => {
+        const text = [c.label, c.name, c.desc, c.guide, c.pos, c.sample, c.hint].join(' ').toLowerCase();
+        if (q && !text.includes(q)) return;
+        const fill = [c.default ? `default "${c.default}"` : '', c.auto ? `auto: ${c.auto}` : '', c.msg5 ? `Msg5 ${c.msg5}` : '', c.lov ? (c.lov[0] === '=' ? 'fixed ' + c.lov.slice(1).replace(/\|/g, ' / ') : 'LOV ' + c.lov) : '', c.format ? c.format : ''].filter(Boolean).join(' · ');
+        html += `<tr class="${isShared(c.name) ? 'shared-row' : ''}"><td class="muted">${i + 1}${c.spec_seq && c.spec_seq !== String(i + 1) ? `<br><small>spec ${esc(c.spec_seq)}</small>` : ''}</td><td><strong>${esc(c.label || c.name || '(empty)')}</strong>${c.spec_seq ? '' : '<br><small class="muted">not in the spec sheet</small>'}</td><td class="center">${c.required ? '<span class="pill pill-err">Y</span>' : ''}</td><td class="nowrap">${esc(c.spec_type || (c.type + (c.max ? ' (' + c.max + ')' : '')))}</td><td><code>${esc(c.name)}</code></td><td class="small-text">${esc(fill)}</td><td class="wrap">${nl(c.desc || (c.spec_seq ? '' : c.hint))}</td><td class="wrap small-text">${nl(c.guide)}</td><td class="small-text">${c.pos ? '<div>POS: <code>' + esc(c.pos) + '</code></div>' : ''}${c.sample ? '<div>Retail HK: ' + esc(c.sample) + '</div>' : ''}</td></tr>`;
+      });
+      html += '</table>';
+    } else if (specTab === 'rules') {
+      html = `<h3>File set</h3><ul class="spec-rules">
+        <li>Files: <code>${esc(layout.name_format)}.csv</code> per type, each with a same-named empty <code>.ok</code> file. The <code>_{SEQ}</code> part is optional (WTCID sends <code>ORDER_WTCID_20261102.csv</code>).</li>
+        <li>Every field double-quoted, no header row, CRLF between rows and no trailing newline; an empty file is a single CRLF.</li>
+        <li>Shared columns (entered once per transaction, copied into every file): ${shared.map(n => '<code>' + esc(n) + '</code>').join(' ')}.</li>
+        <li>ORDER_XM (account values for TSR / Lucky Draw) is only produced when a transaction has account lines or the toggle in <em>File set</em> is on.</li></ul>
+        <h3>Business rules the editor applies</h3><ul class="spec-rules">
+        <li><strong>Dates are UTC</strong>: HK / TW / MY local time − 8 h, as <code>YYYY/MM/DD HH:MM:SS</code> (19 bytes). The Msg5 import converts for you; the Validation card flags dates in the future.</li>
+        <li><strong>Members</strong>: Card Number keeps the 991 prefix, Member Number is the card without 991, Loyalty / Member Program Name = BU + " Membership", Organization (BU) Name for Member = BU. <strong>Non-members</strong>: all four are "".</li>
+        <li>Store Name = "05" + Store ID. Tax Exempt Flag and X_STF_DISCNT_PROCESS_FLG default to N. Discount Source Code defaults to Manual.</li>
+        <li>Total Amount = sum of item Net Prices (incl. the amount paid with points); Payments should add up to the same; Points Earned is the total (base + bonus).</li>
+        <li>Order Line Numbers are unique per order; payment Sequence Numbers run 1, 2, 3 …; quantities are positive, cancelled quantities and discounts are not negative.</li>
+        <li>Promotion lines use Type = "PromotionID"; account lines use Type = "Account"; Order Number for Conversion = reference base + 05 (ORDER) or 07 (line files) + 2-digit transaction index.</li></ul>
+        <h3>Data formats (Ref-Format)</h3><ul class="spec-rules">${(layout.format_notes || []).map(x => '<li>' + esc(x) + '</li>').join('')}</ul>`;
+    } else if (specTab === 'payments') {
+      html = '<p class="muted small-text">From the Order Payment sheet: how each POS tender maps to Siebel Payment Method (LOV PAYMENT_METHOD_CODE) and Payment Type (LOV PAYMENT_TYPE_CODE). Use the <em>Tender ↦</em> picker on a payment line to apply one.</p>';
+      for (const m of layout.payment_maps || []) html += `<h3>${esc(m.title)}</h3><table class="grid-table spec-table"><tr><th>POS tender</th><th>Payment Method</th><th>Payment Type</th></tr>${m.rows.filter(r => !q || (r.label + r.method + r.type).toLowerCase().includes(q)).map(r => `<tr><td>${esc(r.label)}</td><td>${esc(r.method)}</td><td>${esc(r.type)}</td></tr>`).join('')}</table>`;
+      html += `<h3>LOV PAYMENT_METHOD_CODE</h3><p class="small-text">${(layout.lovs.PAYMENT_METHOD_CODE || []).map(esc).join(' · ')}</p><h3>LOV PAYMENT_TYPE_CODE</h3><p class="small-text">${(layout.lovs.PAYMENT_TYPE_CODE || []).map(esc).join(' · ')}</p>`;
+    } else if (specTab === 'cancel') {
+      const co = layout.cancel_order || { columns: [] };
+      html = `<p class="muted small-text">Separate cancellation feed (sheet <em>Cancel Order</em>) — local time, not UTC, and no shared columns with the sales files. Not produced by this editor yet; listed for reference. File: <code>${esc(co.file || '')}</code></p>
+        <table class="grid-table spec-table"><tr><th>#</th><th>Column</th><th>Type</th><th>Comments</th></tr>${co.columns.map(c => `<tr><td class="muted">${esc(c.seq)}</td><td><code>${esc(c.name)}</code></td><td>${esc(c.type)}</td><td class="wrap">${esc(c.desc)}</td></tr>`).join('')}</table>`;
+    }
+    box.innerHTML = html;
+  }
+  $('spec-btn').onclick = () => { renderSpec(); so.hidden = false; };
+  $('spec-close').onclick = () => so.hidden = true;
+  so.addEventListener('click', e => { if (e.target === so) so.hidden = true; });
+  $('spec-tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; specTab = b.dataset.tab; $('spec-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderSpec(); });
+  $('spec-filter').addEventListener('input', renderSpec);
+
   // ---------- layout editor ----------
   const lo = $('layout-overlay');
   $('layout-btn').onclick = () => { $('lay-format').value = layout.name_format; renderLayTable(); lo.hidden = false; };
@@ -586,7 +709,7 @@
       if (isShared(c.name)) tr.className = 'shared-row';
       tr.innerHTML = `<td class="muted">${i + 1}</td><td><input data-k="name" class="mono-in" placeholder="(empty)"></td><td><input data-k="label"></td>
         <td><select data-k="type">${TYPES.map(x => `<option value="${x}">${x}</option>`).join('')}</select></td><td><input data-k="max" style="width:52px"></td>
-        <td class="center"><input type="checkbox" data-k="required"></td><td><input data-k="lov" class="mono-in" style="width:150px" placeholder="—"></td><td><input data-k="default"></td>
+        <td class="center"><input type="checkbox" data-k="required"></td><td><input data-k="lov" class="mono-in" style="width:150px" placeholder="— or =A|B" title="LOV name from Ref-LOV (PAYMENT_TYPE_CODE) or a fixed list: =PromotionID, =Y|N"></td><td><input data-k="default"></td>
         <td><select data-k="format">${FORMATS.map(f => `<option value="${f}">${f || '—'}</option>`).join('')}</select></td>
         <td><select data-k="auto">${AUTOS.map(a => `<option value="${a}">${a || '—'}</option>`).join('')}</select></td>
         <td><input data-k="ref" style="width:50px" placeholder="—" title="Type code inserted after the reference base (e.g. 05 for ORDER, 07 for lines)"></td><td><input data-k="msg5" class="mono-in" placeholder="tag or json:key"></td><td><input data-k="hint" style="min-width:220px"></td>
@@ -608,7 +731,7 @@
   }
   $('lay-add').onclick = async () => { await saveLayout({ files: { [layFt]: cols(layFt).concat([{ name: '', label: '', default: '', format: '', auto: '', msg5: '', type: 'text', max: '', required: false, lov: '', hint: '' }]) } }); renderLayTable(); };
   $('lay-reset').onclick = async () => { if (!confirm('Reset every file layout to the defaults?')) return; await saveLayout({ reset: true }); renderLayTable(); };
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { lo.hidden = true; m5.hidden = true; } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { lo.hidden = true; m5.hidden = true; so.hidden = true; } });
 
   // ---------- init ----------
   ensureLovLists();

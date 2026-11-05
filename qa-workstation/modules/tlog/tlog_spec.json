@@ -123,7 +123,12 @@
     "max": "100",
     "required": true,
     "lov": "",
-    "hint": "Organization Name for the Sales Order (from the Store) [Chelsea, 20111012] Put \"WTCCN\". Put in configuration file."
+    "hint": "Organization Name for the Sales Order (from the Store) [Chelsea, 20111012] Put \"WTCCN\". Put in configuration file.",
+    "desc": "Organization Name for the Sales Order (from the Store)",
+    "guide": "默认值，需要填写在config文件中方便修改 ⏎ [Chelsea, 20111012] Put \"WTCCN\". Put in configuration file.",
+    "sample": "\"MBHK\"",
+    "spec_seq": "1",
+    "spec_type": "Varchar (100)"
    },
    {
     "name": "LoyaltyProgramName",
@@ -136,7 +141,12 @@
     "max": "50",
     "required": false,
     "lov": "",
-    "hint": "Loyalty program name. Should be same as member program name for ASW. [Chelsea, 20111010] For members, put \"WTCCN Membership\" and put in configuration file. For non-members, put \"\""
+    "hint": "Loyalty program name. Should be same as member program name for ASW. [Chelsea, 20111010] For members, put \"WTCCN Membership\" and put in configuration file. For non-members, put \"\"",
+    "desc": "Loyalty program name. Should be same as member program name for ASW.",
+    "guide": "默认值，需要填写在config文件中方便修改 ⏎ [Chelsea, 20111010] For members, put \"WTCCN Membership\" and put in configuration file. For non-members, put \"\"",
+    "sample": "\"MBHK Membership\"",
+    "spec_seq": "2",
+    "spec_type": "Character (50)"
    },
    {
     "name": "OrganizationBUNameForMember",
@@ -149,7 +159,12 @@
     "max": "100",
     "required": false,
     "lov": "",
-    "hint": "The Organization Name for Member [Chelsea, 20111012] For members, put \"WTCCN\" and put in configuration file. For non-members, put \"\""
+    "hint": "The Organization Name for Member [Chelsea, 20111012] For members, put \"WTCCN\" and put in configuration file. For non-members, put \"\"",
+    "desc": "The Organization Name for Member",
+    "guide": "[Chelsea, 20111012] For members,  put \"WTCCN\" and put in configuration file. For non-members, put \"\"",
+    "sample": "\"MBHK\"",
+    "spec_seq": "3",
+    "spec_type": "Varchar (100)"
    },
    {
     "name": "MemberNumber",
@@ -162,7 +177,13 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "The Member ID [Chelsea, 20111010] For members, put Member ID (Without 991). For non-members, put \"\""
+    "hint": "The Member ID [Chelsea, 20111010] For members, put Member ID (Without 991). For non-members, put \"\"",
+    "desc": "The Member ID",
+    "guide": "去掉991后的会员卡号 ⏎ [Chelsea, 20111010] For members, put Member ID (Without 991). For non-members, put \"\"",
+    "sample": "Member Number",
+    "spec_seq": "4",
+    "spec_type": "Varchar (30)",
+    "pos": "11000096611"
    },
    {
     "name": "MemberProgramName",
@@ -175,7 +196,12 @@
     "max": "50",
     "required": false,
     "lov": "",
-    "hint": "The program name for the member [Chelsea, 20111010] For members, put \"WTCCN Membership\" and put in configuration file. For non-members, put \"\""
+    "hint": "The program name for the member [Chelsea, 20111010] For members, put \"WTCCN Membership\" and put in configuration file. For non-members, put \"\"",
+    "desc": "The program name for the member",
+    "guide": "默认值，需要填写在config文件中方便修改 ⏎ [Chelsea, 20111010] For members, put \"WTCCN Membership\" and put in configuration file. For non-members, put \"\"",
+    "sample": "\"MBHK Membership\"",
+    "spec_seq": "5",
+    "spec_type": "Varchar (50)"
    },
    {
     "name": "ExternalIntegrationID",
@@ -188,7 +214,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "The customer id used at the website by the third party hosting the WEB site. For the e-Shopper sales transactions come from the website, Siebel will make use of thie customer id from website to resolve the person user identifier in Siebel. [Chelsea,20111010] P"
+    "hint": "The customer id used at the website by the third party hosting the WEB site. For the e-Shopper sales transactions come from the website, Siebel will make use of thie customer id from website to resolve the person user identifier in Siebel. [Chelsea,20111010] P",
+    "desc": "The customer id used at the website by the third party hosting the WEB site. ⏎ For the e-Shopper sales transactions come from the website, Siebel will make use of thie customer id from website to resolve the person user identifier in Siebel.",
+    "guide": "[Chelsea,20111010] Put \"\"",
+    "sample": "(null)",
+    "spec_seq": "6",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "Comments",
@@ -201,7 +232,12 @@
     "max": "250",
     "required": false,
     "lov": "",
-    "hint": "[Chelsea, 20111010] Put \"\""
+    "hint": "[Chelsea, 20111010] Put \"\"",
+    "desc": "",
+    "guide": "空值 ⏎ [Chelsea, 20111010] Put \"\"",
+    "sample": "(null)",
+    "spec_seq": "7",
+    "spec_type": "Varchar (250)"
    },
    {
     "name": "TaxExemptFlag",
@@ -214,7 +250,13 @@
     "max": "1",
     "required": true,
     "lov": "",
-    "hint": "Flag to indicate the order is tax exempted. [Chelsea] Put Default Value \"N\""
+    "hint": "Flag to indicate the order is tax exempted. [Chelsea] Put Default Value \"N\"",
+    "desc": "Flag to indicate the order is tax exempted.",
+    "guide": "默认值 ⏎ [Chelsea] Put Default Value \"N\"",
+    "sample": "\"N\"",
+    "spec_seq": "8",
+    "spec_type": "Character (1)",
+    "pos": "N"
    },
    {
     "name": "TotalAmount",
@@ -227,7 +269,13 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "The total amount for the order. [Chelsea, 20111212] Total net price including the amount from points redemption."
+    "hint": "The total amount for the order. [Chelsea, 20111212] Total net price including the amount from points redemption.",
+    "desc": "The total amount for the order. ⏎ [Chelsea, 20111212] Total net price including the amount from points redemption.",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "9",
+    "spec_type": "Number (22)",
+    "pos": "Tendered"
    },
    {
     "name": "TotalStaffDiscountAmount",
@@ -240,7 +288,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "The total staff discount amount in this order"
+    "hint": "The total staff discount amount in this order",
+    "desc": "The total staff discount amount in this order",
+    "guide": "",
+    "sample": "(null)",
+    "spec_seq": "10",
+    "spec_type": "Number (22)"
    },
    {
     "name": "CustomerOrderDate",
@@ -253,7 +306,13 @@
     "max": "19",
     "required": true,
     "lov": "",
-    "hint": "[Chelsea, 20110921] Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function."
+    "hint": "[Chelsea, 20110921] Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "desc": "",
+    "guide": "[Chelsea, 20110921] Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "sample": "",
+    "spec_seq": "11",
+    "spec_type": "UTC ⏎ Date Time (19)",
+    "pos": "TransactionDate"
    },
    {
     "name": "BusinessOrderDate",
@@ -266,7 +325,13 @@
     "max": "19",
     "required": false,
     "lov": "",
-    "hint": "Order Date for business process [Chelsea, 20110921] Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function."
+    "hint": "Order Date for business process [Chelsea, 20110921] Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "desc": "Order Date for business process",
+    "guide": "[Chelsea, 20110921] Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "sample": "",
+    "spec_seq": "12",
+    "spec_type": "UTC ⏎ Date Time (19)",
+    "pos": "Workdate"
    },
    {
     "name": "StoreID",
@@ -279,7 +344,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Store ID [Chelsea,20110921] Put Store_Id where Store_Id in ORGLOCDM.LOC_IDNT in Retek"
+    "hint": "Store ID [Chelsea,20110921] Put Store_Id where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "desc": "Store ID",
+    "guide": "[Chelsea,20110921] Put Store_Id ⏎ where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "sample": "",
+    "spec_seq": "13",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "StoreName",
@@ -292,7 +362,13 @@
     "max": "100",
     "required": true,
     "lov": "",
-    "hint": "Store Name [Chelsea, 20110926] Put \"05\" + Store ID where Store_Id in ORGLOCDM.LOC_IDNT in Retek"
+    "hint": "Store Name [Chelsea, 20110926] Put \"05\" + Store ID where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "desc": "Store Name",
+    "guide": "店铺号是如何生成的需要GIT确认 ⏎ [Chelsea, 20110926] Put \"05\" + Store ID ⏎ where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "sample": "",
+    "spec_seq": "14",
+    "spec_type": "Varchar (100)",
+    "pos": "store"
    },
    {
     "name": "ERPOrderNumber",
@@ -305,7 +381,12 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "The ERP Order Number; WTCTW daily sales provides transaction time, HH24MISS [Chelsea] Put GlobalTrxId"
+    "hint": "The ERP Order Number; WTCTW daily sales provides transaction time, HH24MISS [Chelsea] Put GlobalTrxId",
+    "desc": "The ERP Order Number; ⏎ WTCTW daily sales provides transaction time, HH24MISS",
+    "guide": "[Chelsea] Put GlobalTrxId",
+    "sample": "",
+    "spec_seq": "15",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "CustomerOrderNumber",
@@ -318,7 +399,13 @@
     "max": "50",
     "required": true,
     "lov": "",
-    "hint": "Put Only when Customer Order Number different with ERP Order Number [Chelsea] Put Transcation ID"
+    "hint": "Put Only when Customer Order Number different with ERP Order Number [Chelsea] Put Transcation ID",
+    "desc": "Put Only when Customer Order Number different with ERP Order Number",
+    "guide": "[Chelsea] Put Transcation ID",
+    "sample": "",
+    "spec_seq": "16",
+    "spec_type": "Varchar (50)",
+    "pos": "GlobalTxnID"
    },
    {
     "name": "POSNumber",
@@ -331,7 +418,13 @@
     "max": "15",
     "required": true,
     "lov": "",
-    "hint": "POS Number"
+    "hint": "POS Number",
+    "desc": "POS Number",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "17",
+    "spec_type": "Varchar (15)",
+    "pos": "TillID"
    },
    {
     "name": "CashierNumber",
@@ -344,7 +437,13 @@
     "max": "20",
     "required": false,
     "lov": "",
-    "hint": "Extension for EU"
+    "hint": "Extension for EU",
+    "desc": "Extension for EU",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "18",
+    "spec_type": "Varchar (20)",
+    "pos": "OperatorID"
    },
    {
     "name": "SellerNumber",
@@ -357,7 +456,12 @@
     "max": "20",
     "required": false,
     "lov": "",
-    "hint": "Extension for EU [Chelsea, 20111010] Put \"\""
+    "hint": "Extension for EU [Chelsea, 20111010] Put \"\"",
+    "desc": "Extension for EU",
+    "guide": "空值 ⏎ [Chelsea, 20111010] Put \"\"",
+    "sample": "(null)",
+    "spec_seq": "19",
+    "spec_type": "Varchar (20)"
    },
    {
     "name": "CardNumber",
@@ -370,7 +474,13 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Member Card Number [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\""
+    "hint": "Member Card Number [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\"",
+    "desc": "Member Card Number",
+    "guide": "保留 991的会员卡号 ⏎ [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\"",
+    "sample": "Card Number",
+    "spec_seq": "20",
+    "spec_type": "Varchar (30)",
+    "pos": "99111000096611"
    },
    {
     "name": "PointsEarned",
@@ -383,7 +493,13 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Reserved for LOY Txn conversion [Chelsea, 20111205] Total Points Earned [Chelsea, 20111010] For members, put points earned. For non-members, put \"\" [Chelsea, 20111205] For members, put total points earned i.e. base points + bonus points. For non-members, put \""
+    "hint": "Reserved for LOY Txn conversion [Chelsea, 20111205] Total Points Earned [Chelsea, 20111010] For members, put points earned. For non-members, put \"\" [Chelsea, 20111205] For members, put total points earned i.e. base points + bonus points. For non-members, put \"",
+    "desc": "Reserved for LOY Txn conversion ⏎ [Chelsea, 20111205] Total Points Earned",
+    "guide": "[Chelsea, 20111010] For members, put points earned. For non-members, put \"\" ⏎ [Chelsea, 20111205] For members, put total points earned i.e. base points + bonus points. For non-members, put \"\"",
+    "sample": "",
+    "spec_seq": "21",
+    "spec_type": "Number (22)",
+    "pos": "Earned"
    },
    {
     "name": "BonusPointsEarned",
@@ -395,8 +511,13 @@
     "type": "number",
     "max": "22",
     "required": false,
-    "lov": "",
-    "hint": "Reserved for LOY Txn conversion [Chelsea, 20111205] Bonus Points Earned [Chelsea, 20111010] Put \"\" [Chelsea, 20111205] For members, put bonus points earned i.e. bonus points. For non-members, put \"\""
+    "lov": "Reserved for LOY Txn conversion ⏎ [Chelsea, 20111205] Bonus Points Earned",
+    "hint": "Reserved for LOY Txn conversion [Chelsea, 20111205] Bonus Points Earned [Chelsea, 20111010] Put \"\" [Chelsea, 20111205] For members, put bonus points earned i.e. bonus points. For non-members, put \"\"",
+    "desc": "",
+    "guide": "等待GIT回复该列填写0或是空 ⏎ [Chelsea, 20111010] Put \"\" ⏎ [Chelsea, 20111205] For members, put bonus points earned i.e. bonus points. For non-members, put \"\"",
+    "sample": "",
+    "spec_seq": "22",
+    "spec_type": "Number (22)"
    },
    {
     "name": "PointsRedeemed",
@@ -409,7 +530,13 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Reserved for LOY Txn conversion [Chelsea, 20111010] For members, put points earned. For non-members, put \"\""
+    "hint": "Reserved for LOY Txn conversion [Chelsea, 20111010] For members, put points earned. For non-members, put \"\"",
+    "desc": "Reserved for LOY Txn conversion",
+    "guide": "[Chelsea, 20111010] For members, put points earned. For non-members, put \"\"",
+    "sample": "",
+    "spec_seq": "23",
+    "spec_type": "Number (22)",
+    "pos": "Redeemed"
    },
    {
     "name": "OrderNumberForConversion",
@@ -423,7 +550,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no [Chelsea, 20110928] Put GlobalTrxId"
+    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no [Chelsea, 20110928] Put GlobalTrxId",
+    "desc": "Use in Data Conversion Only. ⏎ For China: Put the Global Transaction ID ⏎ For Euro: Concatenate the fields: ⏎ transaction date original || store || till || ticket no",
+    "guide": "[Chelsea, 20110928] Put GlobalTrxId",
+    "sample": "",
+    "spec_seq": "24",
+    "spec_type": "Number (30)"
    },
    {
     "name": "AmountOfRedemption",
@@ -436,7 +568,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "The total amount of redemption for the order [Chelsea, 20111212] Put total amount from points redemption"
+    "hint": "The total amount of redemption for the order [Chelsea, 20111212] Put total amount from points redemption",
+    "desc": "The total amount of redemption for the order",
+    "guide": "[Chelsea, 20111212] Put total amount from points redemption",
+    "sample": "",
+    "spec_seq": "25",
+    "spec_type": "Number (22)"
    },
    {
     "name": "TotalStaffDiscountAmount2",
@@ -449,7 +586,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "The total staff discount #2 amount in this order"
+    "hint": "The total staff discount #2 amount in this order",
+    "desc": "The total staff discount #2 amount in this order",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "26",
+    "spec_type": "Number (22)"
    },
    {
     "name": "InvoiceNumber",
@@ -462,7 +604,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Extension for WTCTW"
+    "hint": "Extension for WTCTW",
+    "desc": "Extension for WTCTW",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "27",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "AlternateMemberIdentification",
@@ -475,7 +622,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Extension for phase 2 WTCTW - if card number is not provide, daily batch will use the field as mobile number to identify Siebel member info."
+    "hint": "Extension for phase 2 WTCTW - if card number is not provide, daily batch will use the field as mobile number to identify Siebel member info.",
+    "desc": "Extension for phase 2 ⏎ WTCTW - if card number is not provide, daily batch will use the field as mobile number to identify Siebel member info.",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "28",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "ExternalTransactionKey",
@@ -488,7 +640,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Unique transaction key from external system"
+    "hint": "Unique transaction key from external system",
+    "desc": "Unique transaction key from external system",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "29",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "VoidExternalTransactionKey",
@@ -501,7 +658,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Unique transaction key to identify the ORIGINAL sales for doing the void transaction"
+    "hint": "Unique transaction key to identify the ORIGINAL sales for doing the void transaction",
+    "desc": "Unique transaction key to identify the ORIGINAL sales for doing the void transaction",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "30",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "XStfDiscntProcessFlg",
@@ -514,7 +676,12 @@
     "max": "1",
     "required": false,
     "lov": "",
-    "hint": "N (Default ‘N’)"
+    "hint": "N (Default ‘N’)",
+    "desc": "N (Default ‘N’)",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "31",
+    "spec_type": "Varchar (1)"
    },
    {
     "name": "SubClub1RedeemAMT",
@@ -527,7 +694,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem amount for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem amount for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem amount for SubClub 1",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "32",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub1RedeemPoint",
@@ -540,7 +712,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem point for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem point for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem point for SubClub 1",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "33",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub1Extra1",
@@ -553,7 +730,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 1 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub1Extra2",
@@ -566,7 +747,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 1. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 1 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub2RedeemAMT",
@@ -579,7 +764,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem amount for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem amount for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem amount for SubClub 2",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "34",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub2RedeemPoint",
@@ -592,7 +782,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem point for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem point for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem point for SubClub 2",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "35",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub2Extra1",
@@ -605,7 +800,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 2 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub2Extra2",
@@ -618,7 +817,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 2. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 2 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub3RedeemAMT",
@@ -631,7 +834,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem amount for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem amount for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem amount for SubClub 3",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "36",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub3RedeemPoint",
@@ -644,7 +852,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem point for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem point for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem point for SubClub 3",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "37",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub3Extra1",
@@ -657,7 +870,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 3 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub3Extra2",
@@ -670,7 +887,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 3. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 3 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub4RedeemAMT",
@@ -683,7 +904,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem amount for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem amount for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem amount for SubClub 4",
+    "guide": "[John, 20140703]  If this  SubClub not used, please fill in 0.",
+    "sample": "",
+    "spec_seq": "38",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub4RedeemPoint",
@@ -696,7 +922,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem point for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem point for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem point for SubClub 4",
+    "guide": "[John, 20140703]  If this  SubClub not used, please fill in 0.",
+    "sample": "",
+    "spec_seq": "39",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub4Extra1",
@@ -709,7 +940,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 4 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub4Extra2",
@@ -722,7 +957,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 4. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 4 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub5RedeemAMT",
@@ -735,7 +974,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem amount for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem amount for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem amount for SubClub 5",
+    "guide": "[John, 20140703]  If this  SubClub not used, please fill in 0.",
+    "sample": "",
+    "spec_seq": "40",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub5RedeemPoint",
@@ -748,7 +992,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem point for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem point for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem point for SubClub 5",
+    "guide": "[John, 20140703]  If this  SubClub not used, please fill in 0.",
+    "sample": "",
+    "spec_seq": "41",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub5Extra1",
@@ -761,7 +1010,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 5 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub5Extra2",
@@ -774,7 +1027,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 5. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 5 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub6RedeemAMT",
@@ -787,7 +1044,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem amount for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem amount for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem amount for SubClub 6",
+    "guide": "[John, 20140703]  If this  SubClub not used, please fill in 0.",
+    "sample": "",
+    "spec_seq": "42",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub6RedeemPoint",
@@ -800,7 +1062,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem point for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem point for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "The redeem point for SubClub 6",
+    "guide": "[John, 20140703]  If this  SubClub not used, please fill in 0.",
+    "sample": "",
+    "spec_seq": "42",
+    "spec_type": "Number ((22,2))"
    },
    {
     "name": "SubClub6Extra1",
@@ -813,7 +1080,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 6 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    },
    {
     "name": "SubClub6Extra2",
@@ -826,7 +1097,11 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "The redeem value for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample."
+    "hint": "The redeem value for SubClub 6. Spec v1.3 lists two columns per SubClub; the sample file has four — if a SubClub is not used fill 0 / leave as the sample.",
+    "desc": "Not in spec v1.3 (two columns per SubClub); present in every sample file as the 3rd / 4th SubClub 6 column — keep the sample value.",
+    "guide": "[John, 20140703] If this SubClub is not used, fill in 0.",
+    "sample": "",
+    "spec_seq": ""
    }
   ],
   "ORDER_PAYMENT": [
@@ -841,7 +1116,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Member Card Number"
+    "hint": "Member Card Number",
+    "desc": "Member Card Number",
+    "guide": "保留 991的会员卡号 ⏎ [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\". E.g. 99111000096611",
+    "sample": "Card Number",
+    "spec_seq": "1",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "CustomerOrderDate",
@@ -854,7 +1134,12 @@
     "max": "19",
     "required": true,
     "lov": "",
-    "hint": ""
+    "hint": "",
+    "desc": "",
+    "guide": "[Chelsea, 20110921] Put TransactionDate ⏎ Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "sample": "",
+    "spec_seq": "2",
+    "spec_type": "UTC ⏎ Date Time (19)"
    },
    {
     "name": "StoreID",
@@ -867,7 +1152,12 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "Store ID"
+    "hint": "Store ID",
+    "desc": "Store ID",
+    "guide": "[Chelsea,20110921] Put Store_Id ⏎ where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "sample": "",
+    "spec_seq": "3",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "POSNumber",
@@ -880,7 +1170,12 @@
     "max": "15",
     "required": true,
     "lov": "",
-    "hint": "POS Number"
+    "hint": "POS Number",
+    "desc": "POS Number",
+    "guide": "[Chelsea,20110921] Put TillID",
+    "sample": "",
+    "spec_seq": "4",
+    "spec_type": "Varchar (15)"
    },
    {
     "name": "CustomerOrderNumber",
@@ -893,7 +1188,12 @@
     "max": "50",
     "required": true,
     "lov": "",
-    "hint": "Put Only when Customer Order Number different with ERP Order Number"
+    "hint": "Put Only when Customer Order Number different with ERP Order Number",
+    "desc": "Put Only when Customer Order Number different with ERP Order Number",
+    "guide": "[Chelsea, 20110921] Put Transcation ID",
+    "sample": "",
+    "spec_seq": "5",
+    "spec_type": "Varchar (50)"
    },
    {
     "name": "ERPOrderNumber",
@@ -906,7 +1206,12 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "The ERP Order Number"
+    "hint": "The ERP Order Number",
+    "desc": "The ERP Order Number",
+    "guide": "[Chelsea, 20111010] Put GlobalTrxID",
+    "sample": "",
+    "spec_seq": "6",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "OrganizationBUName",
@@ -919,7 +1224,12 @@
     "max": "100",
     "required": true,
     "lov": "",
-    "hint": ""
+    "hint": "",
+    "desc": "",
+    "guide": "[Chelsea, 20111012] Put \"WTCCN\". Put in configuration file.",
+    "sample": "\"MBHK\"",
+    "spec_seq": "7",
+    "spec_type": "Varchar (100)"
    },
    {
     "name": "PaymentMethod",
@@ -932,7 +1242,12 @@
     "max": "30",
     "required": false,
     "lov": "PAYMENT_METHOD_CODE",
-    "hint": "Payment Method refer to the LOV. Cash, Credit Card, Direct Debit, Stored Value, Coupon"
+    "hint": "Payment Method refer to the LOV. Cash, Credit Card, Direct Debit, Stored Value, Coupon",
+    "desc": "Payment Method refer to the LOV. ⏎ Cash, Credit Card, Direct Debit, Stored Value, Coupon",
+    "guide": "[Chelsea, 20110921] Refer to the mapping in Row 15",
+    "sample": "",
+    "spec_seq": "8",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "SequenceNumber",
@@ -945,7 +1260,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "For each Order Header, put a sequence number for each payment methods starting from 1."
+    "hint": "For each Order Header, put a sequence number for each payment methods starting from 1.",
+    "desc": "For each Order Header, put a sequence number for each payment methods starting from 1.",
+    "guide": "[Chelsea, 20110921] Generate sequence number starting from 1. Unique for each payment in the order",
+    "sample": "",
+    "spec_seq": "9",
+    "spec_type": "Number (22)"
    },
    {
     "name": "PaymentType",
@@ -958,7 +1278,12 @@
     "max": "30",
     "required": true,
     "lov": "PAYMENT_TYPE_CODE",
-    "hint": "Refer to Payment Type LOV"
+    "hint": "Refer to Payment Type LOV",
+    "desc": "Refer to Payment Type LOV",
+    "guide": "[Chelsea, 20110921] Refer to the mapping in Row 15",
+    "sample": "",
+    "spec_seq": "10",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "TransactionAmount",
@@ -971,7 +1296,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": ""
+    "hint": "",
+    "desc": "",
+    "guide": "[Chelsea, 20110921] For historical data records, multiple the amount by currency rate if payment is foreigh country dollar (e.g. USD, HKD)",
+    "sample": "",
+    "spec_seq": "11",
+    "spec_type": "Number (22)"
    },
    {
     "name": "OrderNumberForConversionLine",
@@ -985,7 +1315,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no"
+    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no",
+    "desc": "Use in Data Conversion Only. ⏎ For China: Put the Global Transaction ID ⏎ For Euro: Concatenate the fields: ⏎ transaction date original || store || till || ticket no",
+    "guide": "[Chelsea, 20110928] Put GlobalTrxId",
+    "sample": "",
+    "spec_seq": "12",
+    "spec_type": "Number (30)"
    }
   ],
   "ORDERITEMS": [
@@ -1000,7 +1335,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Member Card Number [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\". E.g. 99111000096611"
+    "hint": "Member Card Number [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\". E.g. 99111000096611",
+    "desc": "Member Card Number",
+    "guide": "保留 991的会员卡号 ⏎ [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\". E.g. 99111000096611",
+    "sample": "Card Number",
+    "spec_seq": "1",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "CustomerOrderDate",
@@ -1013,7 +1353,12 @@
     "max": "19",
     "required": true,
     "lov": "",
-    "hint": "[Chelsea, 20110921] Put TransactionDate Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function."
+    "hint": "[Chelsea, 20110921] Put TransactionDate Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "desc": "",
+    "guide": "[Chelsea, 20110921] Put TransactionDate ⏎ Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "sample": "",
+    "spec_seq": "2",
+    "spec_type": "UTC ⏎ Date Time (19)"
    },
    {
     "name": "StoreID",
@@ -1026,7 +1371,12 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "Store ID [Chelsea,20110921] Put Store_Id where Store_Id in ORGLOCDM.LOC_IDNT in Retek"
+    "hint": "Store ID [Chelsea,20110921] Put Store_Id where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "desc": "Store ID",
+    "guide": "[Chelsea,20110921] Put Store_Id ⏎ where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "sample": "",
+    "spec_seq": "3",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "POSNumber",
@@ -1039,7 +1389,12 @@
     "max": "15",
     "required": true,
     "lov": "",
-    "hint": "POS Number [Chelsea,20110921] Put TillID"
+    "hint": "POS Number [Chelsea,20110921] Put TillID",
+    "desc": "POS Number",
+    "guide": "[Chelsea,20110921] Put TillID",
+    "sample": "",
+    "spec_seq": "4",
+    "spec_type": "Varchar (15)"
    },
    {
     "name": "CustomerOrderNumber",
@@ -1052,7 +1407,12 @@
     "max": "50",
     "required": true,
     "lov": "",
-    "hint": "Put Only when Customer Order Number different with ERP Order Number [Chelsea, 20110921] Put Transcation ID"
+    "hint": "Put Only when Customer Order Number different with ERP Order Number [Chelsea, 20110921] Put Transcation ID",
+    "desc": "Put Only when Customer Order Number different with ERP Order Number",
+    "guide": "[Chelsea, 20110921] Put Transcation ID",
+    "sample": "",
+    "spec_seq": "5",
+    "spec_type": "Varchar (50)"
    },
    {
     "name": "ERPOrderNumber",
@@ -1065,7 +1425,12 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "The ERP Order Number [Chelsea, 20111010] Put GlobalTrxID"
+    "hint": "The ERP Order Number [Chelsea, 20111010] Put GlobalTrxID",
+    "desc": "The ERP Order Number",
+    "guide": "[Chelsea, 20111010] Put GlobalTrxID",
+    "sample": "",
+    "spec_seq": "6",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "OrganizationBUName",
@@ -1078,7 +1443,13 @@
     "max": "100",
     "required": true,
     "lov": "",
-    "hint": "[Chelsea, 20111012] Put \"WTCCN\". Put in configuration file."
+    "hint": "[Chelsea, 20111012] Put \"WTCCN\". Put in configuration file.",
+    "desc": "",
+    "guide": "默认值，需要填写在config文件中方便修改 ⏎ [Chelsea, 20111012] Put \"WTCCN\". Put in configuration file.",
+    "sample": "\"MBHK\"",
+    "spec_seq": "7",
+    "spec_type": "Varchar (100)",
+    "pos": "WTCCN"
    },
    {
     "name": "ProductSKU",
@@ -1091,7 +1462,13 @@
     "max": "100",
     "required": true,
     "lov": "",
-    "hint": "The Product SKU"
+    "hint": "The Product SKU",
+    "desc": "The Product SKU",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "8",
+    "spec_type": "Varchar (100)",
+    "pos": "Barcode"
    },
    {
     "name": "OrderLineNumber",
@@ -1104,7 +1481,12 @@
     "max": "22",
     "required": true,
     "lov": "",
-    "hint": "Sequence number for each item in this order. 每张小票中自动生成的流水号，不能重复"
+    "hint": "Sequence number for each item in this order. 每张小票中自动生成的流水号，不能重复",
+    "desc": "Sequence number for each item in this order.",
+    "guide": "每张小票中自动生成的流水号，不能重复",
+    "sample": "",
+    "spec_seq": "9",
+    "spec_type": "Number (22)"
    },
    {
     "name": "QuantityReceived",
@@ -1117,7 +1499,13 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Quantity for this item in the order [Chelsea] Need to review after receiving samples from Paul"
+    "hint": "Quantity for this item in the order [Chelsea] Need to review after receiving samples from Paul",
+    "desc": "Quantity for this item in the order",
+    "guide": "必须为正数，GIT需要确认如果销售为0，是否还需要产生该记录 ⏎ [Chelsea] Need to review after receiving samples from Paul",
+    "sample": "",
+    "spec_seq": "10",
+    "spec_type": "Number (22)",
+    "pos": "Quantity"
    },
    {
     "name": "CustomersOrderNumber",
@@ -1130,7 +1518,12 @@
     "max": "50",
     "required": false,
     "lov": "",
-    "hint": "Customer's Order Number. [Chelsea,20111010] Put \"\""
+    "hint": "Customer's Order Number. [Chelsea,20111010] Put \"\"",
+    "desc": "Customer's Order Number.",
+    "guide": "[Chelsea,20111010] Put \"\"",
+    "sample": "",
+    "spec_seq": "11",
+    "spec_type": "Varchar (50)"
    },
    {
     "name": "DescriptiveText",
@@ -1143,7 +1536,12 @@
     "max": "250",
     "required": false,
     "lov": "",
-    "hint": "[Chelsea,20111010] Put \"\""
+    "hint": "[Chelsea,20111010] Put \"\"",
+    "desc": "",
+    "guide": "空值 ⏎ [Chelsea,20111010] Put \"\"",
+    "sample": "(null)",
+    "spec_seq": "12",
+    "spec_type": "Varchar (250)"
    },
    {
     "name": "DiscountAmount",
@@ -1156,7 +1554,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "The amount to be discounted for each unit >=0 [Chelsea, 20111010] Total discount amount should be put in colum \"Spread Discount Amount. Put \"\" here."
+    "hint": "The amount to be discounted for each unit >=0 [Chelsea, 20111010] Total discount amount should be put in colum \"Spread Discount Amount. Put \"\" here.",
+    "desc": "The amount to be discounted for each unit >=0",
+    "guide": "[Chelsea, 20111010] Total discount amount should be put in colum \"Spread Discount Amount. Put \"\" here.",
+    "sample": "(null)",
+    "spec_seq": "13",
+    "spec_type": "Number (22)"
    },
    {
     "name": "DiscountMethod",
@@ -1169,7 +1572,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "The discount method [Chelsea,20111010] Put \"\""
+    "hint": "The discount method [Chelsea,20111010] Put \"\"",
+    "desc": "The discount method",
+    "guide": "[Chelsea,20111010] Put \"\"",
+    "sample": "(null)",
+    "spec_seq": "14",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "DiscountPercentage",
@@ -1182,7 +1590,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Discount Percentage for each unit [Chelsea, 20111010] As discount percentage has converted to amount, i.e. Put \"\""
+    "hint": "Discount Percentage for each unit [Chelsea, 20111010] As discount percentage has converted to amount, i.e. Put \"\"",
+    "desc": "Discount Percentage for each unit",
+    "guide": "需要计算，如果打9折，就填写10% ⏎ [Chelsea, 20111010] As discount percentage has converted to amount, i.e. Put \"\"",
+    "sample": "(null)",
+    "spec_seq": "15",
+    "spec_type": "Number (22)"
    },
    {
     "name": "DiscountSourceCode",
@@ -1195,7 +1608,13 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "Default value is \"Manual\" 默认值"
+    "hint": "Default value is \"Manual\" 默认值",
+    "desc": "Default value is \"Manual\"",
+    "guide": "默认值",
+    "sample": "Manual",
+    "spec_seq": "16",
+    "spec_type": "Varchar (30)",
+    "pos": "Manual"
    },
    {
     "name": "NetPrice",
@@ -1208,7 +1627,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "The item net price. [Chelsea, 20111212] Net price including the prorated amount from points redemption for the order item. 用户付款金额，用户退货这里应该负数"
+    "hint": "The item net price. [Chelsea, 20111212] Net price including the prorated amount from points redemption for the order item. 用户付款金额，用户退货这里应该负数",
+    "desc": "The item net price. ⏎ [Chelsea, 20111212] Net price including the prorated amount from points redemption for the order item.",
+    "guide": "用户付款金额，用户退货这里应该负数",
+    "sample": "",
+    "spec_seq": "17",
+    "spec_type": "Number (22)"
    },
    {
     "name": "ProductOptionValueCode",
@@ -1221,7 +1645,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Put EAN code when applicable [Chelsea, 20110920] Put Coupon code if product is coupon"
+    "hint": "Put EAN code when applicable [Chelsea, 20110920] Put Coupon code if product is coupon",
+    "desc": "Put EAN code when applicable",
+    "guide": "空值 ⏎ [Chelsea, 20110920] Put Coupon code if product is coupon",
+    "sample": "(null)",
+    "spec_seq": "18",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "QuantityCancelled",
@@ -1234,7 +1663,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "退货的数量，不能为负数"
+    "hint": "退货的数量，不能为负数",
+    "desc": "",
+    "guide": "退货的数量，不能为负数",
+    "sample": "",
+    "spec_seq": "19",
+    "spec_type": "Number (22)"
    },
    {
     "name": "SpreadDiscountAmount",
@@ -1247,7 +1681,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Line Discount Amount [Chelsea, 20110928] Put total discount amount for that line"
+    "hint": "Line Discount Amount [Chelsea, 20110928] Put total discount amount for that line",
+    "desc": "Line Discount Amount",
+    "guide": "空值 ⏎ [Chelsea, 20110928] Put total discount amount for that line",
+    "sample": "",
+    "spec_seq": "20",
+    "spec_type": "Number (22)"
    },
    {
     "name": "UnitPrice",
@@ -1260,7 +1699,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Unit Price Overwrite 单个货品的付款金额"
+    "hint": "Unit Price Overwrite 单个货品的付款金额",
+    "desc": "Unit Price Overwrite",
+    "guide": "单个货品的付款金额",
+    "sample": "",
+    "spec_seq": "21",
+    "spec_type": "Number (22)"
    },
    {
     "name": "ItemPointsEarned",
@@ -1273,7 +1717,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "[Chelsea, 20111205] Total Points earned from Retalix [Chelsea, 20120117] Put \"\""
+    "hint": "[Chelsea, 20111205] Total Points earned from Retalix [Chelsea, 20120117] Put \"\"",
+    "desc": "[Chelsea, 20111205] Total Points earned from Retalix",
+    "guide": "[Chelsea, 20120117] Put \"\"",
+    "sample": "(null)",
+    "spec_seq": "22",
+    "spec_type": "Number (22)"
    },
    {
     "name": "ItemBonusPointsEarned",
@@ -1286,7 +1735,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Bonus Points earned from Retalix [Chelsea, 20120117] Put bonus point for the order item"
+    "hint": "Bonus Points earned from Retalix [Chelsea, 20120117] Put bonus point for the order item",
+    "desc": "Bonus Points earned from Retalix",
+    "guide": "[Chelsea, 20120117] Put bonus point for the order item",
+    "sample": "(null)",
+    "spec_seq": "23",
+    "spec_type": "Number (22)"
    },
    {
     "name": "ItemPointsRedeemed",
@@ -1299,7 +1753,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Points redeem from Retalix [Chelsea, 20120117] Put points redeemed for the order item"
+    "hint": "Points redeem from Retalix [Chelsea, 20120117] Put points redeemed for the order item",
+    "desc": "Points redeem from Retalix",
+    "guide": "因为积分是by ticket level的,需要GIT确认是否需要by item level ⏎ [Chelsea, 20120117] Put points redeemed for the order item",
+    "sample": "(null)",
+    "spec_seq": "24",
+    "spec_type": "Number (22)"
    },
    {
     "name": "OrderNumberForConversionLine",
@@ -1313,7 +1772,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no [Chelsea, 20110928] Put GlobalTrxId"
+    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no [Chelsea, 20110928] Put GlobalTrxId",
+    "desc": "Use in Data Conversion Only. ⏎ For China: Put the Global Transaction ID ⏎ For Euro: Concatenate the fields: ⏎ transaction date original || store || till || ticket no",
+    "guide": "[Chelsea, 20110928] Put GlobalTrxId",
+    "sample": "",
+    "spec_seq": "25",
+    "spec_type": "Number (30)"
    },
    {
     "name": "ItemAmountOfRedemption",
@@ -1326,7 +1790,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "The amount of redemption for the order item [Chelsea, 20111212] Put prorated amount from points redemption for the order item [Chelsea, 20111212] Put prorated amount from points redemption for the order item"
+    "hint": "The amount of redemption for the order item [Chelsea, 20111212] Put prorated amount from points redemption for the order item [Chelsea, 20111212] Put prorated amount from points redemption for the order item",
+    "desc": "The amount of redemption for the order item ⏎ [Chelsea, 20111212] Put prorated amount from points redemption for the order item",
+    "guide": "[Chelsea, 20111212] Put prorated amount from points redemption for the order item",
+    "sample": "(null)",
+    "spec_seq": "26",
+    "spec_type": "Number (22)"
    },
    {
     "name": "AmountOfStaffDiscount",
@@ -1339,7 +1808,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Staff discount amount on this line"
+    "hint": "Staff discount amount on this line",
+    "desc": "Staff discount amount on this line",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "27",
+    "spec_type": "Number (22)"
    },
    {
     "name": "AmountOfStaffDiscount2",
@@ -1352,7 +1826,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Staff discount 2 amount on this line"
+    "hint": "Staff discount 2 amount on this line",
+    "desc": "Staff discount 2 amount on this line",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "28",
+    "spec_type": "Number (22)"
    },
    {
     "name": "AmountOfTax",
@@ -1365,7 +1844,12 @@
     "max": "22",
     "required": false,
     "lov": "",
-    "hint": "Amount of tax on this line"
+    "hint": "Amount of tax on this line",
+    "desc": "Amount of tax on this line",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "29",
+    "spec_type": "Number (22)"
    }
   ],
   "ORDERITEMS_PROMOTION": [
@@ -1380,7 +1864,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Member Card Number"
+    "hint": "Member Card Number",
+    "desc": "Member Card Number",
+    "guide": "保留 991的会员卡号 ⏎ [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\". E.g. 99111000096611",
+    "sample": "Card Number",
+    "spec_seq": "1",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "CustomerOrderDate",
@@ -1393,7 +1882,12 @@
     "max": "19",
     "required": false,
     "lov": "",
-    "hint": ""
+    "hint": "",
+    "desc": "",
+    "guide": "[Chelsea, 20110921] Put TransactionDate ⏎ Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "sample": "",
+    "spec_seq": "2",
+    "spec_type": "UTC ⏎ Date Time (19)"
    },
    {
     "name": "StoreID",
@@ -1406,7 +1900,12 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "Store ID"
+    "hint": "Store ID",
+    "desc": "Store ID",
+    "guide": "[Chelsea,20110921] Put Store_Id ⏎ where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "sample": "",
+    "spec_seq": "3",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "POSNumber",
@@ -1419,7 +1918,12 @@
     "max": "15",
     "required": true,
     "lov": "",
-    "hint": "POS Number"
+    "hint": "POS Number",
+    "desc": "POS Number",
+    "guide": "[Chelsea,20110921] Put TillID",
+    "sample": "",
+    "spec_seq": "4",
+    "spec_type": "Varchar (15)"
    },
    {
     "name": "CustomerOrderNumber",
@@ -1432,7 +1936,12 @@
     "max": "50",
     "required": true,
     "lov": "",
-    "hint": "Put Only when Customer Order Number different with ERP Order Number"
+    "hint": "Put Only when Customer Order Number different with ERP Order Number",
+    "desc": "Put Only when Customer Order Number different with ERP Order Number",
+    "guide": "[Chelsea, 20110921] Put Transcation ID",
+    "sample": "",
+    "spec_seq": "5",
+    "spec_type": "Varchar (50)"
    },
    {
     "name": "ERPOrderNumber",
@@ -1445,7 +1954,12 @@
     "max": "30",
     "required": true,
     "lov": "",
-    "hint": "The ERP Order Number"
+    "hint": "The ERP Order Number",
+    "desc": "The ERP Order Number",
+    "guide": "[Chelsea, 20111010] Put GlobalTrxID",
+    "sample": "",
+    "spec_seq": "6",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "OrganizationBUName",
@@ -1458,7 +1972,12 @@
     "max": "100",
     "required": true,
     "lov": "",
-    "hint": "Organization Name for Order"
+    "hint": "Organization Name for Order",
+    "desc": "Organization Name for Order",
+    "guide": "[Chelsea, 20111012] Put \"WTCCN\". Put in configuration file.",
+    "sample": "\"MBHK\"",
+    "spec_seq": "7",
+    "spec_type": "Varchar (100)"
    },
    {
     "name": "OrderLineNumber",
@@ -1471,7 +1990,12 @@
     "max": "22",
     "required": true,
     "lov": "",
-    "hint": "Sequence number for the relevant item in the order. This is the compound key to join with Order Item"
+    "hint": "Sequence number for the relevant item in the order. This is the compound key to join with Order Item",
+    "desc": "Sequence number for the relevant item in the order. This is the compound key to join with Order Item",
+    "guide": "[Chelsea, 20110921] Generate sequence number starting from 1. Unique for each promotion ID in Order Item. Should be same as that in \"Order Item\" interface file.",
+    "sample": "N/A",
+    "spec_seq": "8",
+    "spec_type": "Number (22)"
    },
    {
     "name": "Type",
@@ -1483,8 +2007,13 @@
     "type": "text",
     "max": "30",
     "required": true,
-    "lov": "",
-    "hint": "Always put \"PromotionID\""
+    "lov": "=PromotionID",
+    "hint": "Always put \"PromotionID\"",
+    "desc": "Always put \"PromotionID\"",
+    "guide": "[Chelsea, 20110921] Put \"PromotionID\"",
+    "sample": "N/A",
+    "spec_seq": "9",
+    "spec_type": "Varchar (30)"
    },
    {
     "name": "PromotionID",
@@ -1497,7 +2026,12 @@
     "max": "100",
     "required": true,
     "lov": "",
-    "hint": "Put the promotion id for the sales line"
+    "hint": "Put the promotion id for the sales line",
+    "desc": "Put the promotion id for the sales line",
+    "guide": "",
+    "sample": "N/A",
+    "spec_seq": "10",
+    "spec_type": "Varchar (100)"
    },
    {
     "name": "OrderNumberForConversionLine",
@@ -1511,7 +2045,12 @@
     "max": "30",
     "required": false,
     "lov": "",
-    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no"
+    "hint": "Use in Data Conversion Only. For China: Put the Global Transaction ID For Euro: Concatenate the fields: transaction date original || store || till || ticket no",
+    "desc": "Use in Data Conversion Only. ⏎ For China: Put the Global Transaction ID ⏎ For Euro: Concatenate the fields: ⏎ transaction date original || store || till || ticket no",
+    "guide": "[Chelsea, 20110928] Put GlobalTrxId",
+    "sample": "",
+    "spec_seq": "11",
+    "spec_type": "Number (30)"
    },
    {
     "name": "BonusPoint",
@@ -1524,7 +2063,12 @@
     "max": "",
     "required": false,
     "lov": "",
-    "hint": "For Retalix calculated Item Bonus Point"
+    "hint": "For Retalix calculated Item Bonus Point",
+    "desc": "For Retalix calculated Item Bonus Point",
+    "guide": "",
+    "sample": "",
+    "spec_seq": "12",
+    "spec_type": ""
    },
    {
     "name": "PromoExtra1",
@@ -1552,7 +2096,513 @@
     "lov": "",
     "hint": ""
    }
+  ],
+  "ORDER_XM": [
+   {
+    "name": "CardNumber",
+    "label": "Card Number",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "ClubCard",
+    "type": "text",
+    "max": "30",
+    "required": false,
+    "lov": "",
+    "hint": "Member Card Number",
+    "desc": "Member Card Number",
+    "guide": "保留 991的会员卡号 ⏎ [Chelsea, 20111010] For members, put card number(With 991). For non-members, put \"\". E.g. 99111000096611",
+    "sample": "Card Number",
+    "spec_seq": "1",
+    "spec_type": "Varchar (30)"
+   },
+   {
+    "name": "CustomerOrderDate",
+    "label": "Customer Order Date",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "StartDateTime",
+    "type": "datetime",
+    "max": "19",
+    "required": true,
+    "lov": "",
+    "hint": "",
+    "desc": "",
+    "guide": "[Chelsea, 20110921] Put TransactionDate ⏎ Convert to UTC Date Time i.e. China time - 8 hours. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+    "sample": "",
+    "spec_seq": "2",
+    "spec_type": "UTC ⏎ Date Time (19)"
+   },
+   {
+    "name": "StoreID",
+    "label": "Store ID",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "StoreID",
+    "type": "text",
+    "max": "30",
+    "required": true,
+    "lov": "",
+    "hint": "Store ID",
+    "desc": "Store ID",
+    "guide": "[Chelsea,20110921] Put Store_Id ⏎ where Store_Id in ORGLOCDM.LOC_IDNT in Retek",
+    "sample": "",
+    "spec_seq": "3",
+    "spec_type": "Varchar (30)"
+   },
+   {
+    "name": "POSNumber",
+    "label": "POS Number",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "TillID",
+    "type": "text",
+    "max": "15",
+    "required": true,
+    "lov": "",
+    "hint": "POS Number",
+    "desc": "POS Number",
+    "guide": "[Chelsea,20110921] Put TillID",
+    "sample": "",
+    "spec_seq": "4",
+    "spec_type": "Varchar (15)"
+   },
+   {
+    "name": "CustomerOrderNumber",
+    "label": "Customer Order Number",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "TransactionNumber",
+    "type": "text",
+    "max": "50",
+    "required": true,
+    "lov": "",
+    "hint": "Put Only when Customer Order Number different with ERP Order Number",
+    "desc": "Put Only when Customer Order Number different with ERP Order Number",
+    "guide": "[Chelsea, 20110921] Put Transcation ID",
+    "sample": "",
+    "spec_seq": "5",
+    "spec_type": "Varchar (50)"
+   },
+   {
+    "name": "ERPOrderNumber",
+    "label": "ERP Order Number",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "TransactionNumber",
+    "type": "text",
+    "max": "30",
+    "required": true,
+    "lov": "",
+    "hint": "The ERP Order Number",
+    "desc": "The ERP Order Number",
+    "guide": "[Chelsea, 20111010] Put GlobalTrxID",
+    "sample": "",
+    "spec_seq": "6",
+    "spec_type": "Varchar (30)"
+   },
+   {
+    "name": "OrganizationBUName",
+    "label": "Organization (BU) Name",
+    "default": "",
+    "format": "",
+    "auto": "bu",
+    "msg5": "",
+    "type": "text",
+    "max": "100",
+    "required": true,
+    "lov": "",
+    "hint": "",
+    "desc": "Organization Name for Order",
+    "guide": "[Chelsea, 20111012] Put \"WTCCN\". Put in configuration file.",
+    "sample": "\"MBHK\"",
+    "spec_seq": "7",
+    "spec_type": "Varchar (100)"
+   },
+   {
+    "name": "Type",
+    "label": "Type",
+    "default": "Account",
+    "format": "",
+    "auto": "",
+    "msg5": "",
+    "type": "text",
+    "max": "30",
+    "required": true,
+    "lov": "=Account",
+    "hint": "Always put \"Account\"",
+    "desc": "Always put \"Account\"",
+    "guide": "[Chelsea, 20110921] Put \"PromotionID\"",
+    "sample": "Account",
+    "spec_seq": "8",
+    "spec_type": "Varchar (30)"
+   },
+   {
+    "name": "AccountID",
+    "label": "Account ID",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "",
+    "type": "text",
+    "max": "100",
+    "required": true,
+    "lov": "",
+    "hint": "TSR and Lucky Draw Account ID (e.g. 1001)",
+    "desc": "Put TSR and Lucky Draw Account ID",
+    "guide": "",
+    "sample": "(e.g. 1001)",
+    "spec_seq": "9",
+    "spec_type": "Varchar (100)"
+   },
+   {
+    "name": "AccountValue",
+    "label": "Account Value",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "",
+    "type": "number",
+    "max": "22",
+    "required": true,
+    "lov": "",
+    "hint": "TSR spending value or Lucky Draw quota (e.g. 20) — Attrib_14",
+    "desc": "Put TSR (Spending value) or Lucky Draw (Quota)",
+    "guide": "",
+    "sample": "(e.g. 20) Attrib_14",
+    "spec_seq": "10",
+    "spec_type": " (22)"
+   },
+   {
+    "name": "OrderNumberForConversionLine",
+    "label": "Order Number for Conversion",
+    "default": "",
+    "format": "",
+    "auto": "txnref",
+    "msg5": "",
+    "type": "number",
+    "max": "30",
+    "required": false,
+    "lov": "",
+    "hint": "Use in Data Conversion Only — same reference as the other line files",
+    "ref": "07",
+    "desc": "Use in Data Conversion Only. ⏎ For China: Put the Global Transaction ID ⏎ For Euro: Concatenate the fields: ⏎ transaction date original || store || till || ticket no",
+    "guide": "[Chelsea, 20110928] Put GlobalTrxId",
+    "sample": "",
+    "spec_seq": "11",
+    "spec_type": "Number (30)"
+   },
+   {
+    "name": "AccountValueRedeem",
+    "label": "Account Value (Redeem)",
+    "default": "",
+    "format": "",
+    "auto": "",
+    "msg5": "",
+    "type": "number",
+    "max": "22",
+    "required": true,
+    "lov": "",
+    "hint": "Account value for limit offer (redeem) — Attrib_15",
+    "desc": "Put account value for limit offer (redeem)",
+    "guide": "",
+    "sample": "Attrib_15",
+    "spec_seq": "12",
+    "spec_type": " (22)"
+   }
   ]
  },
- "source": "RetailHK - Sales_Transactions v1.3.xlsx (field names, types, lengths, LOVs); column order and defaults from the WWHK sample set"
+ "source": "RetailHK - Sales_Transactions v1.3.xlsx (sheets Order, Order XM, Order Items, Order Payment, Order Items Promotions, Ref-LOV, Ref-Format); column order and defaults from the WWHK / WTCID sample sets",
+ "payment_maps": [
+  {
+   "key": "WTCTW",
+   "title": "WTCTW POS → Siebel",
+   "rows": [
+    {
+     "label": "pay_cash · 現金付款",
+     "method": "Cash",
+     "type": "Payment"
+    },
+    {
+     "label": "pay_card · 信用卡付款",
+     "method": "Credit Card",
+     "type": "Payment"
+    },
+    {
+     "label": "pay_easy · 悠遊卡付款",
+     "method": "Stored Value",
+     "type": "Payment"
+    },
+    {
+     "label": "pay_cupon · 禮券付款",
+     "method": "Voucher",
+     "type": "Payment"
+    },
+    {
+     "label": "pay_salecupon · 賣場禮券付款",
+     "method": "Coupon",
+     "type": "Payment"
+    },
+    {
+     "label": "pay_saleic · 賣場IC卡",
+     "method": "Stored Value",
+     "type": "Payment"
+    },
+    {
+     "label": "coupon2_pay · Voucher · excluded from points",
+     "method": "Voucher",
+     "type": "Payment"
+    },
+    {
+     "label": "pay_other · 其它付款",
+     "method": "Other",
+     "type": "Others"
+    },
+    {
+     "label": "pay_bonus · 紅利折抵 · excluded from points",
+     "method": "Point redemption",
+     "type": "Payment"
+    },
+    {
+     "label": "pay_bn · 寵i卡付款金 · excluded from points",
+     "method": "Point redemption",
+     "type": "Payment"
+    }
+   ]
+  },
+  {
+   "key": "WTCCN",
+   "title": "WTCCN Sales Center → Siebel",
+   "rows": [
+    {
+     "label": "Cash · 人民币",
+     "method": "Cash",
+     "type": "Payment"
+    },
+    {
+     "label": "Cash · 免收",
+     "method": "Cash",
+     "type": "Waived"
+    },
+    {
+     "label": "Check · 支票",
+     "method": "Check",
+     "type": "Payment"
+    },
+    {
+     "label": "General Tender · 国内卡",
+     "method": "Cash",
+     "type": "Bank Payment"
+    },
+    {
+     "label": "General Tender · 电子钱包",
+     "method": "Stored Value",
+     "type": "Mobile Phone"
+    },
+    {
+     "label": "General Tender · 充值卡",
+     "method": "Stored Value",
+     "type": "In-Store Credit"
+    },
+    {
+     "label": "General Tender · VISA",
+     "method": "Credit Card",
+     "type": "Visa"
+    },
+    {
+     "label": "General Tender · MASTER",
+     "method": "Credit Card",
+     "type": "MasterCard"
+    },
+    {
+     "label": "General Tender · AMEX",
+     "method": "Credit Card",
+     "type": "American Express"
+    },
+    {
+     "label": "General Tender · DINERS",
+     "method": "Credit Card",
+     "type": "Diners Club"
+    },
+    {
+     "label": "Generic credit card · JCB",
+     "method": "Credit Card",
+     "type": "JCB"
+    },
+    {
+     "label": "Store coupons · WATSON'S礼券",
+     "method": "Coupon",
+     "type": "C01"
+    },
+    {
+     "label": "Store coupons · 顾客调查礼券",
+     "method": "Coupon",
+     "type": "C02"
+    },
+    {
+     "label": "Store coupons · FUN享卡",
+     "method": "Stored Value",
+     "type": "Gift Certificate"
+    },
+    {
+     "label": "Vendor coupons · 其他礼券",
+     "method": "Coupon",
+     "type": "Others"
+    }
+   ]
+  },
+  {
+   "key": "COMMON",
+   "title": "Common pairs",
+   "rows": [
+    {
+     "label": "Cash",
+     "method": "Cash",
+     "type": "Payment"
+    },
+    {
+     "label": "Visa",
+     "method": "Credit Card",
+     "type": "Visa"
+    },
+    {
+     "label": "MasterCard",
+     "method": "Credit Card",
+     "type": "MasterCard"
+    },
+    {
+     "label": "American Express",
+     "method": "Credit Card",
+     "type": "American Express"
+    },
+    {
+     "label": "JCB",
+     "method": "Credit Card",
+     "type": "JCB"
+    },
+    {
+     "label": "UnionPay / bank card",
+     "method": "Cash",
+     "type": "Bank Payment"
+    },
+    {
+     "label": "Mobile wallet",
+     "method": "Stored Value",
+     "type": "Mobile Phone"
+    },
+    {
+     "label": "Stored value card",
+     "method": "Stored Value",
+     "type": "In-Store Credit"
+    },
+    {
+     "label": "Gift certificate",
+     "method": "Stored Value",
+     "type": "Gift Certificate"
+    },
+    {
+     "label": "Store coupon",
+     "method": "Coupon",
+     "type": "C01"
+    },
+    {
+     "label": "Voucher",
+     "method": "Voucher",
+     "type": "Payment"
+    },
+    {
+     "label": "Point redemption",
+     "method": "Point redemption",
+     "type": "Payment"
+    },
+    {
+     "label": "Other",
+     "method": "Other",
+     "type": "Others"
+    }
+   ]
+  }
+ ],
+ "format_notes": [
+  "This tab is reserved for special data format compliance.",
+  "Data Type - Character(1)",
+  "Value can be either 'Y' or 'N'",
+  "Data Type - Varchar",
+  "Any UTF8 character that fit in database column type \"varchar\"",
+  "Data Type - Number",
+  "Only numeric values are acceptable",
+  "Data Type: Date/Time",
+  "Siebel EIM adopts Oracle DATE format, which is fixed 7 bytes. Please provide formatted date/time strings as \"YYYY/MM/DD HH:MI:SS\" (19 bytes) to be converted by using TO_DATE() function.",
+  "Data Type: UTC Date Time",
+  "Same as \"Data Type: Date/Time\", except all date/time values should be converted to GMT time zone by proper hour offset before importing",
+  "Phone Format:",
+  "Phone number should be import with prefix \"+\" and country code, follow by area code, phone number, and extension (if applicable) without space, bracket or special characters."
+ ],
+ "cancel_order": {
+  "file": "CANCEL_ORDER_<BU>_<YYYYMMDD>.csv (name inferred — not in the sheet)",
+  "columns": [
+   {
+    "seq": "1",
+    "name": "ORD_ACCNT_ORDER_NUM",
+    "type": "Varchar",
+    "desc": "Ticket Number"
+   },
+   {
+    "seq": "2",
+    "name": "ORD_STORE_OU_NUM",
+    "type": "Varchar",
+    "desc": "Store Number"
+   },
+   {
+    "seq": "3",
+    "name": "ORD_CANCEL_DT",
+    "type": "Date",
+    "desc": "Cancel Date (Local Time-zone) in format yyyymmdd"
+   },
+   {
+    "seq": "4",
+    "name": "ORD_MEDIA_TYPE",
+    "type": "Varchar",
+    "desc": "Cancel Type"
+   },
+   {
+    "seq": "5",
+    "name": "ORD_CANCEL_PAY_AMT",
+    "type": "Number",
+    "desc": "Cancel Amount"
+   },
+   {
+    "seq": "6",
+    "name": "ORD_TOTAL_AMT",
+    "type": "Number",
+    "desc": "Total Amount"
+   },
+   {
+    "seq": "7",
+    "name": "ORD_ORDER_DT",
+    "type": "Date/ Time",
+    "desc": "Order Date-Time (Local Time-zone) in format yyyymmddhh24mi"
+   },
+   {
+    "seq": "8",
+    "name": "ORD_POS_NO",
+    "type": "Varchar",
+    "desc": "POS No (set to 1 for eStore)"
+   },
+   {
+    "seq": "9",
+    "name": "ORD_BU_NAME",
+    "type": "Varchar",
+    "desc": "Bu Name(Such as: WTCTW, WTCMY)"
+   }
+  ]
+ },
+ "optional_files": [
+  "ORDER_XM"
+ ]
 }

@@ -969,3 +969,17 @@ details.sub-fields > summary { cursor: pointer; font-size: 12px; color: var(--mu
 .ts-fmt-table td { white-space: normal; }
 .ts-fmt-add { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(220px, 2fr) auto auto auto; gap: 8px; align-items: center; }
 @media (max-width: 900px) { .ts-fmt-add { grid-template-columns: 1fr 1fr; } }
+
+/* ---- TLog CSV set: spec reference, payment picker, optional file block ---- */
+.spec-modal { width: min(1480px, 100%); }
+.spec-table { font-size: 12px; }
+.spec-table td.wrap { white-space: normal; min-width: 220px; max-width: 380px; }
+.spec-table td.nowrap { white-space: nowrap; }
+.spec-table td.center { text-align: center; }
+.spec-table tr.shared-row td { background: var(--tag-bg); }
+.spec-rules { margin: 4px 0 14px 18px; font-size: 13px; }
+.spec-rules li { margin-bottom: 4px; }
+.pay-pick { max-width: 150px; font-size: 12px; padding: 4px 6px; }
+.txn-sec-optional h3 { opacity: .75; }
+.issue-list li.info .sev { color: var(--accent); }
+.issue-list li.info { opacity: .85; }

@@ -24,8 +24,12 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "tlog"
 LAYOUT_FILE = DATA_DIR / "csv_layout.json"
 SETS_DIR = DATA_DIR / "sets"
 
-FILE_TYPES = ["ORDER", "ORDER_PAYMENT", "ORDERITEMS", "ORDERITEMS_PROMOTION"]
-CHILD_OF = {"ORDER_PAYMENT": "payments", "ORDERITEMS": "items", "ORDERITEMS_PROMOTION": "promotions"}
+FILE_TYPES = ["ORDER", "ORDER_PAYMENT", "ORDERITEMS", "ORDERITEMS_PROMOTION", "ORDER_XM"]
+# ORDER_XM (TSR / Lucky Draw account values) is part of the spec but only sent when a transaction has account lines
+OPTIONAL_FILES = ("ORDER_XM",)
+CHILD_OF = {"ORDER_PAYMENT": "payments", "ORDERITEMS": "items", "ORDERITEMS_PROMOTION": "promotions", "ORDER_XM": "accounts"}
+# per-column spec notes carried from tlog_spec.json (read-only in the layout editor)
+NOTE_KEYS = ("desc", "guide", "sample", "pos", "spec_seq", "spec_type")
 NAME_FORMAT = "{TYPE}_{BU}_{YYYYMMDD}_{SEQ}"
 FORMATS = ("", "dec3", "dec4", "dec9")
 # auto rules — every auto is a *suggestion*: it fills the cell when it is left blank; typed values win
@@ -46,6 +50,14 @@ def _spec_layout():
 DEFAULT_LAYOUT = _spec_layout()
 
 
+def _clean_lov(v):
+    """LOV name (PAYMENT_TYPE_CODE) or an inline fixed list ("=PromotionID", "=Y|N")."""
+    v = str(v or "").strip()
+    if v.startswith("="):
+        return "=" + "|".join(x.strip() for x in v[1:].split("|") if x.strip())
+    return re.sub(r"[^A-Z0-9_]", "", v.upper())
+
+
 def clean_col(c):
     if not isinstance(c, dict):
         return dict(E)
@@ -60,9 +72,12 @@ def clean_col(c):
         "type": c.get("type") if c.get("type") in TYPES else "text",
         "max": re.sub(r"\D", "", str(c.get("max", "")))[:4],
         "required": bool(c.get("required", False)),
-        "lov": re.sub(r"[^A-Z0-9_]", "", str(c.get("lov", "")).upper()),
+        "lov": _clean_lov(c.get("lov", "")),
         "hint": str(c.get("hint", ""))[:400],
     }
+    for k in NOTE_KEYS:
+        if c.get(k):
+            out[k] = str(c[k])[:600]
     ref = re.sub(r"[^0-9A-Za-z]", "", str(c.get("ref", "")).strip())
     if ref:
         out["ref"] = ref
@@ -82,6 +97,8 @@ def load_layout():
             lay["ref_base"] = str(saved["ref_base"])
         if isinstance(saved.get("bus"), list):
             lay["bus"] = [str(b).strip().upper() for b in saved["bus"] if str(b).strip()]
+        if isinstance(saved.get("payment_maps"), list):
+            lay["payment_maps"] = saved["payment_maps"]
         if isinstance(saved.get("lovs"), dict):
             lay["lovs"] = {k: [str(v) for v in vals] for k, vals in saved["lovs"].items() if isinstance(vals, list)}
         files = saved.get("files")
@@ -99,6 +116,7 @@ def save_layout(lay):
         "ref_base": str(lay.get("ref_base", "")),
         "bus": [str(b).strip().upper() for b in (lay.get("bus") or BUS) if str(b).strip()],
         "lovs": {k: [str(v) for v in vals] for k, vals in (lay.get("lovs") or DEFAULT_LAYOUT["lovs"]).items() if isinstance(vals, list)},
+        "payment_maps": lay.get("payment_maps") or DEFAULT_LAYOUT.get("payment_maps", []),
         "files": {ft: [clean_col(c) for c in (lay.get("files", {}).get(ft) or [])] for ft in FILE_TYPES},
     }
     LAYOUT_FILE.write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -200,11 +218,19 @@ def csv_bytes(rows):
     return text.encode("utf-8")
 
 
-def build_zip(lay, bu, date, seq, files):
-    """files: {ftype: [[cell, ...], ...]} -> zip bytes with 4 csv + 4 ok."""
+def zip_files(files, include=None):
+    """The file types that go into the zip: the 4 mandatory ones plus an
+    optional one (ORDER_XM) when it is asked for or has rows."""
+    include = set(include or ())
+    return [ft for ft in FILE_TYPES if ft not in OPTIONAL_FILES or ft in include or files.get(ft)]
+
+
+def build_zip(lay, bu, date, seq, files, include=None):
+    """files: {ftype: [[cell, ...], ...]} -> zip bytes with one csv + one
+    empty ok per file type (4 mandatory + ORDER_XM when used)."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        for ft in FILE_TYPES:
+        for ft in zip_files(files, include):
             z.writestr(file_name(lay, ft, bu, date, seq, "csv"), csv_bytes(files.get(ft) or []))
             z.writestr(file_name(lay, ft, bu, date, seq, "ok"), b"")
     buf.seek(0)
@@ -276,11 +302,11 @@ def import_set(lay, uploads):
         return tuple(d.get(n, "") for n in key_names)
     txns = []
     for o in orders:
-        t = {"order": o, "items": [], "payments": [], "promotions": []}
-        for kind in ("items", "payments", "promotions"):
+        t = {"order": o, **{kind: [] for kind in CHILD_OF.values()}}
+        for kind in CHILD_OF.values():
             t[kind] = [{k: v for k, v in c.items() if k not in shared} for c in children[kind] if key(c) == key(o)]
         txns.append(t)
-    matched = sum(len(t[k]) for t in txns for k in ("items", "payments", "promotions"))
+    matched = sum(len(t[k]) for t in txns for k in CHILD_OF.values())
     total = sum(len(v) for v in children.values())
     if matched < total:
         warnings.append(f"{total - matched} child rows did not match any ORDER row on {', '.join(key_names)}")

@@ -58,8 +58,11 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
   ORDER_PAYMENT / ORDERITEMS / ORDERITEMS_PROMOTION files on the
   Sales_Transactions v1.3 spec (`modules/tlog/tlog_spec.json`): shared
   fields, derived defaults, spec validation (required / formats /
-  lengths / LOVs), Msg5 fill, editable column layout and a zip of the
-  4 CSVs + 4 `.ok` files named `{TYPE}_{BU}_{YYYYMMDD}[_{SEQ}]`.
+  lengths / LOVs and the spec's business rules), Msg5 fill, a tender
+  picker from the payment mapping tables, the optional ORDER_XM file,
+  a 📖 Spec reference panel with every field's comments and mapping
+  notes, editable column layout and a zip of the CSVs + `.ok` files
+  named `{TYPE}_{BU}_{YYYYMMDD}[_{SEQ}]`.
 - **Timestamp Converter** (`modules/timestamp/`) — UTC+8 ⇄ UTC ⇄ epoch
   (s / ms / µs / ns), quick Now / Today / end-of-day buttons, display
   presets (with or without seconds, milliseconds, TLog style, ISO, 12-hour),

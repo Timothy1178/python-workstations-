@@ -5,6 +5,33 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.21.0 — 2026-11-05
+
+- **TLog editor built on the full Sales_Transactions v1.3 workbook.**
+  `modules/tlog/tlog_spec.json` is regenerated from the spec: every column
+  now carries the sheet's comments, the WTCCN mapping guidance, the POS
+  source field and the Retail HK sample value (shown on hover and in the
+  new **📖 Spec** panel, which lists each file's fields next to the
+  editor's column name, default, auto rule and LOV, plus a *Rules &
+  formats* tab, the *Payment mapping* tables from the Order Payment sheet
+  and the *Cancel Order* feed for reference).
+- **ORDER_XM** (TSR / Lucky Draw account values, sheet *Order XM*) is the
+  optional 5th file: an *Account values* table per transaction; the file
+  and its `.ok` are added to the zip when a transaction has account lines
+  or the toggle in *File set* is on; import accepts it.
+- **Tender ↦ picker** on payment lines: pick a POS tender from the WTCTW /
+  WTCCN mapping tables (or a common pair) and Payment Method + Payment
+  Type are filled with LOV-valid values.
+- **Spec business rules in Validation**: member cards must carry the 991
+  prefix and non-member orders leave the four member fields empty
+  (programme names are now derived only when a card is present); Points
+  Earned ≥ Bonus Points Earned; Customer / Business Order Date not in the
+  future (they are UTC); Total Amount vs item net prices; unique Order
+  Line Numbers and payment Sequence Numbers (1, 2, 3 …); positive
+  quantities, no negative cancelled quantity or discounts; fixed values
+  (`=PromotionID`, `=Account`) as inline LOVs usable in the Layout editor;
+  promotion lines that do not match an item line are listed as a note.
+
 ## 1.20.1 — 2026-11-05
 
 - **TLog CSV set: imports sets without a sequence number.** A WTCID set

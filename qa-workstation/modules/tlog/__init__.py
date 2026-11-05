@@ -140,6 +140,7 @@ def csv_page():
     return render_template("tlog/csvset.html", layout=lay, shared=csvset.shared_names(lay),
                            sets=csvset.list_sets(), entries=store.list_entries(),
                            file_types=csvset.FILE_TYPES, child_of=csvset.CHILD_OF,
+                           optional_files=list(csvset.OPTIONAL_FILES),
                            formats=csvset.FORMATS, autos=csvset.AUTOS)
 
 
@@ -211,6 +212,7 @@ def csv_export():
     date = (str(data.get("date", "")).strip() or time.strftime("%Y%m%d"))[:8]
     seq = str(data.get("seq", "")).strip()
     files = data.get("files") if isinstance(data.get("files"), dict) else {}
-    buf = csvset.build_zip(lay, bu, date, seq, files)
+    include = [str(x) for x in data.get("include", [])] if isinstance(data.get("include"), list) else []
+    buf = csvset.build_zip(lay, bu, date, seq, files, include)
     return send_file(buf, as_attachment=True, mimetype="application/zip",
                      download_name=f"TLOG_{bu}_{date}{'_' + seq if seq else ''}.zip")
