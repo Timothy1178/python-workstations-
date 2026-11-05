@@ -5,6 +5,17 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.20.1 — 2026-11-05
+
+- **TLog CSV set: imports sets without a sequence number.** A WTCID set
+  named `ORDER_WTCID_20261102.csv` (no `_SEQ`) was rejected with
+  "no ORDER_<BU>_<YYYYMMDD>_<SEQ>.csv in the upload" because the file-name
+  parser insisted on the `_SEQ` part even though export had already made
+  it optional. `_SEQ` is now optional on import too; the WTCID set loads
+  as 1 transaction (2 items, 3 payments, 24 promotions), all four files
+  match the spec column counts (55 / 29 / 12 / 14) and the zip
+  round-trips byte for byte.
+
 ## 1.20.0 — 2026-11-04
 
 - **Timestamp Converter** (`/timestamp`, ⏱ in the sidebar). UTC+8 ⇄ UTC ⇄

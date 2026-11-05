@@ -214,12 +214,13 @@ def build_zip(lay, bu, date, seq, files):
 # ---------- import an existing set ----------
 
 def parse_name(filename):
-    """ORDER_PAYMENT_WWHK_20240829_54.csv -> (type, bu, date, seq)."""
+    """ORDER_PAYMENT_WWHK_20240829_54.csv -> (type, bu, date, seq);
+    the _SEQ part is optional (ORDER_WTCID_20261102.csv -> seq "")."""
     stem = Path(filename).stem
     for ft in sorted(FILE_TYPES, key=len, reverse=True):
-        m = re.fullmatch(re.escape(ft) + r"_([A-Za-z0-9]+)_(\d{8})_(\w+)", stem)
+        m = re.fullmatch(re.escape(ft) + r"_([A-Za-z0-9]+)_(\d{8})(?:_(\w+))?", stem)
         if m:
-            return ft, m.group(1).upper(), m.group(2), m.group(3)
+            return ft, m.group(1).upper(), m.group(2), m.group(3) or ""
     return None
 
 
@@ -261,12 +262,12 @@ def import_set(lay, uploads):
             continue
         p = parse_name(name)
         if not p:
-            warnings.append(f"{name}: name does not match {NAME_FORMAT}.csv — skipped")
+            warnings.append(f"{name}: name does not match {NAME_FORMAT}.csv (the _SEQ part is optional) — skipped")
             continue
         files[p[0]] = read_rows(raw)
         meta = meta or p[1:]
     if "ORDER" not in files:
-        return {"error": "no ORDER_<BU>_<YYYYMMDD>_<SEQ>.csv in the upload", "warnings": warnings}
+        return {"error": "no ORDER_<BU>_<YYYYMMDD>[_<SEQ>].csv in the upload", "warnings": warnings}
     shared = shared_names(lay)
     orders = rows_to_dicts(lay, "ORDER", files["ORDER"])
     children = {CHILD_OF[ft]: rows_to_dicts(lay, ft, files.get(ft, [])) for ft in CHILD_OF}
