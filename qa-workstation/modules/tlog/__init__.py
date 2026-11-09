@@ -7,6 +7,7 @@ in the browser; this module keeps the library and the field config
 under data/tlog/ (gitignored).
 """
 import json
+import re
 import time
 
 from flask import Blueprint, render_template, request, jsonify, send_file
@@ -150,9 +151,13 @@ def csv_layout():
         data = request.get_json(force=True) or {}
         if data.get("reset"):
             lay = csvset.save_layout(csvset.DEFAULT_LAYOUT)
+        elif data.get("preset") in csvset.PRESETS:
+            lay = csvset.load_layout()
+            lay["files"] = json.loads(json.dumps(csvset.PRESETS[data["preset"]]["files"]))
+            lay = csvset.save_layout(lay)
         else:
             lay = csvset.load_layout()
-            for k in ("name_format", "ref_base"):
+            for k in ("name_format", "ref_base", "ok_ext", "empty_file"):
                 if k in data:
                     lay[k] = data[k]
             if isinstance(data.get("files"), dict):
@@ -209,7 +214,7 @@ def csv_export():
     data = request.get_json(force=True) or {}
     lay = csvset.load_layout()
     bu = str(data.get("bu", "")).strip().upper() or "BU"
-    date = (str(data.get("date", "")).strip() or time.strftime("%Y%m%d"))[:8]
+    date = (re.sub(r"\D", "", str(data.get("date", ""))) or time.strftime("%Y%m%d%H%M"))[:14]
     seq = str(data.get("seq", "")).strip()
     files = data.get("files") if isinstance(data.get("files"), dict) else {}
     include = [str(x) for x in data.get("include", [])] if isinstance(data.get("include"), list) else []

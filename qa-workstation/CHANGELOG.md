@@ -5,6 +5,25 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.22.1 — 2026-11-09
+
+- **TLog CSV set: output now matches the valid WTCID batch set byte for
+  byte** (`ORDER_WTCID_202604281544`), so the batch import accepts it.
+  What was wrong and is fixed: file names now carry a 12-digit
+  `YYYYMMDDHHMM` stamp with no sequence (`{TYPE}_{BU}_{YYYYMMDDHHMM}`;
+  8- and 14-digit stamps and `_SEQ` still import), the marker files are
+  `.OK` (upper case, configurable), **empty files are 0 bytes** instead
+  of a CRLF, the default column set is the batch one — ORDER 30 columns
+  (no X_STF_DISCNT_PROCESS_FLG / SubClub block), ORDERITEMS 26 (no staff
+  discount / tax columns), ORDER_PAYMENT 12, ORDERITEMS_PROMOTION 14 —
+  amounts are written with 2 decimals and quantities as typed (no more
+  `1.000000000` / `0E-9`), and Order Number for Conversion (all files)
+  and External Transaction Key default to the ERP Order Number instead of
+  a reference-base counter. The full spec v1.3 layout (55 / 29 columns,
+  4-decimal amounts) is kept as a preset in ⚙️ Layout, which also gets
+  the `.OK` extension and empty-file options. A layout saved with the old
+  defaults is migrated automatically; customised layouts are kept.
+
 ## 1.22.0 — 2026-11-08
 
 - **Test Cases · 🎛 Studio** — a second editor for the same plans at

@@ -30,8 +30,8 @@ OPTIONAL_FILES = ("ORDER_XM",)
 CHILD_OF = {"ORDER_PAYMENT": "payments", "ORDERITEMS": "items", "ORDERITEMS_PROMOTION": "promotions", "ORDER_XM": "accounts"}
 # per-column spec notes carried from tlog_spec.json (read-only in the layout editor)
 NOTE_KEYS = ("desc", "guide", "sample", "pos", "spec_seq", "spec_type")
-NAME_FORMAT = "{TYPE}_{BU}_{YYYYMMDD}_{SEQ}"
-FORMATS = ("", "dec3", "dec4", "dec9")
+NAME_FORMAT = "{TYPE}_{BU}_{YYYYMMDDHHMM}"   # the valid WTCID batch set: ORDER_WTCID_202604281544.csv + .OK
+FORMATS = ("", "dec2", "dec3", "dec4", "dec9")
 # auto rules — every auto is a *suggestion*: it fills the cell when it is left blank; typed values win
 AUTOS = ("", "lineno", "txnref", "sum_items_net", "sum_items_qty", "count_items", "sum_payments",
          "line_net", "total_if_blank", "bu", "bu_member", "program", "member_no", "store_name", "erp_if_blank")
@@ -48,6 +48,7 @@ def _spec_layout():
 
 
 DEFAULT_LAYOUT = _spec_layout()
+PRESETS = DEFAULT_LAYOUT.get("presets", {})   # name -> {title, files}: wtcid_batch (default) / full_spec
 
 
 def _clean_lov(v):
@@ -91,21 +92,31 @@ def load_layout():
             saved = json.loads(LAYOUT_FILE.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             saved = {}
-        if saved.get("name_format"):
+        # a layout saved before the valid WTCID batch set became the default
+        # still carries the old defaults: ignore those so the fix applies
+        if saved.get("name_format") and saved["name_format"] != "{TYPE}_{BU}_{YYYYMMDD}_{SEQ}":
             lay["name_format"] = str(saved["name_format"])
         if "ref_base" in saved:
             lay["ref_base"] = str(saved["ref_base"])
         if isinstance(saved.get("bus"), list):
             lay["bus"] = [str(b).strip().upper() for b in saved["bus"] if str(b).strip()]
+        if saved.get("ok_ext"):
+            lay["ok_ext"] = re.sub(r"[^A-Za-z0-9]", "", str(saved["ok_ext"]))[:8] or "OK"
+        if saved.get("empty_file") in ("zero", "crlf"):
+            lay["empty_file"] = saved["empty_file"]
         if isinstance(saved.get("payment_maps"), list):
             lay["payment_maps"] = saved["payment_maps"]
         if isinstance(saved.get("lovs"), dict):
             lay["lovs"] = {k: [str(v) for v in vals] for k, vals in saved["lovs"].items() if isinstance(vals, list)}
         files = saved.get("files")
         if isinstance(files, dict):
+            old_default = {ft: [clean_col(c) for c in cols] for ft, cols in PRESETS.get("full_spec", {}).get("files", {}).items()}
             for ft in FILE_TYPES:
                 if isinstance(files.get(ft), list):
-                    lay["files"][ft] = [clean_col(c) for c in files[ft]]
+                    cols = [clean_col(c) for c in files[ft]]
+                    if cols == old_default.get(ft):
+                        continue  # untouched old default -> take the new default
+                    lay["files"][ft] = cols
     return lay
 
 
@@ -114,6 +125,8 @@ def save_layout(lay):
     out = {
         "name_format": str(lay.get("name_format") or NAME_FORMAT),
         "ref_base": str(lay.get("ref_base", "")),
+        "ok_ext": re.sub(r"[^A-Za-z0-9]", "", str(lay.get("ok_ext") or "OK"))[:8] or "OK",
+        "empty_file": lay.get("empty_file") if lay.get("empty_file") in ("zero", "crlf") else "zero",
         "bus": [str(b).strip().upper() for b in (lay.get("bus") or BUS) if str(b).strip()],
         "lovs": {k: [str(v) for v in vals] for k, vals in (lay.get("lovs") or DEFAULT_LAYOUT["lovs"]).items() if isinstance(vals, list)},
         "payment_maps": lay.get("payment_maps") or DEFAULT_LAYOUT.get("payment_maps", []),
@@ -175,7 +188,7 @@ def save_set(sid, data):
     existing.update({
         "name": str(data.get("name", "")).strip() or existing.get("name") or f"set {sid}",
         "bu": str(data.get("bu", "")).strip().upper(),
-        "date": re.sub(r"\D", "", str(data.get("date", "")))[:8],
+        "date": re.sub(r"\D", "", str(data.get("date", "")))[:14],
         "seq": str(data.get("seq", "")).strip(),
         "ref_base": str(data.get("ref_base", "")).strip(),
         "transactions": data.get("transactions", []) if isinstance(data.get("transactions"), list) else [],
@@ -195,19 +208,24 @@ def delete_set(sid):
 # ---------- files ----------
 
 def file_name(lay, ftype, bu, date, seq, ext="csv"):
+    """{YYYYMMDD} / {YYYYMMDDHHMM} / {YYYYMMDDHHMMSS} all take the date-time
+    digits as typed (8, 12 or 14); _{SEQ} is dropped when seq is blank."""
     fmt = lay.get("name_format") or NAME_FORMAT
     if not str(seq).strip():
         fmt = fmt.replace("_{SEQ}", "").replace("{SEQ}", "")
-    base = fmt.format(TYPE=ftype, BU=bu, YYYYMMDD=date, SEQ=seq)
+    if ext.lower() == "ok":
+        ext = lay.get("ok_ext") or "OK"
+    base = fmt.format(TYPE=ftype, BU=bu, YYYYMMDD=date, YYYYMMDDHHMM=date, YYYYMMDDHHMMSS=date, SEQ=seq)
     base = re.sub(r"[^\w\-.]", "", base)
     return f"{base}.{ext}"
 
 
-def csv_bytes(rows):
+def csv_bytes(rows, empty="zero"):
     """Template format: every field quoted, CRLF between rows, no trailing
-    newline; an empty file is one CRLF."""
+    newline; an empty file is 0 bytes (the valid WTCID batch set) — or one
+    CRLF with empty_file = "crlf" (older WWHK samples)."""
     if not rows:
-        return b"\r\n"
+        return b"\r\n" if empty == "crlf" else b""
     buf = io.StringIO()
     w = csv.writer(buf, quoting=csv.QUOTE_ALL, lineterminator="\r\n")
     for r in rows:
@@ -231,7 +249,7 @@ def build_zip(lay, bu, date, seq, files, include=None):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for ft in zip_files(files, include):
-            z.writestr(file_name(lay, ft, bu, date, seq, "csv"), csv_bytes(files.get(ft) or []))
+            z.writestr(file_name(lay, ft, bu, date, seq, "csv"), csv_bytes(files.get(ft) or [], lay.get("empty_file", "zero")))
             z.writestr(file_name(lay, ft, bu, date, seq, "ok"), b"")
     buf.seek(0)
     return buf
@@ -240,11 +258,12 @@ def build_zip(lay, bu, date, seq, files, include=None):
 # ---------- import an existing set ----------
 
 def parse_name(filename):
-    """ORDER_PAYMENT_WWHK_20240829_54.csv -> (type, bu, date, seq);
-    the _SEQ part is optional (ORDER_WTCID_20261102.csv -> seq "")."""
+    """ORDER_PAYMENT_WWHK_20240829_54.csv -> (type, bu, date, seq); the date
+    may be YYYYMMDD, YYYYMMDDHHMM or YYYYMMDDHHMMSS and _SEQ is optional
+    (ORDER_WTCID_202604281544.csv -> seq "")."""
     stem = Path(filename).stem
     for ft in sorted(FILE_TYPES, key=len, reverse=True):
-        m = re.fullmatch(re.escape(ft) + r"_([A-Za-z0-9]+)_(\d{8})(?:_(\w+))?", stem)
+        m = re.fullmatch(re.escape(ft) + r"_([A-Za-z0-9]+)_(\d{8}|\d{12}|\d{14})(?:_(\w+))?", stem)
         if m:
             return ft, m.group(1).upper(), m.group(2), m.group(3) or ""
     return None
@@ -293,7 +312,7 @@ def import_set(lay, uploads):
         files[p[0]] = read_rows(raw)
         meta = meta or p[1:]
     if "ORDER" not in files:
-        return {"error": "no ORDER_<BU>_<YYYYMMDD>[_<SEQ>].csv in the upload", "warnings": warnings}
+        return {"error": "no ORDER_<BU>_<YYYYMMDDHHMM>[_<SEQ>].csv in the upload", "warnings": warnings}
     shared = shared_names(lay)
     orders = rows_to_dicts(lay, "ORDER", files["ORDER"])
     children = {CHILD_OF[ft]: rows_to_dicts(lay, ft, files.get(ft, [])) for ft in CHILD_OF}

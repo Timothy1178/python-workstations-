@@ -8,7 +8,7 @@
 <div class="page-head">
   <div>
     <h1>🗂 TLog CSV set — ORDER · PAYMENT · ITEMS · PROMOTION <span class="muted">(+ ORDER_XM)</span></h1>
-    <p class="muted">One editor for the four files, built on the Sales_Transactions spec. Each transaction is entered once: the shared fields (card number, customer order date, store, POS, customer / ERP order numbers, BU) flow into every file; derived values (member number, store name, program name, totals, line numbers) fill in when left blank; the Validation card checks required fields, formats, lengths, LOVs and the spec's business rules. Download the zip with the 4 CSVs (plus <code>ORDER_XM</code> when a transaction carries TSR / Lucky Draw account values) and their <code>.ok</code> files, named <code>{{ layout.name_format }}</code>. 📖 Spec shows every field of <em>RetailHK – Sales_Transactions v1.3</em> with its comments and mapping notes.</p>
+    <p class="muted">One editor for the four files, built on the Sales_Transactions spec. Each transaction is entered once: the shared fields (card number, customer order date, store, POS, customer / ERP order numbers, BU) flow into every file; derived values (member number, store name, program name, totals, line numbers) fill in when left blank; the Validation card checks required fields, formats, lengths, LOVs and the spec's business rules. Download the zip with the 4 CSVs (plus <code>ORDER_XM</code> when a transaction carries TSR / Lucky Draw account values) and their empty <code>.{{ layout.ok_ext }}</code> files, named <code>{{ layout.name_format }}</code> — the exact format of the valid WTCID batch set (0-byte empty files, 2-decimal amounts, ERP order number as the conversion reference). 📖 Spec shows every field of <em>RetailHK – Sales_Transactions v1.3</em> with its comments and mapping notes.</p>
   </div>
   <div class="row-actions">
     <button class="btn" id="spec-btn" title="Field reference from RetailHK – Sales_Transactions v1.3">📖 Spec</button>
@@ -21,7 +21,7 @@
   <aside class="card msg-side">
     <h2>💾 Saved sets <span class="pill" id="sets-count">{{ sets|length }}</span></h2>
     <label class="dropzone small-dz" id="set-drop">
-      <input type="file" id="set-files" accept=".csv,.ok,.zip" multiple hidden>
+      <input type="file" id="set-files" accept=".csv,.ok,.OK,.zip" multiple hidden>
       <div>📂 <strong>Import a set</strong></div>
       <div class="muted small-text">drop the 4 CSVs (or a zip) — rows become transactions</div>
     </label>
@@ -43,9 +43,9 @@
       <h2>File set</h2>
       <div class="set-grid">
         <label>BU <input id="set-bu" placeholder="WWHK" list="bu-list"><datalist id="bu-list">{% for b in layout.bus %}<option value="{{ b }}">{% endfor %}</datalist></label>
-        <label>File date (YYYYMMDD) <div class="id-row"><input id="set-date" placeholder="20240829" maxlength="8"><button class="btn small" id="date-today" type="button">today</button></div></label>
+        <label>File date-time <span class="muted">(YYYYMMDDHHMM · or YYYYMMDD)</span> <div class="id-row"><input id="set-date" placeholder="202604281544" maxlength="14"><button class="btn small" id="date-today" type="button" title="Now, as YYYYMMDDHHMM">now</button></div></label>
         <label>Sequence <span class="muted">(optional)</span> <input id="set-seq" placeholder="54"></label>
-        <label>Reference base <input id="set-ref" placeholder="0006957324" title="Prefix of the order / line references: base + type code + 2-digit transaction index"></label>
+        <label>Reference base <span class="muted">(only for txnref autos)</span> <input id="set-ref" placeholder="0006957324" title="Prefix of the order / line references when a column uses the txnref auto rule: base + type code + 2-digit transaction index. The default layout uses the ERP Order Number instead."></label>
       </div>
       <div class="file-names" id="file-names"></div>
       {% for ft in optional_files %}<label class="check-label top-gap small-text"><input type="checkbox" id="inc-{{ ft }}"> Include <code>{{ ft }}</code> files even when empty <span class="muted">(added automatically when a transaction has account value lines)</span></label>{% endfor %}
@@ -140,7 +140,10 @@
     </div>
     <div class="import-body">
       <div class="row-actions">
-        <label class="inline">File name format <input id="lay-format" class="mono-in" style="width:280px"></label>
+        <label class="inline">File name format <input id="lay-format" class="mono-in" style="width:250px" title="{TYPE} {BU} {YYYYMMDDHHMM} or {YYYYMMDD} {SEQ}"></label>
+        <label class="inline">.ok extension <input id="lay-okext" class="mono-in" style="width:60px" maxlength="8"></label>
+        <label class="inline">Empty file <select id="lay-empty"><option value="zero">0 bytes</option><option value="crlf">one CRLF</option></select></label>
+        <label class="inline">Preset <select id="lay-preset"><option value="">load…</option>{% for key, p in layout.presets.items() %}<option value="{{ key }}">{{ p.title }}</option>{% endfor %}</select></label>
         <div class="seg" id="lay-tabs">{% for ft in file_types %}<button type="button" data-ft="{{ ft }}" class="{{ 'on' if loop.first }}">{{ ft }}</button>{% endfor %}</div>
         <span class="muted small-text" id="lay-info"></span>
       </div>
@@ -195,7 +198,7 @@
   const isShared = name => shared.includes(name);
   function fmt(v, f) {
     if (!f || v === '' || v == null || !/^-?\d+(\.\d+)?$/.test(String(v))) return v ?? '';
-    const d = { dec3: 3, dec4: 4, dec9: 9 }[f];
+    const d = { dec2: 2, dec3: 3, dec4: 4, dec9: 9 }[f];
     return d ? Number(v).toFixed(d) : v;
   }
   function status(el, text, ok = true) { el.textContent = text; el.className = 'status ' + (text ? (ok ? 'ok' : 'bad') : ''); }
@@ -203,7 +206,8 @@
   function fileName(ft, ext) {
     const m = setMeta();
     let f = layout.name_format; if (!m.seq) f = f.replace('_{SEQ}', '').replace('{SEQ}', '');
-    return f.replace('{TYPE}', ft).replace('{BU}', m.bu || 'BU').replace('{YYYYMMDD}', m.date || 'YYYYMMDD').replace('{SEQ}', m.seq).replace(/[^\w\-.]/g, '') + '.' + ext;
+    if (ext === 'ok') ext = layout.ok_ext || 'OK';
+    return f.replace('{TYPE}', ft).replace('{BU}', m.bu || 'BU').replace(/\{YYYYMMDD(HHMM(SS)?)?\}/g, m.date || 'YYYYMMDDHHMM').replace('{SEQ}', m.seq).replace(/[^\w\-.]/g, '') + '.' + ext;
   }
 
   // ---------- compute rows (same rules as the export) ----------
@@ -263,7 +267,7 @@
     const issues = [];
     const m = setMeta();
     if (!m.bu) issues.push({ sev: 'error', where: 'File set', field: 'BU', msg: 'required for the file names and the Organization (BU) Name columns' });
-    if (!/^\d{8}$/.test(m.date)) issues.push({ sev: 'error', where: 'File set', field: 'File date', msg: 'must be 8 digits (YYYYMMDD)' });
+    if (!/^\d{8}(\d{4}(\d{2})?)?$/.test(m.date)) issues.push({ sev: 'error', where: 'File set', field: 'File date-time', msg: 'must be YYYYMMDDHHMM (12 digits) or YYYYMMDD' });
     state.transactions.forEach((t, ti) => {
       for (const c of cols('ORDER')) { const r = checkCell(c, cellValue(c, t, ti, null, 0, 'order')); if (r) issues.push({ sev: r[0], ti, ft: 'ORDER', key: c.name, where: `Txn ${ti + 1} · ORDER`, field: c.label, msg: r[1] }); }
       for (const [ft, kind] of Object.entries(KIND_OF)) t[kind].forEach((row, ri) => {
@@ -347,7 +351,7 @@
   }
   function renderNames() {
     const list = FILE_TYPES.filter(includeFt);
-    $('file-names').innerHTML = list.map(ft => `<span class="pill mono-in">${esc(fileName(ft, 'csv'))}</span>`).join(' ') + ` <span class="muted small-text">+ the same ${list.length} names as empty .ok files</span>`;
+    $('file-names').innerHTML = list.map(ft => `<span class="pill mono-in">${esc(fileName(ft, 'csv'))}</span>`).join(' ') + ` <span class="muted small-text">+ the same ${list.length} names as empty .${esc(layout.ok_ext || 'OK')} files</span>`;
   }
   function ensureLovLists() {
     const box = $('lov-lists'); box.innerHTML = '';
@@ -384,7 +388,7 @@
     $('preview-name').textContent = `${fileName(previewFt, 'csv')} · ${files[previewFt].length} row${files[previewFt].length === 1 ? '' : 's'} · ${cols(previewFt).length} columns`;
   }
   function txnTitle(t, i) {
-    return `#${i + 1} · Order ${ov(t, 'CustomerOrderNumber') || '—'} · ${ov(t, 'CardNumber') ? 'card ' + ov(t, 'CardNumber') : 'no member'} · ${t.items.length} item${t.items.length === 1 ? '' : 's'} · ${t.payments.length} payment${t.payments.length === 1 ? '' : 's'} · total ${fmt(r4(itemsNet(t)), 'dec4')}`;
+    return `#${i + 1} · Order ${ov(t, 'CustomerOrderNumber') || '—'} · ${ov(t, 'CardNumber') ? 'card ' + ov(t, 'CardNumber') : 'no member'} · ${t.items.length} item${t.items.length === 1 ? '' : 's'} · ${t.payments.length} payment${t.payments.length === 1 ? '' : 's'} · total ${fmt(r4(itemsNet(t)), colOf('TotalAmount').format || 'dec2')}`;
   }
   function renderTxns() {
     const wrap = $('txns');
@@ -561,12 +565,12 @@
   // ---------- set meta / preview / export ----------
   OPTIONAL.forEach(ft => { const cb = $('inc-' + ft); if (cb) cb.addEventListener('change', () => { renderNames(); renderPreview(); }); });
   ['set-bu', 'set-date', 'set-seq', 'set-ref'].forEach(id => { $(id).addEventListener('input', () => { renderNames(); renderPreview(); }); $(id).addEventListener('change', () => render()); });
-  $('date-today').onclick = () => { const d = new Date(); $('set-date').value = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`; renderNames(); renderPreview(); };
+  $('date-today').onclick = () => { const d = new Date(); $('set-date').value = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}${pad2(d.getHours())}${pad2(d.getMinutes())}`; renderNames(); renderPreview(); };
   $('preview-tabs').addEventListener('click', e => { const b = e.target.closest('[data-ft]'); if (!b) return; previewFt = b.dataset.ft; $('preview-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderPreview(); });
   $('copy-preview').onclick = async () => { try { await navigator.clipboard.writeText($('preview').value); status($('preview-status'), 'Copied.'); } catch (e) { status($('preview-status'), e.message, false); } };
   $('zip-btn').onclick = async () => {
     const m = setMeta();
-    if (!m.bu || !/^\d{8}$/.test(m.date)) { status($('preview-status'), 'Fill BU and an 8-digit file date first.', false); return; }
+    if (!m.bu || !/^\d{8}(\d{4}(\d{2})?)?$/.test(m.date)) { status($('preview-status'), 'Fill BU and the file date-time (YYYYMMDDHHMM) first.', false); return; }
     if (!state.transactions.length && !confirm('No transactions — download 4 empty files?')) return;
     renderIssues();
     const errs = lastIssues.filter(i => i.sev === 'error').length;
@@ -576,7 +580,7 @@
     const blob = await res.blob();
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `TLOG_${m.bu}_${m.date}${m.seq ? '_' + m.seq : ''}.zip`; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    status($('preview-status'), `📦 ${a.download} — ${include.length} CSV + ${include.length} .ok files (${include.join(', ')}).`);
+    status($('preview-status'), `📦 ${a.download} — ${include.length} CSV + ${include.length} .${layout.ok_ext || 'OK'} files (${include.join(', ')}).`);
   };
 
   // ---------- saved sets ----------
@@ -659,8 +663,9 @@
       html += '</table>';
     } else if (specTab === 'rules') {
       html = `<h3>File set</h3><ul class="spec-rules">
-        <li>Files: <code>${esc(layout.name_format)}.csv</code> per type, each with a same-named empty <code>.ok</code> file. The <code>_{SEQ}</code> part is optional (WTCID sends <code>ORDER_WTCID_20261102.csv</code>).</li>
-        <li>Every field double-quoted, no header row, CRLF between rows and no trailing newline; an empty file is a single CRLF.</li>
+        <li>Files: <code>${esc(layout.name_format)}.csv</code> per type, each with a same-named empty <code>.${esc(layout.ok_ext || 'OK')}</code> file. The valid WTCID batch set is <code>ORDER_WTCID_202604281544.csv</code> + <code>.OK</code>; <code>{YYYYMMDD}</code> and <code>_{SEQ}</code> are also accepted on import.</li>
+        <li>Every field double-quoted, no header row, CRLF between rows and no trailing newline; an empty file is ${layout.empty_file === 'crlf' ? 'a single CRLF' : '0 bytes'}.</li>
+        <li>Column sets: the default is the valid WTCID batch layout (ORDER 30 · ORDERITEMS 26 · ORDER_PAYMENT 12 · ORDERITEMS_PROMOTION 14); the full spec v1.3 layout with X_STF / SubClub / staff-discount / tax columns (55 · 29 · 12 · 14) is a preset in ⚙️ Layout. Amounts are written with 2 decimals, quantities as typed.</li>
         <li>Shared columns (entered once per transaction, copied into every file): ${shared.map(n => '<code>' + esc(n) + '</code>').join(' ')}.</li>
         <li>ORDER_XM (account values for TSR / Lucky Draw) is only produced when a transaction has account lines or the toggle in <em>File set</em> is on.</li></ul>
         <h3>Business rules the editor applies</h3><ul class="spec-rules">
@@ -690,7 +695,10 @@
 
   // ---------- layout editor ----------
   const lo = $('layout-overlay');
-  $('layout-btn').onclick = () => { $('lay-format').value = layout.name_format; renderLayTable(); lo.hidden = false; };
+  $('layout-btn').onclick = () => { $('lay-format').value = layout.name_format; $('lay-okext').value = layout.ok_ext || 'OK'; $('lay-empty').value = layout.empty_file || 'zero'; $('lay-preset').value = ''; renderLayTable(); lo.hidden = false; };
+  $('lay-okext').addEventListener('change', () => saveLayout({ ok_ext: $('lay-okext').value.trim() || 'OK' }));
+  $('lay-empty').addEventListener('change', () => saveLayout({ empty_file: $('lay-empty').value }));
+  $('lay-preset').addEventListener('change', async () => { const v = $('lay-preset').value; if (!v) return; if (!confirm(`Replace every file layout with the preset "${$('lay-preset').selectedOptions[0].textContent}"? Column names, defaults and formats are overwritten.`)) { $('lay-preset').value = ''; return; } await saveLayout({ preset: v }); renderLayTable(); $('lay-preset').value = ''; });
   $('layout-close').onclick = () => lo.hidden = true;
   lo.addEventListener('click', e => { if (e.target === lo) lo.hidden = true; });
   $('lay-tabs').addEventListener('click', e => { const b = e.target.closest('[data-ft]'); if (!b) return; layFt = b.dataset.ft; $('lay-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderLayTable(); });
@@ -699,7 +707,7 @@
     if (d.ok) { layout = d.layout; shared = d.shared; ensureLovLists(); render(); }
     return d;
   }
-  $('lay-format').addEventListener('change', () => saveLayout({ name_format: $('lay-format').value.trim() || '{TYPE}_{BU}_{YYYYMMDD}_{SEQ}' }));
+  $('lay-format').addEventListener('change', () => saveLayout({ name_format: $('lay-format').value.trim() || '{TYPE}_{BU}_{YYYYMMDDHHMM}' }));
   function renderLayTable() {
     const t = $('lay-table'); const list = cols(layFt);
     $('lay-info').textContent = `${list.length} columns · ${list.filter(c => c.name).length} named · shared: ${list.filter(c => isShared(c.name)).length}`;
