@@ -1,0 +1,606 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.name }} · Studio{% endblock %}
+{% block content %}
+<div class="builder-bar st-bar">
+  <div class="bb-title">
+    <a class="btn small" href="{{ url_for('testcases.index') }}" title="Back to plans">← Plans</a>
+    <div>
+      <h1>🎛 {{ plan.name }}</h1>
+      <p class="muted small-text">{{ plan.description or "Case Studio" }} · template: {{ template.name }}</p>
+    </div>
+  </div>
+  <div class="bb-tools">
+    <span class="pill status-pill" id="save-status" data-state="clean">saved</span>
+    <label class="toggle-pill st-auto" title="Save 1.5 s after each change"><input type="checkbox" id="autosave" checked> autosave</label>
+    <button class="btn" id="import-btn" title="Import test cases from an Excel workbook or CSV">📂 Import</button>
+    <button class="btn" id="tools-btn" title="Find &amp; replace, bulk edits">🧰 Tools</button>
+    <a class="btn" href="{{ url_for('testcases.builder', plan_id=plan.id) }}" title="Classic spreadsheet view of the same plan">☰ Table</a>
+    <a class="btn" href="{{ url_for('testcases.viewer', plan_id=plan.id) }}" title="Execute the cases and record results">▶ Run</a>
+    <a class="btn" href="{{ url_for('testcases.export', plan_id=plan.id) }}" title="Download the Excel test plan (same template as always)">📥 Excel</a>
+    <button class="btn primary" id="save-btn" title="Save now (Ctrl/Cmd+S)">💾 Save</button>
+  </div>
+</div>
+
+<div class="st-stats" id="stats"></div>
+
+<div class="st-layout">
+  <!-- ---------- case list ---------- -->
+  <aside class="card st-list-card">
+    <div class="st-list-head">
+      <label class="search-box"><span>🔍</span><input id="filter" placeholder="Find a case…" autocomplete="off"><button type="button" id="filter-clear" hidden>✕</button></label>
+      <div class="row-actions">
+        <button class="btn small primary" id="add-case" title="New case (Ctrl/Cmd+Enter)">＋ Case</button>
+        <div class="seg" title="Group the list by Testing BU or keep plan order"><button type="button" data-group="bu" class="on">By BU</button><button type="button" data-group="flat">Order</button></div>
+      </div>
+    </div>
+    <div class="st-list" id="list"></div>
+    <div class="st-list-foot muted small-text" id="list-foot"></div>
+  </aside>
+
+  <!-- ---------- editor ---------- -->
+  <main class="st-main" id="main">
+    <div class="card st-empty" id="empty" hidden>
+      <div class="empty-state small-es">
+        <div class="es-icon">🎛</div>
+        <h2>No test cases yet</h2>
+        <p class="muted">Write the first case, import a workbook, or let the assistant draft cases from a requirement. One case at a time — the list on the left keeps the whole plan in view.</p>
+        <div class="row-actions">
+          <button class="btn primary" id="es-add">＋ First case</button>
+          <button class="btn" id="es-import">📂 Import Excel / CSV</button>
+          <button class="btn" id="es-assist">🤖 Draft with assistant</button>
+        </div>
+      </div>
+    </div>
+    <div class="card st-editor" id="editor"></div>
+  </main>
+
+  <!-- ---------- inspector ---------- -->
+  <aside class="st-side" id="side"></aside>
+</div>
+
+<!-- ---------- tools ---------- -->
+<div class="preview-overlay" id="tools-overlay" hidden>
+  <div class="preview-modal card st-tools">
+    <div class="page-head">
+      <div><h2>🧰 Plan tools</h2><p class="muted small-text">Bulk edits across every case. Nothing is written until you Save (or autosave runs).</p></div>
+      <button class="btn small" id="tools-close">✕ Close</button>
+    </div>
+    <div class="import-body">
+      <h3>Find &amp; replace</h3>
+      <div class="st-tool-row">
+        <input id="fr-find" placeholder="Find…">
+        <input id="fr-replace" placeholder="Replace with…">
+        <select id="fr-field"><option value="">all fields</option>{% for f in template.fields %}<option value="{{ f.key }}">{{ f.label }}</option>{% endfor %}</select>
+        <label class="check-label"><input type="checkbox" id="fr-case"> match case</label>
+        <button class="btn" id="fr-count">Count</button>
+        <button class="btn primary" id="fr-go">Replace all</button>
+      </div>
+      <div class="muted small-text" id="fr-info"></div>
+
+      <h3 class="top-gap">Testing BU</h3>
+      <div class="st-tool-row">
+        <input id="bu-value" placeholder="BU (e.g. WWHK)" list="bu-list">
+        <button class="btn" id="bu-fill">Fill cases with no BU</button>
+        <button class="btn" id="bu-all">Set on all cases</button>
+      </div>
+
+      <h3 class="top-gap">Steps &amp; order</h3>
+      <div class="st-tool-row">
+        <button class="btn" id="renum-steps" title="Rewrite every Steps field as 1. 2. 3. …">1-2-3 Renumber all steps</button>
+        <button class="btn" id="sort-bu" title="Stable sort: cases grouped by Testing BU in first-seen order">⇅ Sort by BU</button>
+        <button class="btn" id="drop-empty">🧹 Remove empty cases</button>
+      </div>
+      <div class="muted small-text" id="tools-info"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- Import dialog (same flow as the table builder) ---------- -->
+<div class="preview-overlay" id="import-overlay" hidden>
+  <div class="preview-modal card import-modal">
+    <div class="page-head">
+      <div>
+        <h2>📂 Import test cases</h2>
+        <p class="muted small-text" id="import-sub">Excel workbook (.xlsx) or CSV — the exported test plan round-trips as is.</p>
+      </div>
+      <div class="row-actions"><button class="btn small" id="import-close">✕ Close</button></div>
+    </div>
+    <div class="import-step" id="imp-step-file">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="import-file" accept=".xlsx,.xlsm,.csv,.txt,.tsv" hidden>
+        <div class="dz-icon">📄</div>
+        <div><strong>Choose a file</strong> or drop it here</div>
+        <div class="muted small-text">.xlsx · .xlsm · .csv — any sheet, any column order; you confirm the mapping next</div>
+      </label>
+      <div class="muted small-text" id="import-error" hidden></div>
+    </div>
+    <div class="import-step import-body" id="imp-step-map" hidden>
+      <div class="import-controls">
+        <label>Sheet <select id="imp-sheet"></select></label>
+        <label>Header row <input id="imp-header" type="number" min="1" step="1"></label>
+        <label class="check-label"><input type="checkbox" id="imp-filldown" checked> Fill blank BU / Case from the row above (merged cells)</label>
+        <label>Into plan <select id="imp-mode"><option value="append">Append after existing cases</option><option value="replace">Replace all cases</option></select></label>
+      </div>
+      <h3>Column mapping <span class="muted small-text">— pick which workbook column feeds each field; unmapped columns are ignored</span></h3>
+      <div class="table-wrap"><table class="list-table map-table" id="map-table"></table></div>
+      <h3>Preview <span class="muted small-text" id="imp-preview-info"></span></h3>
+      <div class="table-wrap imp-preview-wrap"><table class="grid-table" id="imp-preview"></table></div>
+    </div>
+    <div class="row-actions import-actions" id="imp-actions" hidden>
+      <button class="btn" id="imp-back">← Different file</button>
+      <span class="muted small-text" id="imp-count"></span>
+      <span class="grow"></span>
+      <button class="btn primary" id="imp-go">⬇ Import rows</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-nav" id="lb-prev" title="Previous (←)">‹</button>
+  <figure><img id="lb-img" alt="evidence"><figcaption><span id="lb-caption"></span> <button class="btn small" id="lb-close">✕ Close (Esc)</button></figcaption></figure>
+  <button class="lb-nav" id="lb-next" title="Next (→)">›</button>
+</div>
+
+<datalist id="bu-list"></datalist>
+<script id="plan-data" type="application/json">{{ plan.cases|tojson }}</script>
+<script id="shots-data" type="application/json">{{ shots|tojson }}</script>
+<script id="template-data" type="application/json">{{ template|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='chatbox.js') }}"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const TEMPLATE = JSON.parse($('template-data').textContent);
+  const FIELDS = TEMPLATE.fields, RUN_FIELDS = TEMPLATE.run_fields || [];
+  const KEYS = FIELDS.map(f => f.key);
+  const SHOTS0 = JSON.parse($('shots-data').textContent);
+  const SAVE_URL = "{{ url_for('testcases.save_cases', plan_id=plan.id) }}";
+  const SHOTS_BASE = "{{ url_for('testcases.shots', plan_id=plan.id, case_uid='UIDX') }}";
+  const CURRENT_URL = "{{ url_for('testcases.current_case') }}";
+  const PLAN_ID = {{ plan.id|tojson }};
+  const IMPORT_TOKEN = {{ import_token|tojson }};
+  const shotsUrl = uid => SHOTS_BASE.replace('UIDX', uid);
+  const has = k => KEYS.includes(k);
+
+  // ---------- state ----------
+  let cases = JSON.parse($('plan-data').textContent).map(c => ({ uid: c.uid || '', fields: Object.assign(Object.fromEntries(KEYS.map(k => [k, ''])), c.fields || {}), run: c.run || {}, shots: SHOTS0[c.uid] || [] }));
+  let sel = cases.length ? 0 : -1;
+  let grouping = 'bu', filterQ = '';
+  let dirty = false, saveTimer = null, saving = false;
+  const blank = () => ({ uid: '', fields: Object.fromEntries(KEYS.map(k => [k, ''])), run: {}, shots: [] });
+  const nonEmpty = c => Object.values(c.fields).some(v => String(v).trim() !== '');
+  const val = (c, k) => String((c.fields || {})[k] ?? '').trim();
+
+  // Case numbers: 1..n within each Testing BU + Case pair, in plan order (same as the server).
+  function renumber() {
+    const counts = {};
+    for (const c of cases) { const g = val(c, 'testing_bu') + '\u0000' + val(c, 'title'); counts[g] = (counts[g] || 0) + 1; c.fields.case_id = String(counts[g]); }
+  }
+  // ---------- steps helpers ----------
+  const STEP_RE = /^\s*(?:\d+[.)]|[-•*])\s*/;
+  const parseSteps = text => String(text || '').split(/\r?\n/).map(l => l.replace(STEP_RE, '').trimEnd()).filter((l, i, a) => l.trim() || (i < a.length - 1));
+  const joinSteps = list => list.filter(s => s.trim()).map((s, i) => `${i + 1}. ${s.trim()}`).join('\n');
+  const stepsAreClean = text => { const lines = String(text || '').split(/\r?\n/).filter(l => l.trim()); return !lines.length || lines.every(l => /^\s*\d+[.)]\s/.test(l)); };
+
+  // ---------- quality ----------
+  function checks(c) {
+    const out = [];
+    const need = (ok, label, key) => out.push({ ok, label, key });
+    if (has('testing_bu')) need(!!val(c, 'testing_bu'), 'Testing BU filled', 'testing_bu');
+    if (has('title')) need(!!val(c, 'title'), 'Case name filled', 'title');
+    if (has('steps')) { const st = parseSteps(val(c, 'steps')).filter(s => s.trim()); need(st.length > 0, 'At least one step', 'steps'); if (st.length) need(st.every(s => s.trim().length > 8), 'Steps are concrete (not one-word)', 'steps'); }
+    if (has('expected')) need(!!val(c, 'expected'), 'Expected result written', 'expected');
+    if (has('test_data') && has('steps') && /\b(login|log in|member|card|account|sku|coupon|campaign|voucher|order)\b/i.test(val(c, 'steps'))) need(!!val(c, 'test_data'), 'Test data given (steps mention data)', 'test_data');
+    if (has('campaign_id') && /campaign/i.test(val(c, 'steps') + ' ' + val(c, 'title'))) need(!!val(c, 'campaign_id'), 'Campaign ID given', 'campaign_id');
+    return out;
+  }
+  const score = c => { const ch = checks(c); return ch.length ? ch.filter(x => x.ok).length / ch.length : 1; };
+
+  // ---------- status / save ----------
+  const status = $('save-status');
+  const setStatus = (state, text) => { status.dataset.state = state; status.textContent = text; };
+  function markDirty(what) {
+    dirty = true; setStatus('dirty', what || 'unsaved changes');
+    if ($('autosave').checked) { clearTimeout(saveTimer); saveTimer = setTimeout(save, 1500); }
+  }
+  async function save() {
+    clearTimeout(saveTimer);
+    if (saving) { saveTimer = setTimeout(save, 500); return; }
+    renumber();
+    const sendable = cases.filter(nonEmpty);
+    const payload = sendable.map(c => { const item = { uid: c.uid || null, fields: c.fields }; if (!c.uid && c.run && Object.keys(c.run).length) item.run = c.run; return item; });
+    saving = true; setStatus('saving', 'saving…');
+    let data;
+    try { data = await (await fetch(SAVE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cases: payload }) })).json(); }
+    catch (e) { data = { error: e.message }; }
+    saving = false;
+    if (data.ok) {
+      sendable.forEach((c, i) => { c.uid = data.uids[i] || c.uid; });
+      dirty = false; setStatus('clean', 'saved ✓ ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      renderList(); renderSide(); reportCurrent();
+      return true;
+    }
+    setStatus('error', 'save failed: ' + (data.error || 'unknown')); return false;
+  }
+  $('save-btn').onclick = save;
+  window.addEventListener('beforeunload', e => { if (dirty) e.preventDefault(); });
+
+  // ---------- rendering: stats ----------
+  function renderStats() {
+    const n = cases.length, bus = new Set(cases.map(c => val(c, 'testing_bu')).filter(Boolean));
+    const complete = cases.filter(c => score(c) === 1).length;
+    const shots = cases.reduce((s, c) => s + (c.shots || []).length, 0);
+    const res = {}; for (const c of cases) { const r = (c.run || {}).result || 'Not Run'; res[r] = (res[r] || 0) + 1; }
+    const run = n - (res['Not Run'] || 0);
+    $('stats').innerHTML = `
+      <div class="st-stat"><b>${n}</b><span>case${n === 1 ? '' : 's'}</span></div>
+      <div class="st-stat"><b>${bus.size}</b><span>testing BU${bus.size === 1 ? '' : 's'}</span></div>
+      <div class="st-stat ${n && complete === n ? 'good' : ''}"><b>${n ? Math.round(complete / n * 100) : 0}%</b><span>complete · ${complete}/${n} pass the checklist</span></div>
+      <div class="st-stat"><b>${shots}</b><span>evidence image${shots === 1 ? '' : 's'}</span></div>
+      <div class="st-stat"><b>${run}/${n}</b><span>executed${res.Pass ? ` · ${res.Pass} pass` : ''}${res.Fail ? ` · <em class="bad">${res.Fail} fail</em>` : ''}${res.Blocked ? ` · ${res.Blocked} blocked` : ''}</span></div>`;
+    $('bu-list').innerHTML = [...bus].map(b => `<option value="${esc(b)}">`).join('');
+  }
+
+  // ---------- rendering: list ----------
+  function matches(c) {
+    if (!filterQ) return true;
+    return Object.values(c.fields).some(v => String(v).toLowerCase().includes(filterQ));
+  }
+  function renderList() {
+    renumber();
+    const list = $('list'); list.innerHTML = '';
+    const groups = [];
+    if (grouping === 'bu') {
+      const idx = {};
+      cases.forEach((c, i) => { const g = val(c, 'testing_bu') || '(no BU)'; if (!(g in idx)) { idx[g] = groups.length; groups.push({ name: g, items: [] }); } groups[idx[g]].items.push(i); });
+    } else groups.push({ name: '', items: cases.map((c, i) => i) });
+    let shown = 0;
+    for (const g of groups) {
+      const items = g.items.filter(i => matches(cases[i]));
+      if (!items.length) continue;
+      if (g.name) { const h = document.createElement('div'); h.className = 'st-group'; h.innerHTML = `<span>${esc(g.name)}</span><span class="pill">${items.length}</span>`; list.appendChild(h); }
+      for (const i of items) {
+        const c = cases[i]; shown++;
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'st-item' + (i === sel ? ' on' : ''); b.dataset.i = i; b.draggable = true;
+        const sc = score(c); const r = (c.run || {}).result || '';
+        b.innerHTML = `<span class="st-dot ${sc === 1 ? 'ok' : sc >= .5 ? 'mid' : 'low'}" title="Checklist ${Math.round(sc * 100)}%"></span>
+          <span class="st-num">${esc(val(c, 'case_id'))}</span>
+          <span class="st-ttl">${esc(val(c, 'title') || (parseSteps(val(c, 'steps'))[0] || '').slice(0, 60) || '(untitled case)')}</span>
+          <span class="st-meta">${c.shots && c.shots.length ? `<span title="${c.shots.length} evidence images">🖼${c.shots.length}</span>` : ''}${r && r !== 'Not Run' ? `<span class="st-res ${esc(r.toLowerCase().replace(/[^a-z]/g, ''))}">${esc(r)}</span>` : ''}</span>`;
+        b.onclick = () => select(i);
+        b.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(i)); b.classList.add('dragging'); });
+        b.addEventListener('dragend', () => b.classList.remove('dragging'));
+        b.addEventListener('dragover', e => { e.preventDefault(); b.classList.add('drop-before'); });
+        b.addEventListener('dragleave', () => b.classList.remove('drop-before'));
+        b.addEventListener('drop', e => { e.preventDefault(); b.classList.remove('drop-before'); const from = +e.dataTransfer.getData('text/plain'); if (Number.isNaN(from) || from === i) return; moveCase(from, i); });
+        list.appendChild(b);
+      }
+    }
+    $('list-foot').textContent = cases.length ? (filterQ ? `${shown} of ${cases.length} cases match` : `${cases.length} case${cases.length === 1 ? '' : 's'} · drag to reorder · numbering follows the order`) : '';
+    $('empty').hidden = cases.length > 0; $('editor').hidden = cases.length === 0; $('side').hidden = cases.length === 0;
+    renderStats();
+    const on = list.querySelector('.st-item.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+  }
+  function moveCase(from, to) {
+    const [c] = cases.splice(from, 1); cases.splice(to, 0, c);
+    sel = to; markDirty('order changed'); renderList(); renderEditor(); renderSide();
+  }
+
+  // ---------- rendering: editor ----------
+  let stepsRaw = false, stepsEdit = null;   // stepsEdit keeps blank steps while editing; the field stores only numbered non-blank ones
+  function fieldDef(k) { return FIELDS.find(f => f.key === k) || { key: k, label: k, type: 'text' }; }
+  function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.max(el.scrollHeight, 44) + 'px'; }
+  function renderEditor() {
+    const ed = $('editor');
+    if (sel < 0 || !cases[sel]) { ed.innerHTML = ''; return; }
+    const c = cases[sel], f = c.fields;
+    const head = [];
+    if (has('testing_bu')) head.push(`<label class="st-bu">Testing BU<input data-key="testing_bu" list="bu-list" value="${esc(f.testing_bu)}" placeholder="WWHK" autocomplete="off"></label>`);
+    if (has('title')) head.push(`<label class="st-title">Case<input data-key="title" value="${esc(f.title)}" placeholder="What is being tested, e.g. Member login with OTP"></label>`);
+    head.push(`<div class="st-caseno" title="Case number — 1..n within each Testing BU + Case pair; it follows the order in the list"><span class="muted small-text">Case #</span><b>${esc(f.case_id || '')}</b></div>`);
+    const rest = FIELDS.filter(x => !['testing_bu', 'title', 'steps', 'expected'].includes(x.key));
+    const stepsText = f.steps || '';
+    if (!stepsAreClean(stepsText) && stepsText.trim()) stepsRaw = true;
+    const steps = stepsEdit || parseSteps(stepsText); if (!steps.length) steps.push(''); stepsEdit = steps;
+    ed.innerHTML = `
+      <div class="st-nav">
+        <button type="button" class="btn small" id="prev-case" ${sel === 0 ? 'disabled' : ''} title="Previous case (Alt+↑)">↑ Prev</button>
+        <span class="muted small-text">Case ${sel + 1} of ${cases.length}</span>
+        <button type="button" class="btn small" id="next-case" ${sel === cases.length - 1 ? 'disabled' : ''} title="Next case (Alt+↓)">Next ↓</button>
+        <span class="grow"></span>
+        <button type="button" class="btn small" data-act="dup" title="Duplicate this case below (Ctrl/Cmd+D)">⧉ Duplicate</button>
+        <button type="button" class="btn small" data-act="insert" title="Insert an empty case below">＋ Insert below</button>
+        <button type="button" class="btn small danger" data-act="del" title="Remove this case">✕ Remove</button>
+      </div>
+      <div class="st-head">${head.join('')}</div>
+      ${has('steps') ? `<section class="st-sec">
+        <div class="st-sec-head"><h3>Steps</h3>
+          <div class="seg"><button type="button" data-steps="list" class="${stepsRaw ? '' : 'on'}" title="One input per step — Enter adds the next">List</button><button type="button" data-steps="raw" class="${stepsRaw ? 'on' : ''}" title="Free text, one step per line">Text</button></div>
+          <span class="muted small-text">${stepsRaw ? 'one step per line — numbers are added on export' : 'Enter = next step · Backspace on an empty step removes it · ⋮ drag to reorder'}</span></div>
+        ${stepsRaw ? `<textarea data-key="steps" class="st-ta" placeholder="1. Open the member app&#10;2. Tap Login&#10;3. …">${esc(stepsText)}</textarea>`
+          : `<ol class="st-steps" id="steps">${steps.map((s, i) => `<li><span class="st-step-n">${i + 1}</span><textarea data-step="${i}" rows="1" placeholder="${i === 0 ? 'First step — what the tester does' : 'Next step'}">${esc(s)}</textarea><button type="button" class="icon-btn" data-step-del="${i}" title="Remove step">✕</button></li>`).join('')}</ol>
+          <button type="button" class="btn small" id="add-step">＋ Step</button>`}
+      </section>` : ''}
+      ${has('expected') ? `<section class="st-sec"><div class="st-sec-head"><h3>Expected results</h3><button type="button" class="btn small" id="exp-number" title="Prefix each line with 1. 2. 3. to match the steps">1-2-3 number lines</button></div>
+        <textarea data-key="expected" class="st-ta" placeholder="What the tester must see for a pass — one line per step is easiest to verify">${esc(f.expected)}</textarea></section>` : ''}
+      <section class="st-sec st-grid">${rest.map(x => `<label class="st-field ${x.type === 'textarea' ? 'ta' : ''}">${esc(x.label)}${x.type === 'textarea' ? `<textarea data-key="${x.key}" class="st-ta" placeholder="${esc(x.label)}">${esc(f[x.key])}</textarea>` : x.type === 'select' ? `<select data-key="${x.key}">${(x.options || []).map(o => `<option ${o === f[x.key] ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>` : `<input data-key="${x.key}" value="${esc(f[x.key])}" placeholder="${esc(x.label)}">`}</label>`).join('')}</section>
+      <section class="st-sec st-evidence" id="evidence">
+        <div class="st-sec-head"><h3>🖼 Evidence</h3><span class="muted small-text">paste (Ctrl/Cmd+V) or drop images anywhere on this case · the screen-cap plugin sends here while this case is open</span>
+          <button type="button" class="btn small" id="pick-shots">＋ Images</button><input type="file" id="shot-files" accept="image/*" multiple hidden></div>
+        <div class="thumbs" id="thumbs"></div>
+      </section>`;
+    // wire
+    ed.querySelectorAll('textarea.st-ta, .st-steps textarea').forEach(t => { autoResize(t); t.addEventListener('input', () => autoResize(t)); });
+    ed.querySelectorAll('[data-key]').forEach(el => el.addEventListener('input', () => {
+      c.fields[el.dataset.key] = el.value; markDirty();
+      if (el.dataset.key === 'testing_bu' || el.dataset.key === 'title') { renderList(); refreshCaseNo(); }
+      renderSide();
+    }));
+    if (!stepsRaw && has('steps')) {
+      const ol = ed.querySelector('#steps');
+      const commit = () => { stepsEdit = [...ol.querySelectorAll('textarea')].map(t => t.value); c.fields.steps = joinSteps(stepsEdit); markDirty(); renderSide(); };
+      ol.querySelectorAll('textarea').forEach(t => {
+        t.addEventListener('input', commit);
+        t.addEventListener('keydown', e => {
+          const i = +t.dataset.step;
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const list = [...ol.querySelectorAll('textarea')].map(x => x.value); list.splice(i + 1, 0, ''); setSteps(list, i + 1); }
+          else if (e.key === 'Backspace' && !t.value && ol.querySelectorAll('textarea').length > 1) { e.preventDefault(); const list = [...ol.querySelectorAll('textarea')].map(x => x.value); list.splice(i, 1); setSteps(list, Math.max(0, i - 1)); }
+          else if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); const list = [...ol.querySelectorAll('textarea')].map(x => x.value); const j = e.key === 'ArrowUp' ? i - 1 : i + 1; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; setSteps(list, j); }
+        });
+      });
+      ol.querySelectorAll('[data-step-del]').forEach(b => b.onclick = () => { const list = [...ol.querySelectorAll('textarea')].map(x => x.value); list.splice(+b.dataset.stepDel, 1); if (!list.length) list.push(''); setSteps(list, Math.min(+b.dataset.stepDel, list.length - 1)); });
+      ed.querySelector('#add-step').onclick = () => { const list = [...ol.querySelectorAll('textarea')].map(x => x.value); list.push(''); setSteps(list, list.length - 1); };
+      function setSteps(list, focus) { stepsEdit = list; c.fields.steps = joinSteps(list); markDirty(); renderEditor(); const ta = $('editor').querySelectorAll('.st-steps textarea')[focus]; if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } renderSide(); }
+    }
+    ed.querySelectorAll('[data-steps]').forEach(b => b.onclick = () => { if (b.dataset.steps === 'list' && !stepsAreClean(c.fields.steps)) { if (!confirm('Convert the text into numbered steps? Lines that are not numbered become steps too.')) return; c.fields.steps = joinSteps(parseSteps(c.fields.steps)); markDirty(); } stepsRaw = b.dataset.steps === 'raw'; renderEditor(); });
+    const en = ed.querySelector('#exp-number'); if (en) en.onclick = () => { c.fields.expected = joinSteps(parseSteps(c.fields.expected)); markDirty(); renderEditor(); renderSide(); };
+    ed.querySelector('#prev-case').onclick = () => select(sel - 1);
+    ed.querySelector('#next-case').onclick = () => select(sel + 1);
+    ed.querySelectorAll('[data-act]').forEach(b => b.onclick = () => caseAction(b.dataset.act));
+    // evidence
+    renderThumbs();
+    ed.querySelector('#pick-shots').onclick = () => ed.querySelector('#shot-files').click();
+    ed.querySelector('#shot-files').onchange = e => { uploadFiles([...e.target.files]); e.target.value = ''; };
+    const ev = ed.querySelector('#evidence');
+    ed.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); ev.classList.add('drop-hot'); } });
+    ed.addEventListener('dragleave', () => ev.classList.remove('drop-hot'));
+    ed.addEventListener('drop', e => { e.preventDefault(); ev.classList.remove('drop-hot'); uploadFiles(filesFromTransfer(e.dataTransfer)); });
+  }
+  function refreshCaseNo() { const b = $('editor').querySelector('.st-caseno b'); if (b && cases[sel]) b.textContent = cases[sel].fields.case_id || ''; }
+  function select(i) {
+    if (i < 0 || i >= cases.length) return;
+    sel = i; stepsRaw = false; stepsEdit = null; renderList(); renderEditor(); renderSide(); reportCurrent();
+    const first = $('editor').querySelector('input[data-key="title"], textarea, input'); if (first && document.activeElement && document.activeElement.closest('#list')) first.focus({ preventScroll: true });
+  }
+  function caseAction(act) {
+    const c = cases[sel]; if (!c) return;
+    if (act === 'del') { if (nonEmpty(c) && !confirm('Remove this case' + (c.uid ? ' and its evidence images' : '') + '?')) return; cases.splice(sel, 1); sel = Math.min(sel, cases.length - 1); markDirty('case removed'); }
+    else if (act === 'dup') { const d = blank(); d.fields = { ...c.fields }; cases.splice(sel + 1, 0, d); sel++; markDirty('case duplicated'); }
+    else if (act === 'insert') { cases.splice(sel + 1, 0, blank()); sel++; markDirty(); }
+    else if (act === 'up' && sel > 0) { moveCase(sel, sel - 1); return; }
+    else if (act === 'down' && sel < cases.length - 1) { moveCase(sel, sel + 1); return; }
+    stepsRaw = false; stepsEdit = null; renderList(); renderEditor(); renderSide();
+    if (act === 'insert' || act === 'dup') { const t = $('editor').querySelector('input[data-key="title"]'); if (t) t.focus(); }
+  }
+  function addCase(fromCurrent) {
+    const d = blank();
+    if (fromCurrent && cases[sel]) { for (const k of ['testing_bu', 'campaign_id']) if (has(k)) d.fields[k] = cases[sel].fields[k] || ''; }
+    cases.push(d); sel = cases.length - 1; stepsRaw = false; stepsEdit = null; markDirty('new case');
+    renderList(); renderEditor(); renderSide();
+    const t = $('editor').querySelector('input[data-key="title"]'); if (t) t.focus();
+  }
+  $('add-case').onclick = () => addCase(true);
+  $('es-add').onclick = () => addCase(false);
+
+  // ---------- rendering: inspector ----------
+  function renderSide() {
+    const side = $('side'); const c = cases[sel];
+    if (!c) { side.innerHTML = ''; return; }
+    const ch = checks(c); const okN = ch.filter(x => x.ok).length;
+    const r = c.run || {};
+    side.innerHTML = `
+      <div class="card st-card"><h3>✅ Checklist <span class="pill ${okN === ch.length ? 'pill-ok' : 'pill-warn'}">${okN}/${ch.length}</span></h3>
+        <ul class="st-checks">${ch.map(x => `<li class="${x.ok ? 'ok' : ''}" data-focus="${esc(x.key)}"><span>${x.ok ? '✓' : '○'}</span>${esc(x.label)}</li>`).join('')}</ul>
+        <div class="muted small-text">Click an unticked item to jump to the field. The checklist is guidance — nothing blocks saving or export.</div></div>
+      <div class="card st-card"><h3>📌 Position</h3>
+        <div class="row-actions"><button type="button" class="btn small" data-act="up" ${sel === 0 ? 'disabled' : ''}>↑ Move up</button><button type="button" class="btn small" data-act="down" ${sel === cases.length - 1 ? 'disabled' : ''}>↓ Move down</button></div>
+        <div class="muted small-text top-gap">Row ${sel + 1} of ${cases.length} in the plan · exported as row ${sel + 1} on the SIT sheet · case # ${esc(c.fields.case_id || '')} within ${esc(val(c, 'testing_bu') || 'no BU')} · ${esc(val(c, 'title') || 'untitled')}</div></div>
+      <div class="card st-card"><h3>▶ Run result</h3>
+        ${r.result && r.result !== 'Not Run' ? `<div><span class="st-res big ${esc(String(r.result).toLowerCase().replace(/[^a-z]/g, ''))}">${esc(r.result)}</span></div>${r.actual ? `<div class="small-text top-gap"><b>Actual:</b> ${esc(r.actual)}</div>` : ''}` : '<div class="muted small-text">Not run yet — record results in the ▶ Run viewer; they export into the Testing Results / Actual Results columns.</div>'}</div>
+      <div class="card st-card"><h3>⌨ Shortcuts</h3><div class="st-keys"><div><kbd>Ctrl</kbd>+<kbd>S</kbd> save</div><div><kbd>Ctrl</kbd>+<kbd>Enter</kbd> new case</div><div><kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate</div><div><kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> prev / next case</div><div><kbd>Enter</kbd> in a step → next step</div><div><kbd>Ctrl</kbd>+<kbd>V</kbd> paste a screenshot</div></div></div>`;
+    side.querySelectorAll('[data-act]').forEach(b => b.onclick = () => caseAction(b.dataset.act));
+    side.querySelectorAll('li[data-focus]').forEach(li => li.onclick = () => { const el = $('editor').querySelector(`[data-key="${li.dataset.focus}"], .st-steps textarea`); if (el) { el.focus(); el.scrollIntoView({ block: 'center' }); } });
+  }
+
+  // ---------- evidence ----------
+  function renderThumbs() {
+    const c = cases[sel]; const box = $('editor').querySelector('#thumbs'); if (!c || !box) return;
+    box.innerHTML = '';
+    (c.shots || []).forEach((name, i) => {
+      const t = document.createElement('div'); t.className = 'thumb';
+      const img = document.createElement('img'); img.src = `${shotsUrl(c.uid)}/${encodeURIComponent(name)}`; img.title = name + ' — click to view'; img.onclick = () => openLightbox(i);
+      const x = document.createElement('button'); x.type = 'button'; x.textContent = '✕'; x.title = 'Remove this image';
+      x.onclick = async e => { e.stopPropagation(); const d = await (await fetch(`${shotsUrl(c.uid)}/${encodeURIComponent(name)}/delete`, { method: 'POST' })).json(); c.shots = d.shots || []; renderThumbs(); renderList(); };
+      t.append(img, x); box.appendChild(t);
+    });
+    if (!(c.shots || []).length) box.innerHTML = '<div class="muted small-text st-noshots">No evidence yet.</div>';
+  }
+  async function loadShots(c) {
+    if (!c || !c.uid) return;
+    try { const d = await (await fetch(shotsUrl(c.uid))).json(); const next = d.shots || []; if (JSON.stringify(next) !== JSON.stringify(c.shots)) { c.shots = next; if (c === cases[sel]) renderThumbs(); renderList(); } } catch (e) { /* offline */ }
+  }
+  function filesFromTransfer(dt) {
+    const files = [...(dt.files || [])].filter(f => f.type.startsWith('image/'));
+    if (files.length) return files;
+    const uri = dt.getData('text/uri-list') || dt.getData('text/plain');
+    if (uri && uri.startsWith('data:image/')) { const [head, b64] = uri.split(','); const type = (head.match(/data:([^;]+)/) || [, 'image/png'])[1]; const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return [new File([bytes], 'pasted.png', { type })]; }
+    return [];
+  }
+  async function uploadFiles(files) {
+    const c = cases[sel]; files = files.filter(f => f && f.type.startsWith('image/'));
+    if (!c || !files.length) return;
+    if (!c.uid) { if (!nonEmpty(c)) { setStatus('error', 'type something in the case first, then add images'); return; } if (!await save() || !c.uid) return; }
+    const fd = new FormData(); files.forEach(f => fd.append('shots', f, f.name || 'pasted.png'));
+    setStatus('saving', `uploading ${files.length} image${files.length > 1 ? 's' : ''}…`);
+    const d = await (await fetch(shotsUrl(c.uid), { method: 'POST', body: fd })).json();
+    c.shots = d.shots || []; renderThumbs(); renderList();
+    setStatus(dirty ? 'dirty' : 'clean', `🖼 ${files.length} image${files.length > 1 ? 's' : ''} attached to case ${sel + 1}`);
+  }
+  document.addEventListener('paste', e => {
+    if (!$('import-overlay').hidden || !$('tools-overlay').hidden) return;
+    const items = [...((e.clipboardData && e.clipboardData.items) || [])].filter(it => it.type.startsWith('image/'));
+    if (!items.length || sel < 0) return;
+    e.preventDefault(); uploadFiles(items.map(it => it.getAsFile()));
+  });
+  // lightbox
+  const lb = $('lightbox'); let lbIdx = 0;
+  function openLightbox(i) { lbIdx = i; showLightbox(); }
+  function showLightbox() { const c = cases[sel]; const names = (c && c.shots) || []; if (!names.length) { lb.hidden = true; return; } lbIdx = (lbIdx + names.length) % names.length; $('lb-img').src = `${shotsUrl(c.uid)}/${encodeURIComponent(names[lbIdx])}`; $('lb-caption').textContent = `Case ${sel + 1} · image ${lbIdx + 1} of ${names.length} · ${names[lbIdx]}`; lb.hidden = false; }
+  $('lb-prev').onclick = () => { lbIdx--; showLightbox(); }; $('lb-next').onclick = () => { lbIdx++; showLightbox(); }; $('lb-close').onclick = () => lb.hidden = true;
+  lb.addEventListener('click', e => { if (e.target === lb) lb.hidden = true; });
+
+  // ---------- current case for the screen-cap plugin ----------
+  let reportedUid = null;
+  function reportCurrent() {
+    const c = cases[sel]; if (!c || !c.uid || c.uid === reportedUid) return;
+    reportedUid = c.uid;
+    fetch(CURRENT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan_id: PLAN_ID, case_uid: c.uid }) }).catch(() => {});
+  }
+  window.addEventListener('focus', () => loadShots(cases[sel]));
+  setInterval(() => { if (!document.hidden) loadShots(cases[sel]); }, 5000);
+
+  // ---------- list controls / keyboard ----------
+  $('filter').addEventListener('input', () => { filterQ = $('filter').value.trim().toLowerCase(); $('filter-clear').hidden = !filterQ; renderList(); });
+  $('filter-clear').onclick = () => { $('filter').value = ''; filterQ = ''; $('filter-clear').hidden = true; renderList(); $('filter').focus(); };
+  document.querySelectorAll('[data-group]').forEach(b => b.onclick = () => { grouping = b.dataset.group; document.querySelectorAll('[data-group]').forEach(x => x.classList.toggle('on', x === b)); try { localStorage.setItem('qa-studio-group', grouping); } catch (e) {} renderList(); });
+  try { if (localStorage.getItem('qa-studio-group') === 'flat') document.querySelector('[data-group="flat"]').click(); } catch (e) {}
+  document.addEventListener('keydown', e => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key === 's') { e.preventDefault(); save(); }
+    else if (mod && e.key === 'Enter') { e.preventDefault(); addCase(true); }
+    else if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); caseAction('dup'); }
+    else if (e.altKey && e.key === 'ArrowUp' && !e.target.closest('.st-steps')) { e.preventDefault(); select(sel - 1); }
+    else if (e.altKey && e.key === 'ArrowDown' && !e.target.closest('.st-steps')) { e.preventDefault(); select(sel + 1); }
+    else if (e.key === 'Escape') { $('tools-overlay').hidden = true; $('import-overlay').hidden = true; lb.hidden = true; }
+    if (!lb.hidden) { if (e.key === 'ArrowLeft') { lbIdx--; showLightbox(); } if (e.key === 'ArrowRight') { lbIdx++; showLightbox(); } }
+  });
+
+  // ---------- tools ----------
+  const to = $('tools-overlay');
+  $('tools-btn').onclick = () => { to.hidden = false; $('fr-find').focus(); };
+  $('tools-close').onclick = () => to.hidden = true;
+  to.addEventListener('click', e => { if (e.target === to) to.hidden = true; });
+  function frRegex() { const f = $('fr-find').value; if (!f) return null; return new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $('fr-case').checked ? 'g' : 'gi'); }
+  function frApply(doReplace) {
+    const re = frRegex(); if (!re) { $('fr-info').textContent = 'Type something to find.'; return; }
+    const field = $('fr-field').value, rep = $('fr-replace').value; let hits = 0, casesHit = 0;
+    for (const c of cases) { let touched = false; for (const k of KEYS) { if (field && k !== field) continue; const v = String(c.fields[k] || ''); const m = v.match(re); if (!m) continue; hits += m.length; touched = true; if (doReplace) c.fields[k] = v.replace(re, rep); } if (touched) casesHit++; }
+    $('fr-info').textContent = `${hits} match${hits === 1 ? '' : 'es'} in ${casesHit} case${casesHit === 1 ? '' : 's'}${doReplace && hits ? ' — replaced' : ''}.`;
+    if (doReplace && hits) { markDirty('replaced text'); renderList(); renderEditor(); renderSide(); }
+  }
+  $('fr-count').onclick = () => frApply(false); $('fr-go').onclick = () => frApply(true);
+  $('bu-fill').onclick = () => { const v = $('bu-value').value.trim(); if (!v) return; let n = 0; for (const c of cases) if (!val(c, 'testing_bu')) { c.fields.testing_bu = v; n++; } $('tools-info').textContent = `${n} case${n === 1 ? '' : 's'} given BU ${v}.`; if (n) { markDirty(); renderList(); renderEditor(); renderSide(); } };
+  $('bu-all').onclick = () => { const v = $('bu-value').value.trim(); if (!v || !confirm(`Set Testing BU = ${v} on all ${cases.length} cases?`)) return; for (const c of cases) c.fields.testing_bu = v; markDirty(); renderList(); renderEditor(); renderSide(); $('tools-info').textContent = `BU set on ${cases.length} cases.`; };
+  $('renum-steps').onclick = () => { let n = 0; for (const c of cases) { const j = joinSteps(parseSteps(c.fields.steps)); if (j !== (c.fields.steps || '')) { c.fields.steps = j; n++; } } $('tools-info').textContent = `${n} case${n === 1 ? '' : 's'} renumbered.`; if (n) { markDirty(); renderEditor(); renderSide(); } };
+  $('sort-bu').onclick = () => { const cur = cases[sel]; const order = []; for (const c of cases) { const g = val(c, 'testing_bu'); if (!order.includes(g)) order.push(g); } cases.sort((a, b) => order.indexOf(val(a, 'testing_bu')) - order.indexOf(val(b, 'testing_bu'))); sel = Math.max(0, cases.indexOf(cur)); markDirty('sorted'); renderList(); renderEditor(); renderSide(); $('tools-info').textContent = 'Cases grouped by BU (order of first appearance kept).'; };
+  $('drop-empty').onclick = () => { const cur = cases[sel]; const before = cases.length; cases = cases.filter(nonEmpty); sel = Math.max(0, cases.indexOf(cur)); if (!cases.length) sel = -1; $('tools-info').textContent = `${before - cases.length} empty case${before - cases.length === 1 ? '' : 's'} removed.`; if (before !== cases.length) { markDirty(); renderList(); renderEditor(); renderSide(); } };
+
+  // ---------- import (same endpoints as the table builder) ----------
+  const PREVIEW_URL = "{{ url_for('testcases.import_preview', plan_id=plan.id) }}";
+  const IMPORT_URL = "{{ url_for('testcases.import_cases', plan_id=plan.id) }}";
+  const impOverlay = $('import-overlay'), impFile = $('import-file'), impErr = $('import-error');
+  const impSheet = $('imp-sheet'), impHeader = $('imp-header'), mapTable = $('map-table'), impPreview = $('imp-preview');
+  let imp = null;
+  const TARGETS = FIELDS.map(f => ({ key: f.key, label: f.label })).concat(RUN_FIELDS.map(f => ({ key: f.key, label: f.label + ' (run result)' }))).concat([{ key: 'case_id', label: '# (case number — ignored, renumbered on save)' }]);
+  function openImport() { impOverlay.hidden = false; showImportStep('file'); impErr.hidden = true; }
+  function showImportStep(step) { $('imp-step-file').hidden = step !== 'file'; $('imp-step-map').hidden = step !== 'map'; $('imp-actions').hidden = step !== 'map'; }
+  ['import-btn', 'es-import'].forEach(id => $(id).onclick = openImport);
+  $('import-close').onclick = () => impOverlay.hidden = true;
+  impOverlay.addEventListener('click', e => { if (e.target === impOverlay) impOverlay.hidden = true; });
+  $('imp-back').onclick = () => showImportStep('file');
+  const dz = $('dropzone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('hot'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('hot'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('hot'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) previewFile({ file: f }); });
+  impFile.onchange = () => { if (impFile.files[0]) previewFile({ file: impFile.files[0] }); impFile.value = ''; };
+  async function previewFile(opts) {
+    const fd = new FormData();
+    if (opts.file) fd.append('file', opts.file, opts.file.name); else fd.append('token', imp.token);
+    if (opts.sheet) fd.append('sheet', opts.sheet); if (opts.header_row) fd.append('header_row', opts.header_row);
+    impErr.hidden = true; dz.classList.add('busy');
+    let data; try { data = await (await fetch(PREVIEW_URL, { method: 'POST', body: fd })).json(); } catch (e) { data = { error: e.message }; }
+    dz.classList.remove('busy');
+    if (!data.ok) { impErr.textContent = '⚠ ' + (data.error || 'could not read the file'); impErr.hidden = false; showImportStep('file'); return; }
+    imp = data; renderImport(); showImportStep('map');
+  }
+  function renderImport() {
+    $('import-sub').textContent = `${imp.filename} · ${imp.total} data row${imp.total === 1 ? '' : 's'} after the header${imp.truncated ? ' (preview shows the first ' + imp.rows.length + ')' : ''}`;
+    impSheet.innerHTML = imp.sheets.map(s => `<option ${s === imp.sheet ? 'selected' : ''}>${esc(s)}</option>`).join('');
+    impHeader.value = imp.header_row; renderMapTable(); renderImportPreview();
+  }
+  impSheet.onchange = () => previewFile({ sheet: impSheet.value });
+  impHeader.onchange = () => previewFile({ sheet: impSheet.value, header_row: impHeader.value });
+  const colLetter = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const trunc = (s, n) => { s = String(s).replace(/\s+/g, ' '); return s.length > n ? s.slice(0, n) + '…' : s; };
+  function renderMapTable() {
+    const sample = ci => { const v = imp.rows.map(r => r[ci] || '').find(v => v.trim()) || ''; return v.length > 60 ? v.slice(0, 60) + '…' : v; };
+    mapTable.innerHTML = '<tr><th>Workbook column</th><th>Sample</th><th>→ Field</th></tr>' + imp.headers.map((h, ci) => `<tr><td><strong>${esc(h)}</strong> <span class="muted small-text">(${colLetter(ci)})</span></td><td class="muted small-text sample-cell">${esc(sample(ci))}</td><td><select data-col="${ci}"><option value="">— skip —</option>${TARGETS.map(t => `<option value="${t.key}" ${imp.mapping[ci] === t.key ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></td></tr>`).join('');
+    mapTable.querySelectorAll('select[data-col]').forEach(s => s.onchange = () => { mapTable.querySelectorAll('select[data-col]').forEach(o => { if (o !== s && s.value && o.value === s.value) o.value = ''; }); imp.mapping = currentMapping(); renderImportPreview(); });
+  }
+  function currentMapping() { const m = {}; mapTable.querySelectorAll('select[data-col]').forEach(s => { if (s.value) m[s.dataset.col] = s.value; }); return m; }
+  function renderImportPreview() {
+    const cols = Object.entries(imp.mapping).map(([ci, key]) => ({ ci: +ci, key, label: (TARGETS.find(t => t.key === key) || {}).label || key }));
+    const mapped = cols.filter(c => c.key !== 'case_id');
+    const rows = imp.rows.filter(r => mapped.some(c => (r[c.ci] || '').trim()));
+    $('imp-count').textContent = mapped.length ? `${rows.length} row${rows.length === 1 ? '' : 's'} will be imported` : 'map at least one column';
+    $('imp-go').disabled = !mapped.length || !rows.length;
+    $('imp-preview-info').textContent = `— first ${Math.min(8, rows.length)} mapped rows`;
+    if (!mapped.length) { impPreview.innerHTML = '<tr><td class="muted">Map a column to see the preview.</td></tr>'; return; }
+    impPreview.innerHTML = '<tr>' + mapped.map(c => `<th>${esc(c.label)}</th>`).join('') + '</tr>' + rows.slice(0, 8).map(r => '<tr>' + mapped.map(c => `<td title="${esc(r[c.ci] || '')}">${esc(trunc(r[c.ci] || '', 80))}</td>`).join('') + '</tr>').join('');
+  }
+  $('imp-go').onclick = async () => {
+    const go = $('imp-go'); go.disabled = true; go.textContent = 'Importing…';
+    let data;
+    try { data = await (await fetch(IMPORT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: imp.token, sheet: impSheet.value, header_row: +impHeader.value, mapping: currentMapping(), fill_down: $('imp-filldown').checked }) })).json(); }
+    catch (e) { data = { error: e.message }; }
+    go.disabled = false; go.textContent = '⬇ Import rows';
+    if (!data.ok) { impErr.textContent = '⚠ ' + (data.error || 'import failed'); impErr.hidden = false; showImportStep('file'); return; }
+    if ($('imp-mode').value === 'replace') { if (cases.length && !confirm(`Replace the ${cases.length} existing cases with the ${data.count} imported ones?`)) return; cases = []; }
+    const start = cases.length;
+    for (const c of data.cases) { const d = blank(); d.fields = Object.assign(d.fields, c.fields || {}); if (c.run && Object.keys(c.run).length) d.run = c.run; cases.push(d); }
+    sel = start < cases.length ? start : cases.length - 1; stepsRaw = false; stepsEdit = null;
+    impOverlay.hidden = true; markDirty(`📂 imported ${data.count} case${data.count === 1 ? '' : 's'}`);
+    renderList(); renderEditor(); renderSide();
+  };
+  if (IMPORT_TOKEN) { imp = { token: IMPORT_TOKEN }; openImport(); previewFile({}); history.replaceState(null, '', location.pathname); }
+
+  // ---------- assistant ----------
+  const chat = initChatBox({
+    context: 'testcases-studio', title: 'Test Case Assistant',
+    greeting: 'Hi! Paste a requirement or Jira ticket and I\'ll draft the test cases, or ask me to improve the open case (e.g. "write expected results for this case"). New cases land in the list for you to review.',
+    placeholder: 'Describe the feature, paste a spec, or ask for help…',
+    endpoint: "{{ url_for('testcases.assist_chat', plan_id=plan.id) }}",
+    buildContext: () => ({ table: cases.map(c => c.fields) }),
+    quickActions: [
+      { label: '🔍 Review this case', message: () => `Review test case row ${sel + 1} like a senior QA lead: steps complete, concrete and executable; expected result specific and verifiable; test data and campaign ID present where needed. Fix weak fields via "updates" for row ${sel + 1} and explain briefly in "reply".` },
+      { label: '🧪 Add negative cases', message: () => `Based on row ${sel + 1}, add the missing negative and boundary test cases for the same feature as "new_cases" (same Testing BU and Case name).` },
+      { label: '🔎 Review whole plan', message: 'Review every test case in the table like a senior QA lead. For each row check: steps are complete, concrete and executable; the expected result is specific and verifiable; test data and campaign ID are filled where the steps need them; no duplicate or overlapping coverage. Point out missing coverage (negative paths, boundary values, permission checks). Summarise findings by row number in "reply", fix weak fields via "updates", add missing cases via "new_cases".' },
+    ],
+    onReply: (data, api) => {
+      let changed = 0, added = 0;
+      for (const u of data.updates || []) { const c = cases[u.row - 1]; if (!c) continue; for (const [k, v] of Object.entries(u.fields || {})) if (has(k)) c.fields[k] = String(v ?? ''); changed++; }
+      for (const nc of data.new_cases || []) { const d = blank(); for (const [k, v] of Object.entries(nc || {})) if (has(k)) d.fields[k] = String(v ?? ''); cases.push(d); added++; }
+      if (changed || added) { if (added && !changed) sel = cases.length - added; stepsRaw = false; stepsEdit = null; markDirty(); renderList(); renderEditor(); renderSide(); const parts = []; if (changed) parts.push(`updated ${changed} case${changed > 1 ? 's' : ''}`); if (added) parts.push(`added ${added} case${added > 1 ? 's' : ''}`); api.addMsg('agent note', `✏️ ${parts.join(' · ')} — review them in the list, then Save.`); }
+    },
+  });
+  $('es-assist').onclick = () => chat.open();
+
+  // ---------- init ----------
+  renderList(); renderEditor(); renderSide(); reportCurrent();
+})();
+</script>
+{% endblock %}

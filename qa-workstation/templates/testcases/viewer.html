@@ -7,7 +7,8 @@
     <p class="muted">Test execution viewer — work through each case and record results.</p>
   </div>
   <div class="row-actions">
-    <a class="btn" href="{{ url_for('testcases.builder', plan_id=plan.id) }}">✏️ Builder</a>
+    <a class="btn" href="{{ url_for('testcases.studio', plan_id=plan.id) }}">🎛 Studio</a>
+    <a class="btn" href="{{ url_for('testcases.builder', plan_id=plan.id) }}">☰ Table</a>
     <a class="btn" href="{{ url_for('testcases.export', plan_id=plan.id) }}">📥 Export Excel</a>
     <a class="btn" href="{{ url_for('testcases.index') }}">← Plans</a>
   </div>

@@ -31,7 +31,8 @@ def create():
     if not name:
         return redirect(url_for("testcases.index"))
     plan = store.create_plan(name, request.form.get("description", "").strip())
-    return redirect(url_for("testcases.builder", plan_id=plan["id"]))
+    target = "testcases.studio" if request.form.get("open", "studio") == "studio" else "testcases.builder"
+    return redirect(url_for(target, plan_id=plan["id"]))
 
 
 @bp.route("/plan/<plan_id>/delete", methods=["POST"])
@@ -50,6 +51,20 @@ def builder(plan_id):
     return render_template(
         "testcases/builder.html", plan=plan, template=store.load_template(),
         import_token=request.args.get("import", ""))
+
+
+@bp.route("/plan/<plan_id>/studio")
+def studio(plan_id):
+    """Case Studio — the focused one-case-at-a-time editor (grouped list,
+    step editor, quality checklist, autosave). Same plan data and the
+    same Excel export as the table builder."""
+    plan = store.load_plan(plan_id)
+    if plan is None:
+        return redirect(url_for("testcases.index"))
+    shots = {c["uid"]: store.list_shots(plan_id, c["uid"]) for c in plan.get("cases", [])}
+    return render_template(
+        "testcases/studio.html", plan=plan, template=store.load_template(),
+        shots=shots, import_token=request.args.get("import", ""))
 
 
 @bp.route("/plan/<plan_id>/cases", methods=["POST"])
@@ -98,7 +113,8 @@ def import_new_plan():
     name = request.form.get("name", "").strip() or f.filename.rsplit(".", 1)[0]
     plan = store.create_plan(name, request.form.get("description", "").strip())
     token = importer.park_upload(f.read(), f.filename)
-    return redirect(url_for("testcases.builder", plan_id=plan["id"], **{"import": token}))
+    target = "testcases.studio" if request.form.get("open") == "studio" else "testcases.builder"
+    return redirect(url_for(target, plan_id=plan["id"], **{"import": token}))
 
 
 @bp.route("/plan/<plan_id>/import/preview", methods=["POST"])

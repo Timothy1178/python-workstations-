@@ -5,6 +5,31 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.22.0 — 2026-11-08
+
+- **Test Cases · 🎛 Studio** — a second editor for the same plans at
+  `/testcases/plan/<id>/studio`, now the default when a plan is created or
+  imported (the ☰ Table builder stays one click away, and both export the
+  unchanged Excel template). One case at a time: a grouped case list by
+  Testing BU with search, drag-to-reorder, checklist dots, evidence counts
+  and run results; a focused form with a big case title, BU with
+  suggestions, a **step editor** (one box per step, Enter adds the next,
+  Backspace removes an empty one, Alt+↑/↓ reorders, Text mode for free
+  typing, numbering added on save), a "1-2-3 number lines" helper for
+  expected results, auto-growing fields and an evidence gallery that takes
+  paste / drop / picker and the screen-cap plugin; an inspector with a
+  **quality checklist** (BU, name, steps present and concrete, expected
+  result, test data / campaign ID when the steps call for them — click an
+  unticked item to jump to the field), position controls, the run result
+  and shortcuts; plan stats (cases, BUs, % complete, evidence, executed);
+  **autosave** 1.5 s after a change (toggle) plus Ctrl+S; **🧰 Tools**
+  with find & replace (per field or all, match case, count first), fill
+  / set Testing BU, renumber all steps, sort by BU, remove empty cases;
+  the same Import Excel / CSV dialog and the assistant with
+  case-aware quick actions (review this case, add negative cases, review
+  the whole plan). Case numbering, saving and the export are the same
+  code paths as the table builder.
+
 ## 1.21.0 — 2026-11-05
 
 - **TLog editor built on the full Sales_Transactions v1.3 workbook.**

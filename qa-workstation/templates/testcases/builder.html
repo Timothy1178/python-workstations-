@@ -12,6 +12,7 @@
   <div class="bb-tools">
     <span class="pill" id="case-count">0 cases</span>
     <span class="pill status-pill" id="save-status" data-state="clean">saved</span>
+    <a class="btn" href="{{ url_for('testcases.studio', plan_id=plan.id) }}" title="Open the focused one-case-at-a-time editor">🎛 Studio</a>
     <button class="btn" id="import-btn" title="Import test cases from an Excel workbook or CSV">📂 Import Excel</button>
     <a class="btn" href="{{ url_for('testcases.export', plan_id=plan.id) }}" title="Download the plan as the Excel test plan">📥 Export</a>
     <a class="btn" href="{{ url_for('testcases.viewer', plan_id=plan.id) }}" title="Open the run viewer to execute the cases">▶ Run tests</a>

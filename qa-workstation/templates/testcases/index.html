@@ -9,8 +9,10 @@
   <form method="post" action="{{ url_for('testcases.create') }}" class="inline-form">
     <input name="name" placeholder="Plan name (e.g. JIRA-1234 SIT)" required>
     <input name="description" placeholder="Description (optional)" class="grow">
+    <select name="open" title="Which editor opens the new plan"><option value="studio">open in 🎛 Studio</option><option value="builder">open in ☰ Table builder</option></select>
     <button class="btn primary" type="submit">Create</button>
   </form>
+  <p class="muted small-text top-gap"><strong>🎛 Studio</strong> edits one case at a time with a grouped case list, a step editor, a quality checklist and autosave; <strong>☰ Table</strong> is the classic spreadsheet view. Both save to the same plan and export the same Excel workbook.</p>
 </section>
 
 <section class="card">
@@ -20,6 +22,7 @@
     <label class="btn">📄 Choose file <input type="file" name="file" accept=".xlsx,.xlsm,.csv,.txt,.tsv" required onchange="this.closest('form').querySelector('.file-name').textContent = this.files[0] ? this.files[0].name : ''"></label>
     <span class="file-name muted small-text"></span>
     <input name="name" placeholder="Plan name (defaults to the file name)">
+    <input type="hidden" name="open" value="studio">
     <button class="btn primary" type="submit">📂 Import</button>
   </form>
 </section>
@@ -31,7 +34,7 @@
     <tr><th>Plan</th><th>Cases</th><th>Progress</th><th>Updated</th><th></th></tr>
     {% for p in plans %}
     <tr>
-      <td><a href="{{ url_for('testcases.builder', plan_id=p.id) }}">{{ p.name }}</a></td>
+      <td><a href="{{ url_for('testcases.studio', plan_id=p.id) }}">{{ p.name }}</a></td>
       <td>{{ p.total }}</td>
       <td>
         <div class="bar"><div class="bar-fill" style="width: {{ (p.done / p.total * 100)|round if p.total else 0 }}%"></div></div>
@@ -39,7 +42,8 @@
       </td>
       <td class="muted">{{ p.updated }}</td>
       <td class="row-actions">
-        <a class="btn small" href="{{ url_for('testcases.builder', plan_id=p.id) }}">✏️ Build</a>
+        <a class="btn small primary" href="{{ url_for('testcases.studio', plan_id=p.id) }}">🎛 Studio</a>
+        <a class="btn small" href="{{ url_for('testcases.builder', plan_id=p.id) }}">☰ Table</a>
         <a class="btn small" href="{{ url_for('testcases.viewer', plan_id=p.id) }}">▶ Run</a>
         <a class="btn small" href="{{ url_for('testcases.export', plan_id=p.id) }}">📥 Excel</a>
         <form method="post" action="{{ url_for('testcases.delete', plan_id=p.id) }}"

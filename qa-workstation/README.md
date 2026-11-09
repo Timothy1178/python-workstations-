@@ -24,9 +24,12 @@ bump gets an entry in [CHANGELOG.md](CHANGELOG.md).
 
 ## Modules
 
-- **Test Cases** (`modules/testcases/`) — template-driven test case builder
-  and a test-run viewer. The columns come from `data/template.json`; replace
-  it with your own template to change the layout, no code changes needed.
+- **Test Cases** (`modules/testcases/`) — template-driven test case
+  editors and a test-run viewer. 🎛 **Studio** (default) edits one case at
+  a time: grouped case list, step editor, quality checklist, evidence
+  gallery, autosave and bulk tools; ☰ **Table** is the classic spreadsheet
+  view. The columns come from `data/template.json`; replace it with your
+  own template to change the layout, no code changes needed.
   📂 **Import Excel / CSV** reads an existing plan (any sheet / column
   order — the dialog detects the header row, suggests the column mapping
   and previews the rows); 📥 **Export** writes the CCASIA test plan

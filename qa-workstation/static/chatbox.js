@@ -125,7 +125,8 @@ function initChatBox(opts) {
     const b = document.createElement("button");
     b.className = "btn small";
     b.textContent = qa.label;
-    b.onclick = () => send(qa.message, qa.label);
+    // message may be a function so the prompt can refer to the current selection
+    b.onclick = () => send(typeof qa.message === "function" ? qa.message() : qa.message, qa.label);
     quick.appendChild(b);
   }
   if (!(opts.quickActions || []).length) quick.remove();
