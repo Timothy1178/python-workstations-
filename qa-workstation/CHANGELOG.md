@@ -5,6 +5,16 @@ Bump rule: every **main update adds 0.1** (1.1.0 → 1.2.0); every
 **bug fix adds 0.0.1** (1.1.0 → 1.1.1). Update this file in the same
 change.
 
+## 1.22.2 — 2026-11-09
+
+- **TLog: a CSV set dropped on the Msg5 request tab now opens in the CSV
+  set tab.** Dropping `ORDER_WTCID_202604281544.csv` (or the zip, or all
+  eight files) on the BU library / *Load from file* used to answer "no
+  message with a playloadJson found". The Msg5 tab now recognises TLog set
+  files by name (and any zip), imports them through the CSV set importer
+  and switches to 🗂 TLog CSV set with the transactions loaded. The Msg5
+  endpoints also answer with a clear pointer if a set file reaches them.
+
 ## 1.22.1 — 2026-11-09
 
 - **TLog CSV set: output now matches the valid WTCID batch set byte for

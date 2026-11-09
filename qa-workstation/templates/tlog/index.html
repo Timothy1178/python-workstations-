@@ -22,7 +22,7 @@
   <aside class="card msg-side">
     <h2>📚 BU library <span class="pill" id="lib-count">{{ entries|length }}</span></h2>
     <label class="dropzone small-dz" id="lib-drop">
-      <input type="file" id="lib-files" accept=".docx,.xlsx,.xlsm,.csv,.json,.txt" multiple hidden>
+      <input type="file" id="lib-files" accept=".docx,.xlsx,.xlsm,.csv,.json,.txt,.zip,.ok,.OK" multiple hidden>
       <div>📄 <strong>Import BU docs</strong></div>
       <div class="muted small-text">.docx · .xlsx · .csv · .json · .txt — drop several at once; every cell or paragraph holding a message is read, BU code from the message</div>
     </label>
@@ -522,6 +522,7 @@
   $('file-input').onchange = async () => {
     const f = $('file-input').files[0]; $('file-input').value = '';
     if (!f) return;
+    if (isTlogSet([f])) { handOffToCsvSet([f], $('load-status')); return; }
     const fd = new FormData(); fd.append('file', f, f.name);
     status($('load-status'), `Reading ${f.name}…`);
     let d; try { d = await (await fetch(READ_URL, { method: 'POST', body: fd })).json(); } catch (e) { d = { error: e.message }; }
@@ -626,8 +627,21 @@
   drop.addEventListener('dragleave', () => drop.classList.remove('hot'));
   drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('hot'); importFiles([...e.dataTransfer.files]); });
   $('lib-files').onchange = () => { importFiles([...$('lib-files').files]); $('lib-files').value = ''; };
+  // TLog CSV set files (ORDER_<BU>_<date>.csv / .OK / a zip of them) belong to the CSV set tab:
+  // import them there and open it, instead of reporting "no message with a playloadJson".
+  const TLOG_FILE_RE = /^(ORDER|ORDER_PAYMENT|ORDERITEMS|ORDERITEMS_PROMOTION|ORDER_XM)_[A-Za-z0-9]+_\d{8}(\d{4}|\d{6})?(_\w+)?\.(csv|ok)$/i;
+  const isTlogSet = files => files.length > 0 && files.every(f => TLOG_FILE_RE.test(f.name) || /\.zip$/i.test(f.name));
+  async function handOffToCsvSet(files, statusEl) {
+    const fd = new FormData(); files.forEach(f => fd.append('files', f, f.name));
+    status(statusEl, `TLog CSV set detected — importing ${files.length} file${files.length > 1 ? 's' : ''} into the 🗂 TLog CSV set tab…`);
+    let d; try { d = await (await fetch("{{ url_for('tlog.csv_import') }}", { method: 'POST', body: fd })).json(); } catch (e) { d = { error: e.message }; }
+    if (!d.ok) { status(statusEl, '⚠ TLog CSV set: ' + (d.error || 'import failed') + (d.warnings && d.warnings.length ? ' · ' + d.warnings.join(' · ') : ''), false); return; }
+    try { sessionStorage.setItem('tlog.handoff', JSON.stringify(d)); } catch (e) { status(statusEl, '⚠ could not hand the set over — open the TLog CSV set tab and import it there.', false); return; }
+    location.href = "{{ url_for('tlog.csv_page') }}?handoff=1";
+  }
   async function importFiles(files) {
     if (!files.length) return;
+    if (isTlogSet(files)) { handOffToCsvSet(files, $('lib-import-status')); return; }
     const fd = new FormData(); files.forEach(f => fd.append('files', f, f.name));
     $('lib-import-status').textContent = `Reading ${files.length} file${files.length > 1 ? 's' : ''}…`;
     const d = await (await fetch(IMPORT_URL, { method: 'POST', body: fd })).json();

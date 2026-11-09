@@ -632,6 +632,10 @@
     const fd = new FormData(); files.forEach(f => fd.append('files', f, f.name));
     $('import-status').textContent = 'Reading…';
     const d = await (await fetch(IMPORT_URL, { method: 'POST', body: fd })).json();
+    applyImport(d);
+  }
+  // result of /api/csv/import -> transactions in the editor (also used for a set dropped on the Msg5 tab)
+  function applyImport(d) {
     if (!d.ok) { $('import-status').textContent = '⚠ ' + (d.error || 'import failed'); return; }
     if (state.transactions.length && !confirm(`Replace the current ${state.transactions.length} transactions with the ${d.transactions.length} imported ones?`)) return;
     state = { id: '', name: '', transactions: d.transactions };
@@ -746,6 +750,8 @@
   $('set-ref').value = layout.ref_base || '';
   $('date-today').click();
   renderSets(); render();
+  // a TLog set dropped on the Msg5 request tab is imported there and handed over here
+  try { const h = sessionStorage.getItem('tlog.handoff'); if (h) { sessionStorage.removeItem('tlog.handoff'); applyImport(JSON.parse(h)); history.replaceState(null, '', location.pathname); } } catch (e) { /* ignore */ }
 })();
 </script>
 {% endblock %}

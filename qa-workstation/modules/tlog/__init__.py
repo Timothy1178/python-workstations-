@@ -87,6 +87,9 @@ def import_files():
     for f in request.files.getlist("files"):
         if not f.filename:
             continue
+        if csvset.parse_name(f.filename) or f.filename.lower().endswith(".zip"):
+            errors.append(f"{f.filename}: this is a TLog CSV set file — import it on the 🗂 TLog CSV set tab (Import a set)")
+            continue
         try:
             found = store.read_upload(f.filename, f.read())
         except Exception as e:  # not a docx / unreadable
@@ -111,6 +114,8 @@ def read_file():
     f = request.files.get("file")
     if not f or not f.filename:
         return jsonify({"ok": False, "error": "no file"}), 400
+    if csvset.parse_name(f.filename) or f.filename.lower().endswith(".zip"):
+        return jsonify({"ok": False, "error": f"{f.filename}: this is a TLog CSV set file — import it on the 🗂 TLog CSV set tab (Import a set)"}), 400
     try:
         found = msgfiles.read_upload(f.filename, f.read())
     except Exception as e:
